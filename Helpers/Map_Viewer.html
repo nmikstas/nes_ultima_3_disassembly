@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NES Ultima 3 Map Viewer</title>
+    <link rel="stylesheet" type="text/css" href="./bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="./Map_Viewer.css">
+</head>
+<body class="pl-3">
+    <div class="row">
+        <div class="col-12 pt-3">
+            <button type="button" id="zoom-out" class="btn btn-primary btn-size align-text-bottom"><b>-</b></button>
+            <button type="button" id="zoom-in"  class="btn btn-primary btn-size align-text-bottom"><b>+</b></button>
+
+            <select id="map" class="align-text-bottom">
+                <option value="0" selected>Overworld</option>
+                <option value="1">Castle of Lord British</option>
+                <option value="2">Royal City</option>
+                <option value="3">Fawn</option>
+                <option value="4">Yew</option>
+                <option value="5">Moon</option>
+                <option value="6">Montor East</option>
+                <option value="7">Montor West</option>
+                <option value="8">Grey</option>
+                <option value="9">Death Gulch</option>
+                <option value="10">Devil Guard</option>
+                <option value="11">Dawn</option>
+                <option value="12">Ambrosia</option>
+                <option value="13">Castle Exodus</option>
+                <option value="14">Shrines</option>
+            </select>
+        </div>
+    </div>
+    
+    <div id="map-title"></div>
+    <div id="map-div" class="no-pad mb-3"></div>
+
+    <script src="./jquery.min.js"></script>
+    <script src="./bootstrap.min.js"></script>
+    <script src="Map_Viewer.js"></script> 
+</body>
+</html>

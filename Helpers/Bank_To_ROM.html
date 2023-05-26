@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank To ROM</title>
+    <link rel="stylesheet" type="text/css" href="./bootstrap.min.css">
+</head>
+<body class="pl-3">
+    <h1>Bank to ROM Address Calculator</h1>
+    <p>Bank #:</p>
+    <select id="bank" class="align-text-bottom">
+        <option value="0" selected>0x00</option>
+        <option value="1">0x01</option>
+        <option value="2">0x02</option>
+        <option value="3">0x03</option>
+        <option value="4">0x04</option>
+        <option value="5">0x05</option>
+        <option value="6">0x06</option>
+        <option value="7">0x07</option>
+        <option value="8">0x08</option>
+        <option value="9">0x09</option>
+        <option value="10">0x0A</option>
+        <option value="11">0x0B</option>
+        <option value="12">0x0C</option>
+        <option value="13">0x0D</option>
+        <option value="14">0x0E</option>
+        <option value="15">0x0F</option>
+    </select>
+    <br/><br/>
+
+    <p>Bank Address(Hex):</p>
+    0x <input type="text" id="address-input"/>
+    <br/><br/>
+    <button type="button" id="bank-clear" class="btn btn-primary btn-size align-text-bottom"><b>Clear</b></button>
+    <button type="button" id="bank-calc"  class="btn btn-primary btn-size align-text-bottom"><b>Calc</b></button>
+    <br/><br/>
+
+    <p>ROM Address:</p>
+    <p id="rom-address"></p>
+
+    <script src="./jquery.min.js"></script>
+    <script src="./bootstrap.min.js"></script>
+    <script src="Bank_To_ROM.js"></script> 
+</body>
+</html>
