@@ -49,7 +49,7 @@ L81E0:  .word TB1EE3, TB1EE4, TB1EE5, TB1EE6, TB1EE7, TB1EE8, TB1EE9, TB1EEA
 L81F0:  .word TB1EEB, TB1EEC, TB1EED, TBXEXX, TBXEXX, TBXEXX, TBXEXX, TBXEXX
 
 ;The dialog in the game is compressed. Three bytes hold 4 characters. Each character is 6 bits. along with the standard
-;numbers, letters and punctuation characters, there are a handful of control characters. Thise characters and their
+;numbers, letters and punctuation characters, there are a handful of control characters. These characters and their
 ;functions are listed below.
 ;
 ;NAME - Displays the name of a player's character.

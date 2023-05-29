@@ -86,6 +86,12 @@
 .alias PPUByteCntLB     $2D     ;PPU write, 16-bit counter, lower byte.
 .alias PPUByteCntUB     $2E     ;PPU write, 16-bit counter, upper byte.
 
+;Window drawing.
+.alias WndYPos          $29     ;Y position of window to draw.
+.alias WndXPos          $2A     ;X position of window to draw.
+.alias WndHeight        $2D     ;Height of window to draw.
+.alias WndWidth         $2E     ;Width of window to draw.
+
 .alias TextIndex        $30     ;Index to text message. $FF=Buffer already filled.
 
 .alias NPCSrcPtr        $45     ;Base address of NPC data for current map.
@@ -110,6 +116,11 @@
 .alias Ch2Dir           $7F     ;Character 2 direction. $00,$04=down, $01=right, $02=left, $08=up.
 .alias Ch3Dir           $80     ;Character 3 direction. $00,$04=down, $01=right, $02=left, $08=up.
 .alias Ch4Dir           $81     ;Character 4 direction. $00,$04=down, $01=right, $02=left, $08=up.
+
+.alias Ch1Class         $7E     ;Char 1 class while making pre-made characters. $FF=Not chosen yet.
+.alias Ch2Class         $7F     ;Char 2 class while making pre-made characters. $FF=Not chosen yet.
+.alias Ch3Class         $80     ;Char 3 class while making pre-made characters. $FF=Not chosen yet.
+.alias Ch4Class         $81     ;Char 4 class while making pre-made characters. $FF=Not chosen yet.
 
 .alias TextBasePtr      $8B     ;Pointer to dialog pointer table($8000 or $9D80).
 .alias TextBasePtrLB    $8B     ;Pointer to dialog pointer table lower byte.
@@ -148,6 +159,8 @@
 .alias DungeonLevel     $B2     ;The current dungeon level minus 1.
 .alias FightTurnIndex   $B3     ;Index to player/enemy that moves next. 0-3 are player characters.
                                 ;4 through 11 are enemies. 12 max.
+.alias ValidGamesFlags  $B3     ;The 3LSBs contain flag showing wich spots have valid saved games.
+                                ;This is for Bank0C only.
 .alias CurPieceYVis     $B4     ;Current piece active on battefield. Upper nibble is their Y
                                 ;position on the battlefiled. 1=top row. LSB 0=invisible, 1=visible.
 
@@ -170,8 +183,15 @@
 .alias BribePray        $DA     ;LSB set=party can pray, 2nd bit set=party can bribe.
 .alias PrevMapProp      $DB     ;Properties of the previous map before a fight was started.
 
+.alias ExodusDead       $E0     ;$01=Exodus dead, $02=Game won, $FF=Time expired, everyone dies.
+
 .alias EnemyNum         $E5     ;Enemy number. Also $FF=enemy remains after fight.
                                 ;Numbers are the same as those found on Bank 3.
+
+.alias NewGmCreated     $E7     ;$01=A new game greated. Bank0C only.
+.alias EndGmTimerLB     $E7     ;Escape Exodus castle timer, lower byte. updates every frame.
+.alias EndGmTimerUB     $E8     ;Escape Exodus castle timer, upper byte. $0F=Times up.
+
 
 .alias DoAnimations     $EA     ;1=Do animation, 0=skip animations.
 
@@ -184,6 +204,7 @@
 .alias SpriteRAM        $0200   ;Through $02FF. 4 bytes per sprite.
 
 ;----------------------------------------------------------------------------------------------------
+
 ;The PPU buffer has the following format:
 ;
 ;   +---------------------------Total PPU buffer length. Address $0300.
@@ -217,10 +238,16 @@
 
 .alias PaletteBuffer    $0540   ;Through $055F. Buffer for palette data.
 
+.alias TextBufferBase   $0580   ;The base address of the text buffer.
 .alias TextBuffer       $0580   ;Buffer for text to be displayed on the screen.
 
 .alias ScreenBlocks     $0700   ;Through $07FF. The blocks currently on the screen.
 
+.alias SG1Name          $6002   ;Through $6006. Save game 1 name.
+.alias SG2Name          $6602   ;Through $6606. Save game 2 name.
+.alias SG3Name          $6C02   ;Through $C006. Save game 3 name.
+
+.alias SpriteBufferBase $7300   ;Base address of sprite buffer.
 .alias SpriteBuffer     $7300   ;Through $73FF. Sprite data buffered here before RAM.
 .alias BlocksBuffer     $7400   ;Through $74FF. Blocks to be put on the screen.
 
@@ -576,7 +603,7 @@
 .alias BANK0A           $0A     ;MMC1 bank $0A.
 .alias BANK_HELPERS1    $0B     ;MMC1 bank $0B.
 .alias BANK_CREATE      $0C     ;MMC1 bank $0C. Load save game/character creation.
-.alias BANK0D           $0D     ;MMC1 bank $0D.
+.alias BANK_HELPERS2    $0D     ;MMC1 bank $0D.
 .alias BANK_INTRO       $0E     ;MMC1 bank $0E. Intro and end game routines.
 .alias BANK_GAME_ENG    $0F     ;MMC1 bank $0F. Main game engine.
 
@@ -718,3 +745,24 @@
 .alias CMD_PRAY         $01     ;LSB set allowas party to pray.
 .alias CMD_BRIBE        $02     ;Second bit set allows party to bribe.
 .alias CMD_BOTH         $03     ;Both bits for bribe and pray.
+
+.alias GME_NORMAL       $00     ;Game in normal mode.
+.alias GME_EX_DEAD      $01     ;Exodus killed. Shake screen and drop debris.
+.alias GME_WON          $02     ;Player made it out of Exodus castle alive.
+.alias GME_LOST         $FF     ;Player did not make it out of the castle in time.
+
+.alias SG_VALID1        $41     ;First byte indicating a save game is valid.
+.alias SG_VALID2        $42     ;Second byte indicating a save game is valid.
+
+.alias CLS_FIGHTER      $00     ;Fighter class.
+.alias CLS_CLERIC       $01     ;Cleric
+.alias CLS_WIZARD       $02     ;Wizard class.
+.alias CLS_THIEF        $03     ;Thief class.
+.alias CLS_PALADIN      $04     ;Paladin class.
+.alias CLS_BARBARIAN    $05     ;Barbarian class.
+.alias CLS_LARK         $06     ;Lark class.
+.alias CLS_ILLUSIONIST  $07     ;Illusionist class.
+.alias CLS_DRUID        $08     ;Druid class.
+.alias CLS_ALCHEMIST    $09     ;Alchemist class.
+.alias CLS_RANGER       $0A     ;Ranger class.
+.alias CLS_UNCHOSEN     $FF     ;Unchosen class.

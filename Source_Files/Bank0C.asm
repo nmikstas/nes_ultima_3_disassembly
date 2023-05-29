@@ -7,6 +7,8 @@
 ;Forward declarations.
 
 .alias  Reset1                  $C000
+.alias  DisplayText1            $C003
+.alias  LoadPPU1                $C006
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
 .alias  NMI                     $FFF0
@@ -21,11 +23,11 @@ L8006:  STA PPUPyLdPtrLB
 
 L8008:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
 
-L800B:  LDA #$01
-L800D:  STA TimeStopTimer
+L800B:  LDA #$01                ;Stop animations of NPCs.
+L800D:  STA TimeStopTimer       ;
 
-L800F:  LDA #MUS_INTRO+INIT
-L8011:  STA InitNewMusic
+L800F:  LDA #MUS_INTRO+INIT     ;Start the create character music.
+L8011:  STA InitNewMusic        ;
 
 L8013:  LDA #ANIM_ENABLE
 L8015:  STA DisNPCMovement
@@ -49,11 +51,14 @@ L802F:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-L8030:  LDA #$00
-L8032:  STA $E7
-L8034:  LDA #$01
-L8036:  STA TimeStopTimer
-L8038:  JSR L837F
+L8030:  LDA #$00                ;Indicate no new games created.
+L8032:  STA NewGmCreated        ;
+
+L8034:  LDA #$01                ;Stop NPC animations.
+L8036:  STA TimeStopTimer       ;
+
+L8038:  JSR DoLoadWindow        ;($837F)Show the load game/new game menu.
+
 L803B:  PHA
 L803C:  LDA #$00
 L803E:  STA TimeStopTimer
@@ -63,8 +68,9 @@ L8043:  BNE L8052
 L8045:  JSR L8679
 L8048:  JSR LBE53
 L804B:  LDA #$01
-L804D:  STA $E7
+L804D:  STA NewGmCreated
 L804F:  JMP L8034
+
 L8052:  JSR L88BF
 L8055:  CMP #$00
 L8057:  BNE L80C5
@@ -110,7 +116,7 @@ L80AD:  TAX
 L80AE:  INX
 L80AF:  CPX #$04
 L80B1:  BNE L809D
-L80B3:  LDA $E7
+L80B3:  LDA NewGmCreated
 L80B5:  BEQ L80C5
 L80B7:  LDA #$01
 L80B9:  STA TimeStopTimer
@@ -122,7 +128,7 @@ L80C5:  LDY #$24
 L80C7:  LDA ($C5),Y
 L80C9:  CMP #$0C
 L80CB:  BEQ L8103
-L80CD:  JSR L990C
+L80CD:  JSR InitPPU             ;($990C)Initialize the PPU.
 L80D0:  LDA #$06
 L80D2:  STA $2A
 L80D4:  LDA #$12
@@ -133,7 +139,7 @@ L80DC:  LDA #$08
 L80DE:  STA $2D
 L80E0:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 L80E3:  LDA #$27
-L80E5:  STA $30
+L80E5:  STA TextIndex
 L80E7:  LDA #$08
 L80E9:  STA $2A
 L80EB:  LDA #$14
@@ -142,7 +148,7 @@ L80EF:  LDA #$0C
 L80F1:  STA $2E
 L80F3:  LDA #$03
 L80F5:  STA $2D
-L80F7:  JSR L995C
+L80F7:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L80FA:  LDA #$64
 L80FC:  CLC
 L80FD:  ADC $00
@@ -167,14 +173,14 @@ L8122:  LDA #$72
 L8124:  STA $98
 L8126:  RTS
 
-L8127:  JSR L990C
+L8127:  JSR InitPPU             ;($990C)Initialize the PPU.
 L812A:  LDA #$FF
 L812C:  STA TimeStopTimer
-L812E:  LDA #$04
-L8130:  STA $7E
-L8132:  STA $7F
-L8134:  STA $80
-L8136:  STA $81
+L812E:  LDA #CLS_PALADIN
+L8130:  STA Ch1Class
+L8132:  STA Ch2Class
+L8134:  STA Ch3Class
+L8136:  STA Ch4Class
 L8138:  LDA #$00
 L813A:  STA CurPPUConfig1
 L813C:  LDA #$AF
@@ -189,7 +195,7 @@ L814C:  LDA #$05
 L814E:  STA $2E
 L8150:  LDA #$40
 L8152:  STA $2D
-L8154:  JSR $C006
+L8154:  JSR LoadPPU1            ;($C006)Load values into PPU.
 L8157:  LDA #$9B
 L8159:  STA $2A
 L815B:  LDA #$1B
@@ -202,7 +208,7 @@ L8167:  LDA #$04
 L8169:  STA $2E
 L816B:  LDA #$00
 L816D:  STA $2D
-L816F:  JSR $C006
+L816F:  JSR LoadPPU1            ;($C006)Load values into PPU.
 L8172:  LDA #$9E
 L8174:  STA $2A
 L8176:  LDA #$EB
@@ -215,7 +221,7 @@ L8182:  LDA #$00
 L8184:  STA $2E
 L8186:  LDA #$40
 L8188:  STA $2D
-L818A:  JSR $C006
+L818A:  JSR LoadPPU1            ;($C006)Load values into PPU.
 L818D:  LDA #$83
 L818F:  STA $2A
 L8191:  LDA #$5F
@@ -292,7 +298,7 @@ L8210:  STA $98
 L8212:  JSR $C048
 L8215:  LDX #$00
 L8217:  LDA #$F0
-L8219:  STA $7300,X
+L8219:  STA SpriteBuffer,X
 L821C:  INX
 L821D:  INX
 L821E:  INX
@@ -326,8 +332,8 @@ L8254:  LDA #$02
 L8256:  STA $2D
 L8258:  PLA
 L8259:  PHA
-L825A:  STA $30
-L825C:  JSR L995C
+L825A:  STA TextIndex
+L825C:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L825F:  CLC
 L8260:  LDA $00
 L8262:  ADC #$B4
@@ -339,8 +345,8 @@ L826B:  BEQ L8273
 L826D:  CLC
 L826E:  ADC #$01
 L8270:  JMP L8243
-L8273:  JSR L98EE
-L8276:  LDA $09
+L8273:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8276:  LDA Pad1Input
 L8278:  CMP #$80
 L827A:  BNE L8273
 L827C:  LDA #$00
@@ -404,7 +410,7 @@ L82EF:  ADC #$08
 L82F1:  STA $730B,X
 L82F4:  STA $730F,X
 L82F7:  LDA $18
-L82F9:  STA $7300,X
+L82F9:  STA SpriteBuffer,X
 L82FC:  STA $7308,X
 L82FF:  CLC
 L8300:  ADC #$08
@@ -421,18 +427,26 @@ L8359:  .byte $01, $98, $48, $73, $01, $98, $0F, $1C, $30, $26, $0F, $30, $15, $
 L8369:  .byte $15, $36, $0F, $30, $02, $36, $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30
 L8379:  .byte $0F, $2D, $0F, $30, $15, $36
 
-L837F:  JSR L990C
-L8382:  LDA #$00
-L8384:  STA $B3
-L8386:  LDA #$08
-L8388:  STA $2A
-L838A:  LDA #$0A
-L838C:  STA $29
-L838E:  LDA #$10
-L8390:  STA $2E
-L8392:  LDA #$10
-L8394:  STA $2D
+;----------------------------------------------------------------------------------------------------
+
+DoLoadWindow:
+L837F:  JSR InitPPU             ;($990C)Initialize the PPU.
+
+L8382:  LDA #$00                ;Clear valid save game flags before finding valid saved games.
+L8384:  STA ValidGamesFlags     ;
+
+L8386:  LDA #$08                ;
+L8388:  STA WndXPos             ;Window will be at screen tile location X,Y = 8,10.
+L838A:  LDA #$0A                ;
+L838C:  STA WndYPos             ;
+
+L838E:  LDA #$10                ;
+L8390:  STA WndWidth            ;Window will be 16 tiles high and 16 tiles wide
+L8392:  LDA #$10                ;
+L8394:  STA WndHeight           ;
+
 L8396:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 L8399:  JSR L9B03
 L839C:  LDA #$F4
 L839E:  STA $AF
@@ -440,19 +454,21 @@ L83A0:  LDA $6000
 L83A3:  CMP #$41
 L83A5:  BNE L83DD
 L83A7:  LDA $6001
-L83AA:  CMP #$42
+L83AA:  CMP #SG_VALID2
 L83AC:  BNE L83DD
-L83AE:  LDA $B3
+L83AE:  LDA ValidGamesFlags
 L83B0:  ORA #$01
-L83B2:  STA $B3
+L83B2:  STA ValidGamesFlags
 L83B4:  LDY #$00
-L83B6:  LDA $6002,Y
-L83B9:  STA $0580,Y
+
+L83B6:* LDA SG1Name,Y
+L83B9:  STA TextBuffer,Y
 L83BC:  INY
 L83BD:  CPY #$05
-L83BF:  BNE L83B6
-L83C1:  LDA #$FF
-L83C3:  STA $0580,Y
+L83BF:  BNE -
+
+L83C1:  LDA #TXT_END
+L83C3:  STA TextBuffer,Y
 L83C6:  LDA #$0F
 L83C8:  STA $2A
 L83CA:  LDA #$0C
@@ -462,25 +478,27 @@ L83D0:  STA $2E
 L83D2:  LDA #$01
 L83D4:  STA $2D
 L83D6:  LDA #$FF
-L83D8:  STA $30
-L83DA:  JSR L995C
+L83D8:  STA TextIndex
+L83DA:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L83DD:  LDA $6600
 L83E0:  CMP #$41
 L83E2:  BNE L841A
 L83E4:  LDA $6601
-L83E7:  CMP #$42
+L83E7:  CMP #SG_VALID2
 L83E9:  BNE L841A
-L83EB:  LDA $B3
+L83EB:  LDA ValidGamesFlags
 L83ED:  ORA #$02
-L83EF:  STA $B3
+L83EF:  STA ValidGamesFlags
 L83F1:  LDY #$00
-L83F3:  LDA $6602,Y
-L83F6:  STA $0580,Y
+
+L83F3:* LDA SG2Name,Y
+L83F6:  STA TextBuffer,Y
 L83F9:  INY
 L83FA:  CPY #$05
-L83FC:  BNE L83F3
-L83FE:  LDA #$FF
-L8400:  STA $0580,Y
+L83FC:  BNE -
+
+L83FE:  LDA #TXT_END
+L8400:  STA TextBuffer,Y
 L8403:  LDA #$0F
 L8405:  STA $2A
 L8407:  LDA #$0F
@@ -489,26 +507,26 @@ L840B:  LDA #$07
 L840D:  STA $2E
 L840F:  LDA #$01
 L8411:  STA $2D
-L8413:  LDA #$FF
-L8415:  STA $30
-L8417:  JSR L995C
+L8413:  LDA #TXT_DBL_SPACE
+L8415:  STA TextIndex
+L8417:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L841A:  LDA $6C00
-L841D:  CMP #$41
+L841D:  CMP #SG_VALID1
 L841F:  BNE L8457
 L8421:  LDA $6C01
-L8424:  CMP #$42
+L8424:  CMP #SG_VALID2
 L8426:  BNE L8457
-L8428:  LDA $B3
+L8428:  LDA ValidGamesFlags
 L842A:  ORA #$04
-L842C:  STA $B3
+L842C:  STA ValidGamesFlags
 L842E:  LDY #$00
-L8430:  LDA $6C02,Y
-L8433:  STA $0580,Y
+L8430:  LDA SG3Name,Y
+L8433:  STA TextBuffer,Y
 L8436:  INY
 L8437:  CPY #$05
 L8439:  BNE L8430
 L843B:  LDA #$FF
-L843D:  STA $0580,Y
+L843D:  STA TextBuffer,Y
 L8440:  LDA #$0F
 L8442:  STA $2A
 L8444:  LDA #$12
@@ -518,8 +536,9 @@ L844A:  STA $2E
 L844C:  LDA #$01
 L844E:  STA $2D
 L8450:  LDA #$FF
-L8452:  STA $30
-L8454:  JSR L995C
+L8452:  STA TextIndex
+L8454:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8457:  LDA #$0C
 L8459:  STA $2A
 L845B:  LDA #$15
@@ -529,8 +548,8 @@ L8461:  STA $2E
 L8463:  LDA #$01
 L8465:  STA $2D
 L8467:  LDA #$00
-L8469:  STA $30
-L846B:  JSR L995C
+L8469:  STA TextIndex
+L846B:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L846E:  LDA #$0C
 L8470:  STA $2A
 L8472:  LDA #$17
@@ -540,15 +559,15 @@ L8478:  STA $2E
 L847A:  LDA #$01
 L847C:  STA $2D
 L847E:  LDA #$01
-L8480:  STA $30
-L8482:  JSR L995C
+L8480:  STA TextIndex
+L8482:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8485:  LDX #$00
 L8487:  LDA $8672,X
-L848A:  STA $7300
+L848A:  STA SpriteBufferBase
 L848D:  LDA #$50
 L848F:  STA $7303
-L8492:  JSR L98EE
-L8495:  LDA $09
+L8492:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8495:  LDA Pad1Input
 L8497:  CMP #$80
 L8499:  BEQ L84B6
 L849B:  CMP #$08
@@ -566,7 +585,7 @@ L84B0:  JMP L8487
 L84B3:  JMP L8485
 L84B6:  CPX #$00
 L84B8:  BNE L84CB
-L84BA:  LDA $B3
+L84BA:  LDA ValidGamesFlags
 L84BC:  AND #$01
 L84BE:  BEQ L8485
 L84C0:  LDA #$00
@@ -575,9 +594,10 @@ L84C4:  LDA #$60
 L84C6:  STA $C6
 L84C8:  LDA #$00
 L84CA:  RTS
+
 L84CB:  CPX #$01
 L84CD:  BNE L84E0
-L84CF:  LDA $B3
+L84CF:  LDA ValidGamesFlags
 L84D1:  AND #$02
 L84D3:  BEQ L84B3
 L84D5:  LDA #$00
@@ -586,9 +606,10 @@ L84D9:  LDA #$66
 L84DB:  STA $C6
 L84DD:  LDA #$01
 L84DF:  RTS
+
 L84E0:  CPX #$02
 L84E2:  BNE L84F5
-L84E4:  LDA $B3
+L84E4:  LDA ValidGamesFlags
 L84E6:  AND #$04
 L84E8:  BEQ L84B3
 L84EA:  LDA #$00
@@ -597,24 +618,25 @@ L84EE:  LDA #$6C
 L84F0:  STA $C6
 L84F2:  LDA #$02
 L84F4:  RTS
+
 L84F5:  CPX #$03
 L84F7:  BNE L8573
-L84F9:  LDA $B3
+L84F9:  LDA ValidGamesFlags
 L84FB:  CMP #$07
 L84FD:  BEQ L84B3
 L84FF:  LDY #$00
-L8501:  LDA $7300,Y
+L8501:  LDA SpriteBuffer,Y
 L8504:  STA $73F4,Y
 L8507:  INY
 L8508:  CPY #$04
 L850A:  BNE L8501
 L850C:  LDX #$00
 L850E:  LDA $8672,X
-L8511:  STA $7300
+L8511:  STA SpriteBufferBase
 L8514:  LDA #$50
 L8516:  STA $7303
-L8519:  JSR L98EE
-L851C:  LDA $09
+L8519:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L851C:  LDA Pad1Input
 L851E:  CMP #$80
 L8520:  BEQ L853E
 L8522:  CMP #$40
@@ -645,11 +667,11 @@ L8552:  STY $C5
 L8554:  STA $C6
 L8556:  LDY #$00
 L8558:  LDA ($C5),Y
-L855A:  CMP #$41
+L855A:  CMP #SG_VALID1
 L855C:  BNE L8568
 L855E:  INY
 L855F:  LDA ($C5),Y
-L8561:  CMP #$42
+L8561:  CMP #SG_VALID2
 L8563:  BNE L8568
 L8565:  JMP L850E
 L8568:  LDA #$03
@@ -659,21 +681,23 @@ L856D:  STA $73F4
 L8570:  JMP L8485
 L8573:  CPX #$04
 L8575:  BNE L8570
-L8577:  LDA $B3
+L8577:  LDA ValidGamesFlags
 L8579:  BEQ L8570
 L857B:  LDY #$00
-L857D:  LDA $7300,Y
-L8580:  STA $73F4,Y
+
+L857D:* LDA SpriteBuffer,Y
+L8580:  STA SpriteBuffer+$F4,Y
 L8583:  INY
 L8584:  CPY #$04
-L8586:  BNE L857D
+L8586:  BNE -
+
 L8588:  LDX #$00
 L858A:  LDA $8672,X
-L858D:  STA $7300
+L858D:  STA SpriteBufferBase
 L8590:  LDA #$50
 L8592:  STA $7303
-L8595:  JSR L98EE
-L8598:  LDA $09
+L8595:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8598:  LDA Pad1Input
 L859A:  CMP #$80
 L859C:  BEQ L85C2
 L859E:  CMP #$40
@@ -713,11 +737,11 @@ L85E4:  LDA #$6C
 L85E6:  STA $C6
 L85E8:  LDY #$00
 L85EA:  LDA ($C5),Y
-L85EC:  CMP #$41
+L85EC:  CMP #SG_VALID1
 L85EE:  BNE L858A
 L85F0:  INY
 L85F1:  LDA ($C5),Y
-L85F3:  CMP #$42
+L85F3:  CMP #SG_VALID2
 L85F5:  BNE L858A
 L85F7:  TXA
 L85F8:  PHA
@@ -730,10 +754,10 @@ L8603:  STA $2E
 L8605:  LDA #$02
 L8607:  STA $2D
 L8609:  LDA #$1F
-L860B:  STA $30
-L860D:  JSR L995C
+L860B:  STA TextIndex
+L860D:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8610:  LDY #$00
-L8612:  LDA $7300,Y
+L8612:  LDA SpriteBuffer,Y
 L8615:  STA $73F4,Y
 L8618:  INY
 L8619:  CPY #$04
@@ -742,9 +766,9 @@ L861D:  LDX #$01
 L861F:  LDA $8677,X
 L8622:  STA $7303
 L8625:  LDA #$B8
-L8627:  STA $7300
-L862A:  JSR L98EE
-L862D:  LDA $09
+L8627:  STA SpriteBufferBase
+L862A:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L862D:  LDA Pad1Input
 L862F:  CMP #$80
 L8631:  BEQ L864F
 L8633:  CMP #$40
@@ -765,7 +789,7 @@ L864F:  CPX #$00
 L8651:  BEQ L8658
 L8653:  PLA
 L8654:  TAX
-L8655:  JMP L837F
+L8655:  JMP DoLoadWindow        ;($837F)Show the load game/new game menu.
 L8658:  PLA
 L8659:  TAX
 L865A:  LDA #$00
@@ -780,12 +804,12 @@ L8669:  INY
 L866A:  STA ($C5),Y
 L866C:  INY
 L866D:  STA ($C5),Y
-L866F:  JMP L837F
+L866F:  JMP DoLoadWindow        ;($837F)Show the load game/new game menu.
 L8672:  RTS
 
 L8673:  .byte $78, $90, $A8, $B8, $58, $78
 
-L8679:  JSR L990C
+L8679:  JSR InitPPU             ;($990C)Initialize the PPU.
 L867C:  LDA #$06
 L867E:  STA $2A
 L8680:  LDA #$06
@@ -795,14 +819,14 @@ L8686:  STA $2E
 L8688:  LDA #$01
 L868A:  STA $2D
 L868C:  LDA #$02
-L868E:  STA $30
-L8690:  JSR L995C
+L868E:  STA TextIndex
+L8690:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8693:  JSR L871D
 L8696:  LDY #$00
-L8698:  LDA #$41
+L8698:  LDA #SG_VALID1
 L869A:  STA ($C5),Y
 L869C:  INY
-L869D:  LDA #$42
+L869D:  LDA #SG_VALID2
 L869F:  STA ($C5),Y
 L86A1:  LDY #$02
 L86A3:  LDA $057E,Y
@@ -880,8 +904,8 @@ L8727:  STA $2E
 L8729:  LDA #$06
 L872B:  STA $2D
 L872D:  LDA #$03
-L872F:  STA $30
-L8731:  JSR L995C
+L872F:  STA TextIndex
+L8731:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8734:  LDA #$08
 L8736:  STA $2A
 L8738:  LDA #$0A
@@ -891,16 +915,16 @@ L873E:  STA $2E
 L8740:  LDA #$01
 L8742:  STA $2D
 L8744:  LDA #$17
-L8746:  STA $30
-L8748:  JSR L995C
+L8746:  STA TextIndex
+L8748:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L874B:  LDX #$00
 L874D:  LDY #$00
 L874F:  LDA #$00
 L8751:  STA $17
 L8753:  JSR L8872
-L8756:  JSR L98EE
-L8759:  LDA $09
-L875B:  CMP #$01
+L8756:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8759:  LDA Pad1Input
+L875B:  CMP #BTN_RIGHT
 L875D:  BNE L876A
 L875F:  CPX #$27
 L8761:  BNE L8766
@@ -939,7 +963,7 @@ L87A5:  JMP L8753
 L87A8:  DEC $17
 L87AA:  LDY $17
 L87AC:  LDA #$FF
-L87AE:  STA $0580,Y
+L87AE:  STA TextBuffer,Y
 L87B1:  DEC $17
 L87B3:  JMP L87CC
 L87B6:  LDA $17
@@ -948,7 +972,7 @@ L87BA:  BNE L87BF
 L87BC:  JMP L8753
 L87BF:  LDA $87FC,X
 L87C2:  LDY $17
-L87C4:  STA $0580,Y
+L87C4:  STA TextBuffer,Y
 L87C7:  LDA #$FF
 L87C9:  STA $0581,Y
 L87CC:  LDA #$08
@@ -960,14 +984,14 @@ L87D6:  STA $2E
 L87D8:  LDA #$01
 L87DA:  STA $2D
 L87DC:  LDA #$FF
-L87DE:  STA $30
+L87DE:  STA TextIndex
 L87E0:  LDA $19
 L87E2:  PHA
 L87E3:  LDA $18
 L87E5:  PHA
 L87E6:  LDA $17
 L87E8:  PHA
-L87E9:  JSR L995C
+L87E9:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L87EC:  PLA
 L87ED:  STA $17
 L87EF:  PLA
@@ -1001,7 +1025,7 @@ L8881:  LDA $8897,X
 L8884:  AND #$F0
 L8886:  CLC
 L8887:  ADC #$60
-L8889:  STA $7300
+L8889:  STA SpriteBufferBase
 L888C:  LDA $8897,X
 L888F:  AND #$F0
 L8891:  LSR
@@ -1020,8 +1044,9 @@ L88C2:  PHA
 L88C3:  JSR L8962
 L88C6:  PLA
 L88C7:  RTS
-L88C8:  JSR L990C
-L88CB:  JSR L9AEB
+
+L88C8:  JSR InitPPU             ;($990C)Initialize the PPU.
+L88CB:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
 L88CE:  LDA #$08
 L88D0:  STA $2A
 L88D2:  LDA #$0E
@@ -1040,25 +1065,33 @@ L88EB:  STA $2E
 L88ED:  LDA #$02
 L88EF:  STA $2D
 L88F1:  LDA #$04
-L88F3:  STA $30
-L88F5:  JSR L995C
+L88F3:  STA TextIndex
+L88F5:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L88F8:  LDA #$80
-L88FA:  STA $7300
+L88FA:  STA SpriteBufferBase
 L88FD:  LDA #$48
 L88FF:  STA $7303
 L8902:  LDY #$01
 L8904:  LDX #$00
-L8906:  JSR L98EE
-L8909:  LDA $09
-L890B:  CMP #$08
-L890D:  BEQ L8936
-L890F:  CMP #$04
-L8911:  BEQ L893E
-L8913:  CMP #$80
-L8915:  BNE L8906
+
+LoadWndInputLoop:
+L8906:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+
+L8909:  LDA Pad1Input
+L890B:  CMP #BTN_UP
+L890D:  BEQ LoadWndUpBtn
+
+L890F:  CMP #BTN_DOWN
+L8911:  BEQ LoadWndDownBtn
+
+L8913:  CMP #BTN_A
+L8915:  BNE LoadWndInputLoop
+
+LoadWndABtn:
 L8917:  TXA
 L8918:  BNE L891B
 L891A:  RTS
+
 L891B:  PHA
 L891C:  STY $18
 L891E:  LDX #$05
@@ -1075,24 +1108,29 @@ L892E:  LDY $18
 L8930:  PLA
 L8931:  LDX #$00
 L8933:  JMP L8943
+
+LoadWndUpBtn:
 L8936:  CPX #$00
-L8938:  BEQ L8906
+L8938:  BEQ LoadWndInputLoop
 L893A:  DEX
 L893B:  JMP L8943
+
+LoadWndDownBtn:
 L893E:  CPX #$01
-L8940:  BEQ L8906
+L8940:  BEQ LoadWndInputLoop
 L8942:  INX
 L8943:  LDA $8967,X
-L8946:  STA $7300
+L8946:  STA SpriteBufferBase
 L8949:  LDA $8969,Y
 L894C:  STA $73C7
-L894F:  JMP L8906
+L894F:  JMP LoadWndInputLoop
+
 L8952:  CPY #$00
-L8954:  BEQ L8906
+L8954:  BEQ LoadWndInputLoop
 L8956:  DEY
 L8957:  JMP L8943
 L895A:  CPY #$01
-L895C:  BEQ L8906
+L895C:  BEQ LoadWndInputLoop
 L895E:  INY
 L895F:  JMP L8943
 L8962:  LDA #$1E
@@ -1101,8 +1139,8 @@ L8966:  RTS
 
 L8967:  .byte $80, $90, $78, $98
 
-L896B:  JSR L990C
-L896E:  JSR L9AEB
+L896B:  JSR InitPPU             ;($990C)Initialize the PPU.
+L896E:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
 L8971:  LDA #$06
 L8973:  STA $2A
 L8975:  LDA #$0C
@@ -1121,20 +1159,21 @@ L898E:  STA $2E
 L8990:  LDA #$05
 L8992:  STA $2D
 L8994:  LDA #$05
-L8996:  STA $30
-L8998:  JSR L995C
+L8996:  STA TextIndex
+L8998:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L899B:  LDA #$70
-L899D:  STA $7300
+L899D:  STA SpriteBufferBase
 L89A0:  LDA #$40
 L89A2:  STA $7303
 L89A5:  LDX #$00
-L89A7:  JSR L98EE
-L89AA:  LDA $09
-L89AC:  CMP #$08
+L89A7:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+
+L89AA:  LDA Pad1Input
+L89AC:  CMP #BTN_UP
 L89AE:  BEQ L89BA
-L89B0:  CMP #$04
+L89B0:  CMP #BTN_DOWN
 L89B2:  BEQ L89C2
-L89B4:  CMP #$80
+L89B4:  CMP #BTN_A
 L89B6:  BNE L89A7
 L89B8:  TXA
 L89B9:  RTS
@@ -1146,13 +1185,13 @@ L89C2:  CPX #$04
 L89C4:  BEQ L89A7
 L89C6:  INX
 L89C7:  LDA $89D0,X
-L89CA:  STA $7300
+L89CA:  STA SpriteBufferBase
 L89CD:  JMP L89A7
 
 L89D0:  .byte $70, $80, $90, $A0, $B0
 
 L89D5:  JSR $990C
-L89D8:  JSR $9AEB
+L89D8:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
 L89DB:  LDA #$04
 L89DD:  STA $2A
 L89DF:  LDA #$0E
@@ -1171,16 +1210,16 @@ L89F8:  STA $2E
 L89FA:  LDA #$03
 L89FC:  STA $2D
 L89FE:  LDA #$06
-L8A00:  STA $30
-L8A02:  JSR L995C
+L8A00:  STA TextIndex
+L8A02:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8A05:  LDA #$80
-L8A07:  STA $7300
+L8A07:  STA SpriteBufferBase
 L8A0A:  LDA #$30
 L8A0C:  STA $7303
 L8A0F:  LDX #$00
-L8A11:  JSR L98EE
-L8A14:  LDA $09
-L8A16:  CMP #$08
+L8A11:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8A14:  LDA Pad1Input
+L8A16:  CMP #BTN_UP
 L8A18:  BEQ L8A63
 L8A1A:  CMP #$04
 L8A1C:  BEQ L8A6B
@@ -1230,12 +1269,12 @@ L8A6B:  CPX #$02
 L8A6D:  BEQ L8A11
 L8A6F:  INX
 L8A70:  LDA $8A79,X
-L8A73:  STA $7300
+L8A73:  STA SpriteBufferBase
 L8A76:  JMP L8A11
 
 L8A79:  .byte $80, $90, $A0
 
-L8A7C:  JSR L990C
+L8A7C:  JSR InitPPU             ;($990C)Initialize the PPU.
 L8A7F:  LDA #$02
 L8A81:  STA $2A
 L8A83:  LDA #$04
@@ -1245,16 +1284,16 @@ L8A89:  STA $2E
 L8A8B:  LDA #$01
 L8A8D:  STA $2D
 L8A8F:  LDA #$07
-L8A91:  STA $30
-L8A93:  JSR L995C
+L8A91:  STA TextIndex
+L8A93:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8A96:  LDX $C5
 L8A98:  STX $99
 L8A9A:  LDX $C6
 L8A9C:  INX
 L8A9D:  STX $9A
 L8A9F:  JSR L99DF
-L8AA2:  JSR L98EE
-L8AA5:  LDA $09
+L8AA2:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8AA5:  LDA Pad1Input
 L8AA7:  CMP #$80
 L8AA9:  BEQ L8AAF
 L8AAB:  CMP #$40
@@ -1285,7 +1324,7 @@ L8AD8:  DEX
 L8AD9:  BNE L8AC1
 L8ADB:  SEC
 L8ADC:  RTS
-L8ADD:  JSR L990C
+L8ADD:  JSR InitPPU             ;($990C)Initialize the PPU.
 L8AE0:  LDA #$02
 L8AE2:  STA $2A
 L8AE4:  LDA #$04
@@ -1295,8 +1334,8 @@ L8AEA:  STA $2E
 L8AEC:  LDA #$01
 L8AEE:  STA $2D
 L8AF0:  LDA #$1A
-L8AF2:  STA $30
-L8AF4:  JSR L995C
+L8AF2:  STA TextIndex
+L8AF4:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8AF7:  LDX $C5
 L8AF9:  STX $99
 L8AFB:  LDX $C6
@@ -1312,41 +1351,41 @@ L8B0D:  STA $2E
 L8B0F:  LDA #$01
 L8B11:  STA $2D
 L8B13:  LDA #$08
-L8B15:  STA $30
-L8B17:  JSR L995C
+L8B15:  STA TextIndex
+L8B17:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8B1A:  LDA #$30
-L8B1C:  STA $7300
+L8B1C:  STA SpriteBufferBase
 L8B1F:  LDA #$20
 L8B21:  STA $7303
 L8B24:  LDA #$00
-L8B26:  STA $B3
+L8B26:  STA ValidGamesFlags
 L8B28:  LDY #$10
 L8B2A:  LDA ($C5),Y
 L8B2C:  CLC
 L8B2D:  ADC #$01
-L8B2F:  STA $7E
+L8B2F:  STA Ch1Class
 L8B31:  INY
 L8B32:  LDA ($C5),Y
 L8B34:  CLC
 L8B35:  ADC #$01
-L8B37:  STA $7F
+L8B37:  STA Ch2Class
 L8B39:  INY
 L8B3A:  LDA ($C5),Y
 L8B3C:  CLC
 L8B3D:  ADC #$01
-L8B3F:  STA $80
+L8B3F:  STA Ch3Class
 L8B41:  INY
 L8B42:  LDA ($C5),Y
 L8B44:  CLC
 L8B45:  ADC #$01
-L8B47:  STA $81
+L8B47:  STA Ch4Class
 L8B49:  JSR L8CF5
 L8B4C:  LDX #$00
 L8B4E:  LDY #$00
-L8B50:  JSR L98EE
-L8B53:  LDA $B3
+L8B50:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8B53:  LDA ValidGamesFlags
 L8B55:  BNE L8BB5
-L8B57:  LDA $09
+L8B57:  LDA Pad1Input
 L8B59:  CMP #$01
 L8B5B:  BNE L8B6D
 L8B5D:  CPX #$01
@@ -1378,7 +1417,7 @@ L8B90:  ASL
 L8B91:  ASL
 L8B92:  CLC
 L8B93:  ADC #$30
-L8B95:  STA $7300
+L8B95:  STA SpriteBufferBase
 L8B98:  JMP L8B50
 L8B9B:  CMP #$04
 L8B9D:  BNE L8BB5
@@ -1393,13 +1432,13 @@ L8BAA:  ASL
 L8BAB:  ASL
 L8BAC:  CLC
 L8BAD:  ADC #$30
-L8BAF:  STA $7300
+L8BAF:  STA SpriteBufferBase
 L8BB2:  JMP L8B50
-L8BB5:  LDA $09
+L8BB5:  LDA Pad1Input
 L8BB7:  CMP #$80
 L8BB9:  BEQ L8BBE
 L8BBB:  JMP L8C6B
-L8BBE:  LDA $B3
+L8BBE:  LDA ValidGamesFlags
 L8BC0:  BEQ L8BFF
 L8BC2:  CMP #$01
 L8BC4:  BEQ L8BFD
@@ -1412,22 +1451,22 @@ L8BCF:  INY
 L8BD0:  CPY #$04
 L8BD2:  BNE L8BCA
 L8BD4:  LDY #$10
-L8BD6:  LDA $7E
+L8BD6:  LDA Ch1Class
 L8BD8:  SEC
 L8BD9:  SBC #$01
 L8BDB:  STA ($C5),Y
 L8BDD:  INY
-L8BDE:  LDA $7F
+L8BDE:  LDA Ch2Class
 L8BE0:  SEC
 L8BE1:  SBC #$01
 L8BE3:  STA ($C5),Y
 L8BE5:  INY
-L8BE6:  LDA $80
+L8BE6:  LDA Ch3Class
 L8BE8:  SEC
 L8BE9:  SBC #$01
 L8BEB:  STA ($C5),Y
 L8BED:  INY
-L8BEE:  LDA $81
+L8BEE:  LDA Ch4Class
 L8BF0:  SEC
 L8BF1:  SBC #$01
 L8BF3:  STA ($C5),Y
@@ -1494,7 +1533,7 @@ L8C66:  LDX $19
 L8C68:  JMP L8B50
 L8C6B:  CMP #$40
 L8C6D:  BNE L8CA9
-L8C6F:  LDA $B3
+L8C6F:  LDA ValidGamesFlags
 L8C71:  BEQ L8C76
 L8C73:  JMP L8CA9
 L8C76:  STX $19
@@ -1524,16 +1563,16 @@ L8CA6:  JMP L8B50
 L8CA9:  CMP #$20
 L8CAB:  BEQ L8CB0
 L8CAD:  JMP L8B50
-L8CB0:  INC $B3
-L8CB2:  LDA $B3
+L8CB0:  INC ValidGamesFlags
+L8CB2:  LDA ValidGamesFlags
 L8CB4:  CMP #$01
 L8CB6:  BNE L8CBC
 L8CB8:  LDA #$02
-L8CBA:  STA $B3
+L8CBA:  STA ValidGamesFlags
 L8CBC:  CMP #$03
 L8CBE:  BNE L8CDD
 L8CC0:  LDA #$00
-L8CC2:  STA $B3
+L8CC2:  STA ValidGamesFlags
 L8CC4:  LDA #$20
 L8CC6:  CPX #$00
 L8CC8:  BEQ L8CCC
@@ -1546,11 +1585,11 @@ L8CD2:  ASL
 L8CD3:  ASL
 L8CD4:  CLC
 L8CD5:  ADC #$30
-L8CD7:  STA $7300
+L8CD7:  STA SpriteBufferBase
 L8CDA:  JMP L8B50
 L8CDD:  LDA #$D0
-L8CDF:  STA $7300
-L8CE2:  LDA $B3
+L8CDF:  STA SpriteBufferBase
+L8CE2:  LDA ValidGamesFlags
 L8CE4:  CMP #$01
 L8CE6:  BEQ L8CED
 L8CE8:  LDA #$A8
@@ -1604,7 +1643,7 @@ L8D42:  LDA $2D
 L8D44:  ADC #$04
 L8D46:  STA $2D
 L8D48:  JMP L8D0F
-L8D4B:  JSR L990C
+L8D4B:  JSR InitPPU             ;($990C)Initialize the PPU.
 L8D4E:  LDA $C5
 L8D50:  STA $29
 L8D52:  LDA $C6
@@ -1639,8 +1678,8 @@ L8D88:  STA $2E
 L8D8A:  LDA #$01
 L8D8C:  STA $2D
 L8D8E:  LDA #$09
-L8D90:  STA $30
-L8D92:  JSR L995C
+L8D90:  STA TextIndex
+L8D92:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8D95:  LDA #$02
 L8D97:  STA $2A
 L8D99:  LDA #$06
@@ -1659,8 +1698,8 @@ L8DB2:  STA $2E
 L8DB4:  LDA #$06
 L8DB6:  STA $2D
 L8DB8:  LDA #$0A
-L8DBA:  STA $30
-L8DBC:  JSR L995C
+L8DBA:  STA TextIndex
+L8DBC:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8DBF:  LDA #$00
 L8DC1:  STA $31
 L8DC3:  STA $32
@@ -1670,11 +1709,11 @@ L8DC9:  INY
 L8DCA:  CPY #$40
 L8DCC:  BNE L8DC7
 L8DCE:  LDA #$40
-L8DD0:  STA $7300
+L8DD0:  STA SpriteBufferBase
 L8DD3:  LDA #$18
 L8DD5:  STA $7303
-L8DD8:  JSR L98EE
-L8DDB:  LDA $09
+L8DD8:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8DDB:  LDA Pad1Input
 L8DDD:  CMP #$01
 L8DDF:  BNE L8E0A
 L8DE1:  LDA $31
@@ -1814,14 +1853,14 @@ L8EFB:  INC $31
 L8EFD:  LDA $31
 L8EFF:  CMP #$01
 L8F01:  BNE L8F4B
-L8F03:  LDA $7300
+L8F03:  LDA SpriteBufferBase
 L8F06:  STA $73C4
 L8F09:  LDA $7303
 L8F0C:  STA $73C7
 L8F0F:  LDA #$01
 L8F11:  STA $73C5
 L8F14:  LDA #$40
-L8F16:  STA $7300
+L8F16:  STA SpriteBufferBase
 L8F19:  LDA #$48
 L8F1B:  STA $7303
 L8F1E:  LDA #$08
@@ -1842,12 +1881,12 @@ L8F3B:  STA $2E
 L8F3D:  LDA #$07
 L8F3F:  STA $2D
 L8F41:  LDA #$0D
-L8F43:  STA $30
-L8F45:  JSR L995C
+L8F43:  STA TextIndex
+L8F45:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8F48:  JMP L8DD8
 L8F4B:  CMP #$02
 L8F4D:  BNE L8F9A
-L8F4F:  LDA $7300
+L8F4F:  LDA SpriteBufferBase
 L8F52:  STA $73C8
 L8F55:  LDA $7303
 L8F58:  STA $73CB
@@ -1871,10 +1910,10 @@ L8F7D:  STA $2E
 L8F7F:  LDA #$01
 L8F81:  STA $2D
 L8F83:  LDA #$0B
-L8F85:  STA $30
-L8F87:  JSR L995C
+L8F85:  STA TextIndex
+L8F87:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8F8A:  LDA #$C0
-L8F8C:  STA $7300
+L8F8C:  STA SpriteBufferBase
 L8F8F:  LDA #$50
 L8F91:  STA $7303
 L8F94:  JSR L9016
@@ -1898,7 +1937,7 @@ L8FB7:  BEQ L8FBE
 L8FB9:  DEC $31
 L8FBB:  JMP L8DD8
 L8FBE:  LDA #$F0
-L8FC0:  STA $7300
+L8FC0:  STA SpriteBufferBase
 L8FC3:  LDA #$0C
 L8FC5:  STA $2A
 L8FC7:  LDA #$1A
@@ -1908,14 +1947,14 @@ L8FCD:  STA $2E
 L8FCF:  LDA #$01
 L8FD1:  STA $2D
 L8FD3:  LDA #$0C
-L8FD5:  STA $30
-L8FD7:  JSR L995C
+L8FD5:  STA TextIndex
+L8FD7:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8FDA:  LDA #$A0
 L8FDC:  STA $7303
 L8FDF:  LDA #$D0
-L8FE1:  STA $7300
-L8FE4:  JSR L98EE
-L8FE7:  LDA $09
+L8FE1:  STA SpriteBufferBase
+L8FE4:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8FE7:  LDA Pad1Input
 L8FE9:  CMP #$01
 L8FEB:  BNE L8FFC
 L8FED:  LDA $7303
@@ -1941,7 +1980,7 @@ L901A:  LDY #$05
 L901C:  LDA ($99),Y
 L901E:  TAX
 L901F:  LDA $90F0,X
-L9022:  STA $7300
+L9022:  STA SpriteBufferBase
 L9025:  RTS
 L9026:  CMP #$01
 L9028:  BNE L9044
@@ -1956,14 +1995,14 @@ L9037:  SBC #$06
 L9039:  STX $7303
 L903C:  TAX
 L903D:  LDA $90F0,X
-L9040:  STA $7300
+L9040:  STA SpriteBufferBase
 L9043:  RTS
 L9044:  LDX $32
 L9046:  LDA $90F6,X
 L9049:  STA $7303
 L904C:  LDY #$00
 L904E:  LDA #$00
-L9050:  STA $0580,Y
+L9050:  STA TextBuffer,Y
 L9053:  INY
 L9054:  CPY #$1E
 L9056:  BNE L9050
@@ -1979,7 +2018,7 @@ L9066:  LDA #$00
 L9068:  STA $A1
 L906A:  JSR L9883
 L906D:  LDA $A4
-L906F:  STA $0580
+L906F:  STA TextBufferBase
 L9072:  LDA $A5
 L9074:  STA $0581
 L9077:  LDY #$07
@@ -2033,13 +2072,13 @@ L90E2:  STA $2E
 L90E4:  LDA #$01
 L90E6:  STA $2D
 L90E8:  LDA #$FF
-L90EA:  STA $30
-L90EC:  JSR L995C
+L90EA:  STA TextIndex
+L90EC:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L90EF:  RTS
 
 L90F0:  .byte $40, $50, $60, $70, $80, $90, $50, $78, $A0, $C8
 
-L90FA:  JSR L990C
+L90FA:  JSR InitPPU             ;($990C)Initialize the PPU.
 L90FD:  LDA #$00
 L90FF:  STA CurPPUConfig1
 L9101:  LDY #$06
@@ -2091,8 +2130,8 @@ L9160:  STA $2E
 L9162:  LDA #$01
 L9164:  STA $2D
 L9166:  LDA #$0E
-L9168:  STA $30
-L916A:  JSR L995C
+L9168:  STA TextIndex
+L916A:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L916D:  JSR L871D
 L9170:  LDY #$0B
 L9172:  LDA #$00
@@ -2123,7 +2162,7 @@ L91A1:  STA ($99),Y
 L91A3:  LDY #$35
 L91A5:  STA ($99),Y
 L91A7:  LDY #$00
-L91A9:  LDA $0580,Y
+L91A9:  LDA TextBuffer,Y
 L91AC:  CMP #$FF
 L91AE:  BEQ L91B8
 L91B0:  STA ($99),Y
@@ -2140,13 +2179,13 @@ L91C1:  RTS
 L91C2:  JSR L9421
 L91C5:  BCC L91C8
 L91C7:  RTS
-L91C8:  LDA #$FF
-L91CA:  STA $7E
-L91CC:  STA $7F
-L91CE:  STA $80
-L91D0:  STA $81
-L91D2:  STA $B3
-L91D4:  JSR L990C
+L91C8:  LDA #CLS_UNCHOSEN
+L91CA:  STA Ch1Class
+L91CC:  STA Ch2Class
+L91CE:  STA Ch3Class
+L91D0:  STA Ch4Class
+L91D2:  STA ValidGamesFlags
+L91D4:  JSR InitPPU             ;($990C)Initialize the PPU.
 L91D7:  LDA #$00
 L91D9:  STA CurPPUConfig1
 L91DB:  LDA #$04
@@ -2158,8 +2197,8 @@ L91E5:  STA $2E
 L91E7:  LDA #$01
 L91E9:  STA $2D
 L91EB:  LDA #$0F
-L91ED:  STA $30
-L91EF:  JSR L995C
+L91ED:  STA TextIndex
+L91EF:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L91F2:  LDA #$04
 L91F4:  STA $2A
 L91F6:  LDA #$0C
@@ -2243,7 +2282,7 @@ L9291:  JSR L970F
 L9294:  PLA
 L9295:  STA $30
 L9297:  LDA #$00
-L9299:  STA $B3
+L9299:  STA ValidGamesFlags
 L929B:  LDA #$06
 L929D:  STA $2A
 L929F:  LDA #$0E
@@ -2252,54 +2291,54 @@ L92A3:  LDA #$13
 L92A5:  STA $2E
 L92A7:  LDA #$07
 L92A9:  STA $2D
-L92AB:  JSR L995C
+L92AB:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L92AE:  LDA #$1E
 L92B0:  STA CurPPUConfig1
 L92B2:  JSR L9352
-L92B5:  JSR L98EE
-L92B8:  LDA $09
+L92B5:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L92B8:  LDA Pad1Input
 L92BA:  CMP #$01
 L92BC:  BNE L92CA
-L92BE:  LDA $B3
+L92BE:  LDA ValidGamesFlags
 L92C0:  BNE L92B5
-L92C2:  INC $B3
+L92C2:  INC ValidGamesFlags
 L92C4:  JSR L9352
 L92C7:  JMP L92B5
 L92CA:  CMP #$02
 L92CC:  BNE L92DC
-L92CE:  LDA $B3
+L92CE:  LDA ValidGamesFlags
 L92D0:  CMP #$01
 L92D2:  BNE L92B5
-L92D4:  DEC $B3
+L92D4:  DEC ValidGamesFlags
 L92D6:  JSR L9352
 L92D9:  JMP L92B5
 L92DC:  CMP #$08
 L92DE:  BNE L92F5
-L92E0:  LDA $B3
+L92E0:  LDA ValidGamesFlags
 L92E2:  CMP #$03
 L92E4:  BEQ L92ED
 L92E6:  CMP #$04
 L92E8:  BEQ L92ED
 L92EA:  JMP L92B5
-L92ED:  DEC $B3
+L92ED:  DEC ValidGamesFlags
 L92EF:  JSR L9352
 L92F2:  JMP L92B5
 L92F5:  CMP #$04
 L92F7:  BNE L930E
-L92F9:  LDA $B3
+L92F9:  LDA ValidGamesFlags
 L92FB:  CMP #$02
 L92FD:  BEQ L9306
 L92FF:  CMP #$03
 L9301:  BEQ L9306
 L9303:  JMP L92B5
-L9306:  INC $B3
+L9306:  INC ValidGamesFlags
 L9308:  JSR L9352
 L930B:  JMP L92B5
 L930E:  CMP #$80
 L9310:  BEQ L9315
 L9312:  JMP L9344
 L9315:  LDX $31
-L9317:  LDA $B3
+L9317:  LDA ValidGamesFlags
 L9319:  BEQ L931D
 L931B:  LDX $32
 L931D:  LDY #$00
@@ -2317,7 +2356,7 @@ L9331:  CPY #$03
 L9333:  BEQ L933F
 L9335:  JSR L9352
 L9338:  LDA #$FF
-L933A:  STA $B3
+L933A:  STA ValidGamesFlags
 L933C:  JMP L9205
 L933F:  JSR L9379
 L9342:  CLC
@@ -2326,13 +2365,13 @@ L9344:  CMP #$40
 L9346:  BEQ L934B
 L9348:  JMP L92B5
 L934B:  LDA #$FF
-L934D:  STA $B3
+L934D:  STA ValidGamesFlags
 L934F:  JMP L9205
-L9352:  LDA $B3
+L9352:  LDA ValidGamesFlags
 L9354:  ASL
 L9355:  TAX
 L9356:  LDA $9363,X
-L9359:  STA $7300
+L9359:  STA SpriteBufferBase
 L935C:  LDA $9364,X
 L935F:  STA $7303
 L9362:  RTS
@@ -2340,7 +2379,7 @@ L9362:  RTS
 L9363:  .byte $70, $28, $70, $90, $10, $11, $12, $13, $14, $15, $00, $0A, $01, $08, $03, $07
 L9373:  .byte $02, $09, $04, $06, $00, $05
 
-L9379:  LDA #$00
+L9379: LDA #$00
 L937B: STA $30
 L937D: LDA $30
 L937F: ASL
@@ -2350,7 +2389,7 @@ L9383: STA $99
 L9385: LDA $92,X
 L9387: STA $9A
 L9389: LDX $30
-L938B: LDA $7E,X
+L938B: LDA Ch1Class,X
 L938D: ASL
 L938E: ASL
 L938F: ASL
@@ -2435,7 +2474,7 @@ L946A:  CMP #$04
 L946C:  BNE L9439
 L946E:  CLC
 L946F:  RTS
-L9470:  JSR L990C
+L9470:  JSR InitPPU             ;($990C)Initialize the PPU.
 L9473:  LDA #$02
 L9475:  STA $2A
 L9477:  LDA #$04
@@ -2445,8 +2484,8 @@ L947D:  STA $2E
 L947F:  LDA #$01
 L9481:  STA $2D
 L9483:  LDA #$1B
-L9485:  STA $30
-L9487:  JSR L995C
+L9485:  STA TextIndex
+L9487:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L948A:  LDX $C5
 L948C:  STX $99
 L948E:  LDX $C6
@@ -2462,20 +2501,20 @@ L94A0:  STA $2E
 L94A2:  LDA #$01
 L94A4:  STA $2D
 L94A6:  LDA #$08
-L94A8:  STA $30
-L94AA:  JSR L995C
+L94A8:  STA TextIndex
+L94AA:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L94AD:  LDA #$30
-L94AF:  STA $7300
+L94AF:  STA SpriteBufferBase
 L94B2:  LDA #$20
 L94B4:  STA $7303
 L94B7:  LDA #$00
-L94B9:  STA $B3
+L94B9:  STA ValidGamesFlags
 L94BB:  LDX #$00
 L94BD:  LDY #$00
-L94BF:  JSR L98EE
-L94C2:  LDA $B3
+L94BF:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L94C2:  LDA ValidGamesFlags
 L94C4:  BNE L9524
-L94C6:  LDA $09
+L94C6:  LDA Pad1Input
 L94C8:  CMP #$01
 L94CA:  BNE L94DC
 L94CC:  CPX #$01
@@ -2507,7 +2546,7 @@ L94FF:  ASL
 L9500:  ASL
 L9501:  CLC
 L9502:  ADC #$30
-L9504:  STA $7300
+L9504:  STA SpriteBufferBase
 L9507:  JMP L94BF
 L950A:  CMP #$04
 L950C:  BNE L9524
@@ -2522,13 +2561,13 @@ L9519:  ASL
 L951A:  ASL
 L951B:  CLC
 L951C:  ADC #$30
-L951E:  STA $7300
+L951E:  STA SpriteBufferBase
 L9521:  JMP L94BF
-L9524:  LDA $09
+L9524:  LDA Pad1Input
 L9526:  CMP #$80
 L9528:  BEQ L952D
 L952A:  JMP L9649
-L952D:  LDA $B3
+L952D:  LDA ValidGamesFlags
 L952F:  BEQ L9535
 L9531:  CLC
 L9532:  RTS
@@ -2586,71 +2625,73 @@ L9590:  STA $2A
 L9592:  LDY #$00
 L9594:  LDX #$00
 L9596:  LDA ($29),Y
-L9598:  STA $0580,X
+L9598:  STA TextBuffer,X
 L959B:  INY
 L959C:  INX
 L959D:  CPX #$05
 L959F:  BNE L9596
 L95A1:  LDA #$FD
-L95A3:  STA $0580,X
+L95A3:  STA TextBuffer,X
 L95A6:  INX
 L95A7:  LDY #$06
 L95A9:  LDA ($29),Y
 L95AB:  TAY
 L95AC:  LDA $96B2,Y
-L95AF:  STA $0580,X
+L95AF:  STA TextBuffer,X
 L95B2:  INX
 L95B3:  LDY #$05
 L95B5:  LDA ($29),Y
 L95B7:  TAY
 L95B8:  LDA $96BD,Y
-L95BB:  STA $0580,X
+L95BB:  STA TextBuffer,X
 L95BE:  INX
 L95BF:  LDY #$06
 L95C1:  LDA ($29),Y
 L95C3:  TAY
 L95C4:  LDA $96C2,Y
-L95C7:  STA $0580,X
+L95C7:  STA TextBuffer,X
 L95CA:  INX
 L95CB:  LDA #$FF
-L95CD:  STA $0580,X
+L95CD:  STA TextBuffer,X
 L95D0:  LDA $2A
 L95D2:  PHA
 L95D3:  LDA $29
 L95D5:  PHA
 L95D6:  LDA #$10
-L95D8:  STA $2A
+L95D8:  STA TXTXPos
 L95DA:  LDA #$0C
-L95DC:  STA $29
+L95DC:  STA TXTYPos
 L95DE:  LDA #$06
-L95E0:  STA $2E
+L95E0:  STA TXTClrCols
 L95E2:  LDA #$02
-L95E4:  STA $2D
-L95E6:  LDA #$FF
-L95E8:  STA $30
-L95EA:  JSR L995C
+L95E4:  STA TXTClrRows
+L95E6:  LDA #TXT_DBL_SPACE
+L95E8:  STA TextIndex
+L95EA:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L95ED:  LDA #$10
-L95EF:  STA $2A
+L95EF:  STA TXTXPos
 L95F1:  LDA #$10
-L95F3:  STA $29
+L95F3:  STA TXTYPos
 L95F5:  LDA #$07
-L95F7:  STA $2E
+L95F7:  STA TXTClrCols
 L95F9:  LDA #$02
-L95FB:  STA $2D
+L95FB:  STA TXTClrRows
 L95FD:  LDA #$28
-L95FF:  STA $30
-L9601:  JSR L995C
+L95FF:  STA TextIndex
+L9601:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L9604:  PLA
 L9605:  STA $29
 L9607:  PLA
 L9608:  STA $2A
 L960A:  LDX #$00
 L960C:  LDA #$90
-L960E:  STA $7300
+L960E:  STA SpriteBuffer
 L9611:  LDA $96B0,X
-L9614:  STA $7303
-L9617:  JSR L98EE
-L961A:  LDA $09
+L9614:  STA SpriteBuffer+3
+L9617:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L961A:  LDA Pad1Input
 L961C:  CMP #$02
 L961E:  BEQ L9632
 L9620:  CMP #$01
@@ -2675,16 +2716,16 @@ L9646:  JMP L94BF
 L9649:  CMP #$20
 L964B:  BEQ L9650
 L964D:  JMP L94BF
-L9650:  INC $B3
-L9652:  LDA $B3
+L9650:  INC ValidGamesFlags
+L9652:  LDA ValidGamesFlags
 L9654:  CMP #$01
 L9656:  BNE L965C
 L9658:  LDA #$02
-L965A:  STA $B3
+L965A:  STA ValidGamesFlags
 L965C:  CMP #$03
 L965E:  BNE L967D
 L9660:  LDA #$00
-L9662:  STA $B3
+L9662:  STA ValidGamesFlags
 L9664:  LDA #$20
 L9666:  CPX #$00
 L9668:  BEQ L966C
@@ -2697,11 +2738,11 @@ L9672:  ASL
 L9673:  ASL
 L9674:  CLC
 L9675:  ADC #$30
-L9677:  STA $7300
+L9677:  STA SpriteBufferBase
 L967A:  JMP L94BF
 L967D:  LDA #$D0
-L967F:  STA $7300
-L9682:  LDA $B3
+L967F:  STA SpriteBufferBase
+L9682:  LDA ValidGamesFlags
 L9684:  CMP #$01
 L9686:  BEQ L968D
 L9688:  LDA #$A8
@@ -2726,7 +2767,8 @@ L96AC:  STA ($C5),Y
 L96AE:  CLC
 L96AF:  RTS
 
-L96B0:  .byte $78, $98, $96, $8F, $96, $96, $8F, $96, $8F, $8F, $96, $96, $96, $91, $8E, $8D
+L96B0:  .byte $78, $98
+l96B2:  .byte $96, $8F, $96, $96, $8F, $96, $8F, $8F, $96, $96, $96, $91, $8E, $8D
 L96C0:  .byte $8B, $8F, $8F, $8C, $A0, $9D, $99, $8B, $95, $92, $8D, $8A, $9B
 
 L96CD:  LDA #$06
@@ -2994,46 +3036,66 @@ L98E8:  ADC $A0
 L98EA:  STA $A5
 L98EC:  PLA
 L98ED:  RTS
-L98EE:  TXA
-L98EF:  PHA
-L98F0:  TYA
-L98F1:  PHA
-L98F2:  LDY $09
-L98F4:  LDX #$0A
-L98F6:  LDA $00
-L98F8:  CMP $00
-L98FA:  BEQ L98F8
-L98FC:  LDA $0A
-L98FE:  BNE L9907
-L9900:  CPY $09
+
+;----------------------------------------------------------------------------------------------------
+
+GetInputPress:
+L98EE:  TXA                     ;
+L98EF:  PHA                     ;Save X and Y on the stack.
+L98F0:  TYA                     ;
+L98F1:  PHA                     ;
+
+L98F2:  LDY Pad1Input           ;Get most recent button presses.
+
+L98F4:  LDX #$0A                ;Prepare to wait 10 frames to wait for a retrigger event.
+L98F6:  LDA Increment0          ;
+
+L98F8:* CMP Increment0          ;Wait for 1 frame.
+L98FA:  BEQ -                   ;
+
+L98FC:  LDA InputChange
+L98FE:  BNE FinishInputPresses
+L9900:  CPY Pad1Input
 L9902:  BNE L98F2
 L9904:  DEX
 L9905:  BNE L98F6
-L9907:  PLA
-L9908:  TAY
-L9909:  PLA
-L990A:  TAX
-L990B:  RTS
-L990C:  LDA #$00
-L990E:  STA CurPPUConfig1
-L9910:  CLC
-L9911:  LDA $00
-L9913:  ADC #$02
-L9915:  CMP $00
-L9917:  BNE L9915
-L9919:  LDA #$D4
-L991B:  STA $AF
+
+FinishInputPresses:
+L9907:  PLA                     ;
+L9908:  TAY                     ;
+L9909:  PLA                     ;Restore X and Y from the stack.
+L990A:  TAX                     ;
+L990B:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+InitPPU:
+L990C:  LDA #SCREEN_OFF         ;Turn the screen off.
+L990E:  STA CurPPUConfig1       ;
+
+L9910:  CLC                     ;
+L9911:  LDA Increment0          ;Prepare to wait 2 frames.
+L9913:  ADC #$02                ;
+
+L9915:* CMP Increment0          ;Have 2 frames passed?
+L9917:  BNE -                   ;If not, branch to wait more.
+
+L9919:  LDA #$D4                ;Hide the upper 10 sprites.
+L991B:  STA HideUprSprites      ;
+
 L991D:  LDY #$00
 L991F:  LDA #$F0
-L9921:  STA $7300,Y
+
+L9921:* STA SpriteBuffer,Y
 L9924:  INY
 L9925:  INY
 L9926:  INY
 L9927:  INY
-L9928:  BNE L9921
+L9928:  BNE -
+
 L992A:  LDY #$00
 L992C:  LDA #$00
-L992E:  STA $7400,Y
+L992E:  STA BlocksBuffer,Y
 L9931:  INY
 L9932:  BNE L992E
 L9934:  LDA #$74
@@ -3048,7 +3110,7 @@ L9944:  LDA #$01
 L9946:  STA $2E
 L9948:  LDA #$00
 L994A:  STA $2D
-L994C:  JSR $C006
+L994C:  JSR LoadPPU1            ;($C006)Load values into PPU.
 L994F:  INC $2C
 L9951:  LDA $2C
 L9953:  CMP #$24
@@ -3056,6 +3118,10 @@ L9955:  BNE L994C
 L9957:  LDA #$1E
 L9959:  STA CurPPUConfig1
 L995B:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+ShowTextString:
 L995C:  LDA $2C
 L995E:  PHA
 L995F:  LDA $2B
@@ -3066,15 +3132,16 @@ L9965:  LDA $27
 L9967:  PHA
 L9968:  LDA $26
 L996A:  PHA
-L996B:  LDA $30
+L996B:  LDA TextIndex
 L996D:  CMP #$FF
 L996F:  BEQ L997C
 L9971:  CMP #$FE
 L9973:  BEQ L997C
 L9975:  JSR L998F
 L9978:  LDA #$FF
-L997A:  STA $30
-L997C:  JSR $C003
+L997A:  STA TextIndex
+
+L997C:  JSR DisplayText1        ;($C003)Display text on screen.
 L997F:  PLA
 L9980:  STA $26
 L9982:  PLA
@@ -3086,6 +3153,9 @@ L9989:  STA $2B
 L998B:  PLA
 L998C:  STA $2C
 L998E:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 L998F:  ASL
 L9990:  TAX
 L9991:  LDA $A675,X
@@ -3094,7 +3164,7 @@ L9996:  LDA $A676,X
 L9999:  STA $2C
 L999B:  LDY #$00
 L999D:  LDA ($2B),Y
-L999F:  STA $0580,Y
+L999F:  STA TextBuffer,Y
 L99A2:  INY
 L99A3:  CMP #$FF
 L99A5:  BNE L999D
@@ -3172,6 +3242,7 @@ L9A00:  LDA $2B
 L9A02:  CMP #$0B
 L9A04:  BCC L99E7
 L9A06:  RTS
+
 L9A07:  LDA #$02
 L9A09:  STA $2A
 L9A0B:  LDA $2C
@@ -3183,9 +3254,10 @@ L9A14:  LDA #$1C
 L9A16:  STA $2E
 L9A18:  LDA #$01
 L9A1A:  STA $2D
-L9A1C:  LDA #$FF
-L9A1E:  JSR L995C
+L9A1C:  LDA #TXT_DBL_SPACE
+L9A1E:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L9A21:  RTS
+
 L9A22:  PHA
 L9A23:  LDY #$00
 L9A25:  STY $27
@@ -3217,52 +3289,52 @@ L9A4D:  LDA #$00
 L9A4F:  INY
 L9A50:  PHA
 L9A51:  LDA $9AE1,Y
-L9A54:  STA $0580,X
+L9A54:  STA TextBuffer,X
 L9A57:  INX
 L9A58:  PLA
 L9A59:  TAY
 L9A5A:  LDA $9AE1,Y
-L9A5D:  STA $0580,X
+L9A5D:  STA TextBuffer,X
 L9A60:  INX
 L9A61:  LDA #$00
-L9A63:  STA $0580,X
+L9A63:  STA TextBuffer,X
 L9A66:  INX
 L9A67:  LDY #$00
 L9A69:  LDA ($26),Y
 L9A6B:  CMP #$FF
 L9A6D:  BEQ L9AB1
-L9A6F:  STA $0580,X
+L9A6F:  STA TextBuffer,X
 L9A72:  INX
 L9A73:  INY
 L9A74:  INC $2F
 L9A76:  CPY #$05
 L9A78:  BNE L9A69
 L9A7A:  LDA #$00
-L9A7C:  STA $0580,X
+L9A7C:  STA TextBuffer,X
 L9A7F:  INX
 L9A80:  LDY #$06
 L9A82:  LDA ($26),Y
 L9A84:  TAY
 L9A85:  LDA $9AC1,Y
-L9A88:  STA $0580,X
+L9A88:  STA TextBuffer,X
 L9A8B:  INX
 L9A8C:  LDY #$05
 L9A8E:  LDA ($26),Y
 L9A90:  TAY
 L9A91:  LDA $9AD7,Y
-L9A94:  STA $0580,X
+L9A94:  STA TextBuffer,X
 L9A97:  INX
 L9A98:  LDY #$06
 L9A9A:  LDA ($26),Y
 L9A9C:  TAY
 L9A9D:  LDA $9ACC,Y
-L9AA0:  STA $0580,X
+L9AA0:  STA TextBuffer,X
 L9AA3:  INX
 L9AA4:  LDY #$0B
 L9AA6:  LDA ($26),Y
 L9AA8:  TAY
 L9AA9:  LDA $9ADC,Y
-L9AAC:  STA $0580,X
+L9AAC:  STA TextBuffer,X
 L9AAF:  INX
 L9AB0:  RTS
 L9AB1:  LDY #$0A
@@ -3270,7 +3342,7 @@ L9AB3:  JSR L9AB7
 L9AB6:  RTS
 
 L9AB7:  LDA #$00
-L9AB9:  STA $0580,X
+L9AB9:  STA TextBuffer,X
 L9ABC:  INX
 L9ABD:  DEY
 L9ABE:  BNE L9AB9
@@ -3280,30 +3352,42 @@ L9AC1:  .byte $96, $8F, $96, $96, $8F, $96, $8F, $8F, $96, $96, $96, $8F, $8C, $
 L9AD1:  .byte $8B, $95, $92, $8D, $8A, $9B, $91, $8E, $8D, $8B, $8F, $90, $99, $9C, $8D, $8A
 L9AE1:  .byte $38, $39, $3A, $3B, $3C, $3D, $3E, $3F, $40, $41
 
+;----------------------------------------------------------------------------------------------------
+
+LoadClassSprites:
 L9AEB:  LDY #$00
-L9AED:  LDA $B441,Y
-L9AF0:  STA $7304,Y
+
+L9AED:* LDA ClassSpritesDat,Y
+L9AF0:  STA SpriteBuffer+4,Y
 L9AF3:  INY
 L9AF4:  CPY #$B0
-L9AF6:  BNE L9AED
-L9AF8:  LDA #$04
-L9AFA:  STA $7E
-L9AFC:  STA $7F
-L9AFE:  STA $80
-L9B00:  STA $81
+L9AF6:  BNE -
+
+L9AF8:  LDA #CLS_PALADIN
+L9AFA:  STA Ch1Class
+L9AFC:  STA Ch2Class
+L9AFE:  STA Ch3Class
+L9B00:  STA Ch4Class
 L9B02:  RTS
-L9B03:  LDY #$00
-L9B05:  LDA $B4F1,Y
-L9B08:  STA $73C4,Y
+
+;----------------------------------------------------------------------------------------------------
+
+L9B03:  LDY #$00                ;Zero out index.
+
+L9B05:* LDA LBSpritesDat,Y
+L9B08:  STA SpriteBuffer+$C4,Y
 L9B0B:  INY
 L9B0C:  CPY #$30
-L9B0E:  BNE L9B05
-L9B10:  LDA #$04
-L9B12:  STA $7E
-L9B14:  STA $7F
-L9B16:  STA $80
-L9B18:  STA $81
+L9B0E:  BNE -
+
+L9B10:  LDA #CLS_PALADIN
+L9B12:  STA Ch1Class
+L9B14:  STA Ch2Class
+L9B16:  STA Ch3Class
+L9B18:  STA Ch4Class
 L9B1A:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 L9B1B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC
 L9B2B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC
@@ -3592,7 +3676,7 @@ LA11D:  JSR LA2ED
 LA120:  LDA #$1E
 LA122:  STA CurPPUConfig1
 LA124:  LDA #$18
-LA126:  STA $7300
+LA126:  STA SpriteBufferBase
 LA129:  LDA #$00
 LA12B:  STA $30
 LA12D:  LDX $30
@@ -3601,9 +3685,9 @@ LA132:  STA $7303
 LA135:  LDA $00
 LA137:  CMP $00
 LA139:  BEQ LA137
-LA13B:  LDA $0A
+LA13B:  LDA InputChange
 LA13D:  BEQ LA135
-LA13F:  LDA $09
+LA13F:  LDA Pad1Input
 LA141:  CMP #$01
 LA143:  BNE LA150
 LA145:  INC $30
@@ -3630,7 +3714,7 @@ LA16C:  LDA $91,X
 LA16E:  STA $99
 LA170:  LDA $92,X
 LA172:  STA $9A
-LA174:  JSR L990C
+LA174:  JSR InitPPU             ;($990C)Initialize the PPU.
 LA177:  JSR $C01E
 LA17A:  LDY #$06
 LA17C:  LDA ($99),Y
@@ -3650,8 +3734,8 @@ LA198:  STA $2E
 LA19A:  LDA #$02
 LA19C:  STA $2D
 LA19E:  LDA #$1C
-LA1A0:  STA $30
-LA1A2:  JSR L995C
+LA1A0:  STA TextIndex
+LA1A2:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LA1A5:  JSR LA3D3
 LA1A8:  LDY #$3D
 LA1AA:  LDA ($99),Y
@@ -3665,10 +3749,10 @@ LA1B8:  STA $2E
 LA1BA:  LDA #$01
 LA1BC:  STA $2D
 LA1BE:  LDA #$26
-LA1C0:  STA $30
-LA1C2:  JSR L995C
+LA1C0:  STA TextIndex
+LA1C2:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LA1C5:  LDA #$F0
-LA1C7:  STA $7300
+LA1C7:  STA SpriteBuffer
 LA1CA:  JSR LB5F8
 LA1CD:  STA $30
 LA1CF:  CMP #$0F
@@ -3683,7 +3767,7 @@ LA1DF:  BCC LA1C5
 LA1E1:  LDY #$34
 LA1E3:  LDA $30
 LA1E5:  STA ($99),Y
-LA1E7:  JSR L990C
+LA1E7:  JSR InitPPU             ;($990C)Initialize the PPU.
 LA1EA:  JSR LA28C
 LA1ED:  LDA #$11
 LA1EF:  STA $2A
@@ -3694,11 +3778,11 @@ LA1F7:  STA $2E
 LA1F9:  LDA #$02
 LA1FB:  STA $2D
 LA1FD:  LDA #$1D
-LA1FF:  STA $30
-LA201:  JSR L995C
+LA1FF:  STA TextIndex
+LA201:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LA204:  JSR LA3ED
 LA207:  LDA #$F0
-LA209:  STA $7300
+LA209:  STA SpriteBufferBase
 LA20C:  JSR LB5E1
 LA20F:  STA $30
 LA211:  LDA $30
@@ -3716,9 +3800,10 @@ LA227:  LDY #$35
 LA229:  STA ($99),Y
 LA22B:  JMP LA000
 
-LA22E:  .byte $20, $50, $A0, $D0, $30, $40, $50, $60, $70, $80, $90, $A0, $B0, $0F, $02, $01
-LA23E:  .byte $06, $0F, $0F, $0F, $02, $02, $01, $0A, $07, $03, $01, $02, $04, $02, $01, $02
-LA24E:  .byte $01, $01, $06, $A2, $00
+LA22E:  .byte $20, $50, $A0, $D0, $30, $40, $50, $60, $70, $80, $90, $A0, $B0
+
+LA23B:  .byte $0F, $02, $01, $06, $0F, $0F, $0F, $02, $02, $01, $0A, $07, $03
+LA24B:  .byte $01, $02, $04, $02, $01, $02, $01, $01, $06, $A2, $00
 
 LA253:  LDA $30
 LA255:  BNE LA258
@@ -3793,9 +3878,9 @@ LA2DD:  .byte $00, $00, $00, $00, $55, $11, $05, $01, $AA, $22, $0A, $02, $FF, $
 
 LA2ED:  LDX #$00
 LA2EF:  LDA $A53B,X
-LA2F2:  STA $0580,X
+LA2F2:  STA TextBuffer,X
 LA2F5:  INX
-LA2F6:  CPX #$41
+LA2F6:  CPX #SG_VALID1
 LA2F8:  BCC LA2EF
 LA2FA:  LDA #$04
 LA2FC:  STA $2E
@@ -3806,8 +3891,8 @@ LA304:  STA $2A
 LA306:  LDA #$0B
 LA308:  STA $29
 LA30A:  LDA #$FF
-LA30C:  STA $30
-LA30E:  JSR L995C
+LA30C:  STA TextIndex
+LA30E:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LA311:  LDY #$00
 LA313:  LDA $A3CF,Y
 LA316:  STA $2A
@@ -3847,14 +3932,14 @@ LA356:  JSR LA39A
 LA359:  LDY #$30
 LA35B:  JSR LA39A
 LA35E:  LDA #$FF
-LA360:  STA $0580,X
+LA360:  STA TextBuffer,X
 LA363:  LDA #$06
 LA365:  STA $2E
 LA367:  LDA #$08
 LA369:  STA $2D
 LA36B:  LDA #$FF
-LA36D:  STA $30
-LA36F:  JSR L995C
+LA36D:  STA TextIndex
+LA36F:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LA372:  RTS
 LA373:  LDA ($99),Y
 LA375:  STA $A0
@@ -3866,13 +3951,13 @@ LA380:  LDX $2C
 LA382:  LDY #$02
 LA384:  JSR LA3C5
 LA387:  LDA $A4
-LA389:  STA $0580,X
+LA389:  STA TextBuffer,X
 LA38C:  INX
 LA38D:  LDA $A5
-LA38F:  STA $0580,X
+LA38F:  STA TextBuffer,X
 LA392:  INX
 LA393:  LDA #$FD
-LA395:  STA $0580,X
+LA395:  STA TextBuffer,X
 LA398:  INX
 LA399:  RTS
 LA39A:  LDA ($99),Y
@@ -3884,21 +3969,21 @@ LA3A3:  STX $2C
 LA3A5:  JSR L9883
 LA3A8:  LDX $2C
 LA3AA:  LDA #$00
-LA3AC:  STA $0580,X
+LA3AC:  STA TextBuffer,X
 LA3AF:  INX
 LA3B0:  LDY #$02
 LA3B2:  LDA $00A0,Y
-LA3B5:  STA $0580,X
+LA3B5:  STA TextBuffer,X
 LA3B8:  INX
 LA3B9:  INY
 LA3BA:  CPY #$06
 LA3BC:  BCC LA3B2
 LA3BE:  LDA #$FD
-LA3C0:  STA $0580,X
+LA3C0:  STA TextBuffer,X
 LA3C3:  INX
 LA3C4:  RTS
 LA3C5:  LDA #$00
-LA3C7:  STA $0580,X
+LA3C7:  STA TextBuffer,X
 LA3CA:  INX
 LA3CB:  DEY
 LA3CC:  BNE LA3C7
@@ -4034,8 +4119,8 @@ LA4BE:  PHA
 LA4BF:  LDA $25
 LA4C1:  PHA
 LA4C2:  LDA #$FF
-LA4C4:  STA $30
-LA4C6:  JSR L995C
+LA4C4:  STA TextIndex
+LA4C6:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LA4C9:  PLA
 LA4CA:  STA $25
 LA4CC:  PLA
@@ -4063,11 +4148,11 @@ LA4F9:  LDA ($2B),Y
 LA4FB:  INY
 LA4FC:  CMP #$FD
 LA4FE:  BEQ LA507
-LA500:  STA $0580,X
+LA500:  STA TextBuffer,X
 LA503:  INX
 LA504:  JMP LA4F9
 LA507:  LDA #$FF
-LA509:  STA $0580,X
+LA509:  STA TextBuffer,X
 LA50C:  STX $2E
 LA50E:  LDA #$01
 LA510:  STA $2D
@@ -4267,122 +4352,135 @@ LAEC1:  .byte $0F, $30, $0F, $0F, $0F, $30, $11, $0C, $0F, $16, $37, $19, $0F, $
 LAED1:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $12, $36, $0F, $30, $15, $36
 
 LAEE1:  .byte $0F, $0F, $0F, $0F, $0F, $30, $11, $0C, $0F, $16, $37, $19, $0F, $0A, $19, $29
-LAEF1:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $0F, $2D, $0F, $30, $15
+LAEF1:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $0F, $2D, $0F, $30, $15, $36
 
 ;Start of GFX.
 
-LAF00:  .byte $36, $04, $83, $81, $82, $83, $89, $88, $88, $01, $00, $06, $07, $07, $17, $17
-LAF10:  .byte $37, $90, $60, $C0, $A0, $E0, $FF, $63, $41, $40, $80, $30, $F0, $F0, $80, $9C
-LAF20:  .byte $BE, $00, $22, $2A, $22, $2A, $E3, $08, $5D, $00, $1C, $14, $1C, $14, $1C, $F7
-LAF30:  .byte $A2, $00, $00, $00, $00, $00, $80, $00, $00, $00, $00, $00, $00, $00, $00, $80
-LAF40:  .byte $80, $00, $00, $03, $2E, $38, $30, $30, $38, $00, $00, $00, $01, $07, $0F, $0F
-LAF50:  .byte $07, $40, $E0, $F8, $0E, $03, $01, $01, $03, $00, $00, $00, $F0, $FC, $FE, $FE
-LAF60:  .byte $FC, $00, $00, $00, $80, $80, $80, $80, $80, $00, $00, $00, $00, $00, $00, $00
-LAF70:  .byte $00, $00, $FE, $FE, $FE, $00, $EF, $EF, $EF, $00, $00, $00, $00, $00, $00, $00
-LAF80:  .byte $00, $00, $FE, $FE, $FE, $00, $EF, $EF, $EF, $00, $00, $00, $00, $00, $00, $00
-LAF90:  .byte $00, $00, $FC, $F9, $F7, $0F, $CF, $D7, $BA, $00, $00, $00, $00, $00, $00, $00
-LAFA0:  .byte $00, $00, $7E, $3E, $BE, $C0, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAFB0:  .byte $00, $00, $7E, $7C, $7D, $03, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAFC0:  .byte $00, $00, $3E, $9E, $EE, $F0, $F3, $EB, $5D, $00, $00, $00, $00, $00, $00, $00
-LAFD0:  .byte $00, $88, $C0, $07, $00, $80, $00, $0F, $1F, $77, $37, $E0, $C7, $0F, $0F, $00
-LAFE0:  .byte $00, $41, $41, $E3, $36, $1C, $00, $00, $98, $BE, $BE, $1C, $C8, $E0, $78, $38
-LAFF0:  .byte $00, $08, $E3, $2A, $22, $2A, $22, $2A, $00, $F7, $1C, $14, $1C, $14, $1C, $14
-LB000:  .byte $1C, $00, $80, $00, $00, $00, $00, $00, $00, $80, $00, $00, $00, $00, $00, $00
-LB010:  .byte $00, $3E, $5F, $EF, $F3, $FC, $7F, $3F, $1F, $01, $60, $D0, $CC, $C3, $40, $00
-LB020:  .byte $00, $0F, $BF, $BE, $B9, $07, $FF, $FF, $FF, $F0, $40, $41, $46, $F8, $00, $00
-LB030:  .byte $00, $80, $40, $E0, $E0, $E0, $C0, $80, $00, $00, $C0, $60, $60, $60, $40, $00
-LB040:  .byte $00, $00, $FE, $FE, $FE, $00, $EF, $EF, $EF, $00, $00, $00, $00, $00, $00, $00
-LB050:  .byte $00, $00, $FE, $FE, $FE, $00, $EF, $EF, $EF, $00, $00, $00, $00, $00, $00, $00
-LB060:  .byte $00, $3C, $7C, $78, $78, $00, $78, $78, $78, $00, $00, $00, $00, $00, $00, $00
-LB070:  .byte $00, $3C, $3E, $1E, $1E, $00, $1E, $1E, $1E, $00, $00, $00, $00, $00, $00, $00
-LB080:  .byte $00, $07, $0F, $0F, $0D, $0F, $07, $0F, $1F, $00, $00, $00, $07, $07, $03, $00
-LB090:  .byte $00, $C0, $E0, $EE, $6A, $EE, $C4, $FF, $F4, $00, $00, $00, $C4, $C0, $8A, $00
-LB0A0:  .byte $0A, $00, $1C, $22, $3E, $3F, $3F, $1F, $1F, $1C, $00, $3E, $3E, $3F, $38, $10
-LB0B0:  .byte $00, $00, $00, $00, $00, $06, $FE, $FF, $FF, $00, $00, $01, $03, $01, $01, $00
-LB0C0:  .byte $00, $1F, $0F, $47, $63, $20, $20, $10, $10, $00, $00, $B8, $9C, $DF, $DF, $EF
-LB0D0:  .byte $EF, $FF, $FE, $FE, $E8, $00, $00, $01, $01, $00, $00, $01, $17, $FF, $FF, $FE
-LB0E0:  .byte $FE, $00, $00, $40, $40, $8C, $8F, $1F, $1F, $00, $00, $B0, $B8, $70, $70, $E0
-LB0F0:  .byte $E0, $06, $07, $17, $1F, $1F, $FF, $FE, $FE, $06, $07, $17, $1F, $1F, $07, $02
-LB100:  .byte $00, $78, $78, $00, $78, $78, $78, $78, $78, $00, $00, $00, $00, $00, $00, $00
-LB110:  .byte $00, $1E, $1E, $00, $1E, $1E, $1E, $1E, $1E, $00, $00, $00, $00, $00, $00, $00
-LB120:  .byte $00, $00, $E1, $C3, $87, $07, $07, $07, $03, $00, $1F, $3F, $7F, $07, $EF, $E7
-LB130:  .byte $E3, $00, $06, $02, $80, $80, $C0, $C0, $80, $00, $F8, $FC, $FE, $80, $EF, $CF
-LB140:  .byte $8F, $07, $03, $00, $00, $30, $10, $00, $07, $18, $3C, $3F, $3F, $3F, $1F, $0F
-LB150:  .byte $08, $C4, $84, $0E, $0E, $04, $04, $04, $04, $30, $7A, $FE, $FE, $EA, $E0, $E0
-LB160:  .byte $E0, $1F, $3F, $3F, $3F, $3F, $3F, $3F, $1F, $00, $00, $00, $00, $00, $00, $00
-LB170:  .byte $00, $FF, $FF, $FF, $FF, $FF, $FF, $FD, $F9, $00, $00, $00, $00, $00, $00, $00
-LB180:  .byte $00, $10, $10, $10, $10, $10, $10, $10, $10, $EF, $EF, $EF, $EF, $EF, $EF, $EF
-LB190:  .byte $EF, $01, $01, $01, $01, $01, $01, $01, $01, $FE, $FE, $FE, $FE, $FE, $FE, $FE
-LB1A0:  .byte $FE, $1F, $1F, $1F, $1F, $1F, $1F, $17, $17, $E0, $E0, $E0, $E0, $E0, $E0, $E0
-LB1B0:  .byte $E0, $FF, $FF, $FF, $FF, $FE, $FE, $FE, $FE, $00, $00, $00, $00, $00, $00, $00
-LB1C0:  .byte $00, $78, $78, $00, $78, $78, $78, $78, $78, $00, $00, $00, $00, $00, $00, $00
-LB1D0:  .byte $00, $1E, $1E, $00, $1E, $1E, $1E, $1E, $1E, $00, $00, $00, $00, $00, $00, $00
-LB1E0:  .byte $00, $00, $08, $06, $00, $07, $83, $C3, $E1, $08, $E7, $E1, $E0, $00, $68, $28
-LB1F0:  .byte $0C, $00, $00, $00, $00, $00, $01, $83, $0F, $20, $EE, $CE, $0E, $C0, $AE, $2C
-LB200:  .byte $60, $07, $0F, $0F, $0F, $1F, $1F, $0F, $08, $00, $00, $01, $05, $07, $03, $01
-LB210:  .byte $07, $C0, $E0, $E0, $E0, $F0, $F0, $FE, $FF, $00, $00, $00, $40, $C0, $C0, $00
-LB220:  .byte $AA, $1F, $1F, $1F, $0F, $0F, $0F, $07, $03, $00, $00, $00, $10, $10, $10, $18
-LB230:  .byte $1C, $F0, $F0, $E1, $E3, $C3, $C3, $87, $07, $01, $01, $00, $00, $00, $00, $00
-LB240:  .byte $00, $10, $18, $08, $0C, $04, $03, $01, $00, $EF, $E7, $F7, $F3, $FB, $FC, $FE
-LB250:  .byte $FF, $01, $03, $02, $06, $04, $18, $10, $A0, $FE, $FC, $FD, $F9, $FB, $E7, $EF
-LB260:  .byte $5F, $03, $03, $11, $19, $19, $1C, $1C, $1C, $F0, $F0, $E0, $E0, $E0, $E0, $E0
-LB270:  .byte $E0, $FC, $FC, $FC, $F8, $F0, $F0, $E0, $00, $00, $00, $00, $00, $00, $00, $00
-LB280:  .byte $00, $80, $80, $20, $70, $F8, $FC, $7E, $00, $00, $00, $00, $00, $00, $00, $00
-LB290:  .byte $00, $01, $01, $04, $0E, $1E, $3F, $0E, $C1, $00, $00, $00, $00, $00, $00, $00
-LB2A0:  .byte $00, $00, $00, $1F, $0F, $00, $03, $07, $07, $1F, $3F, $20, $00, $07, $07, $07
-LB2B0:  .byte $06, $5F, $7D, $76, $56, $78, $E0, $C0, $C0, $AA, $EA, $EE, $AE, $A0, $00, $C0
-LB2C0:  .byte $00, $00, $00, $14, $14, $14, $14, $1C, $08, $1C, $1C, $08, $08, $08, $08, $00
-LB2D0:  .byte $00, $0E, $1E, $1E, $3E, $7E, $7C, $0C, $00, $01, $01, $01, $01, $01, $03, $03
-LB2E0:  .byte $07, $00, $00, $00, $00, $00, $00, $00, $00, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-LB2F0:  .byte $FF, $A0, $A0, $A0, $A0, $A0, $A0, $00, $00, $5F, $5F, $5F, $5F, $5F, $5F, $FF
-LB300:  .byte $FF, $0E, $0E, $0F, $0F, $0F, $07, $06, $00, $F0, $F0, $F0, $F0, $F0, $F8, $F8
-LB310:  .byte $FC, $00, $00, $00, $80, $C0, $C0, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB320:  .byte $00, $FF, $F0, $E7, $EF, $07, $E0, $F6, $FF, $00, $00, $00, $00, $00, $00, $00
-LB330:  .byte $00, $00, $00, $E0, $F0, $F0, $E4, $0E, $BF, $00, $00, $00, $00, $00, $00, $00
-LB340:  .byte $00, $01, $00, $07, $0F, $07, $20, $76, $FF, $00, $00, $00, $00, $00, $00, $00
-LB350:  .byte $00, $0F, $2F, $F7, $F0, $F2, $E7, $0F, $BF, $00, $00, $00, $00, $00, $00, $00
-LB360:  .byte $00, $00, $07, $06, $03, $01, $18, $38, $B8, $03, $07, $07, $07, $03, $1F, $3F
-LB370:  .byte $2F, $00, $F0, $B0, $E0, $C0, $0C, $8E, $0E, $E0, $F0, $F0, $F0, $E0, $FC, $FE
-LB380:  .byte $FE, $FF, $82, $30, $7C, $FE, $FE, $7E, $00, $00, $00, $00, $00, $00, $00, $00
-LB390:  .byte $00, $7F, $01, $FC, $FE, $7E, $3F, $8E, $C1, $00, $00, $00, $00, $00, $00, $00
-LB3A0:  .byte $00, $FF, $86, $38, $7C, $FE, $FE, $7E, $00, $00, $00, $00, $00, $00, $00, $00
-LB3B0:  .byte $00, $7F, $00, $FC, $F8, $70, $20, $80, $80, $00, $00, $00, $00, $00, $00, $00
-LB3C0:  .byte $00, $FF, $06, $38, $1C, $0E, $06, $02, $00, $00, $00, $00, $00, $00, $00, $00
-LB3D0:  .byte $00, $7F, $01, $FC, $FE, $7E, $3F, $8E, $C1, $00, $00, $00, $00, $00, $00, $00
-LB3E0:  .byte $00, $F8, $CF, $EF, $7E, $3C, $00, $00, $1E, $07, $33, $17, $07, $03, $0F, $0F
-LB3F0:  .byte $1E, $0F, $FF, $C7, $7F, $0E, $00, $78, $7C, $FF, $FF, $3F, $83, $FE, $78, $78
-LB400:  .byte $7C, $FF, $F0, $E7, $EF, $07, $E0, $F6, $FF, $00, $00, $00, $00, $00, $00, $00
-LB410:  .byte $00, $0F, $2F, $F7, $F0, $F2, $E7, $0F, $BF, $00, $00, $00, $00, $00, $00, $00
-LB420:  .byte $00, $FF, $F0, $E4, $E8, $00, $E0, $C0, $80, $00, $00, $00, $00, $00, $00, $00
-LB430:  .byte $00, $0F, $2F, $37, $10, $02, $07, $03, $01, $00, $00, $00, $00, $00, $00, $00
+LAF01:  .byte $04, $83, $81, $82, $83, $89, $88, $88, $01, $00, $06, $07, $07, $17, $17, $37
+LAF11:  .byte $90, $60, $C0, $A0, $E0, $FF, $63, $41, $40, $80, $30, $F0, $F0, $80, $9C, $BE
+LAF21:  .byte $00, $22, $2A, $22, $2A, $E3, $08, $5D, $00, $1C, $14, $1C, $14, $1C, $F7, $A2
+LAF31:  .byte $00, $00, $00, $00, $00, $80, $00, $00, $00, $00, $00, $00, $00, $00, $80, $80
+LAF41:  .byte $00, $00, $03, $2E, $38, $30, $30, $38, $00, $00, $00, $01, $07, $0F, $0F, $07
+LAF51:  .byte $40, $E0, $F8, $0E, $03, $01, $01, $03, $00, $00, $00, $F0, $FC, $FE, $FE, $FC
+LAF61:  .byte $00, $00, $00, $80, $80, $80, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00
+LAF71:  .byte $00, $FE, $FE, $FE, $00, $EF, $EF, $EF, $00, $00, $00, $00, $00, $00, $00, $00
+LAF81:  .byte $00, $FE, $FE, $FE, $00, $EF, $EF, $EF, $00, $00, $00, $00, $00, $00, $00, $00
+LAF91:  .byte $00, $FC, $F9, $F7, $0F, $CF, $D7, $BA, $00, $00, $00, $00, $00, $00, $00, $00
+LAFA1:  .byte $00, $7E, $3E, $BE, $C0, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LAFB1:  .byte $00, $7E, $7C, $7D, $03, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LAFC1:  .byte $00, $3E, $9E, $EE, $F0, $F3, $EB, $5D, $00, $00, $00, $00, $00, $00, $00, $00
+LAFD1:  .byte $88, $C0, $07, $00, $80, $00, $0F, $1F, $77, $37, $E0, $C7, $0F, $0F, $00, $00
+LAFE1:  .byte $41, $41, $E3, $36, $1C, $00, $00, $98, $BE, $BE, $1C, $C8, $E0, $78, $38, $00
+LAFF1:  .byte $08, $E3, $2A, $22, $2A, $22, $2A, $00, $F7, $1C, $14, $1C, $14, $1C, $14, $1C
+LB001:  .byte $00, $80, $00, $00, $00, $00, $00, $00, $80, $00, $00, $00, $00, $00, $00, $00
+LB011:  .byte $3E, $5F, $EF, $F3, $FC, $7F, $3F, $1F, $01, $60, $D0, $CC, $C3, $40, $00, $00
+LB021:  .byte $0F, $BF, $BE, $B9, $07, $FF, $FF, $FF, $F0, $40, $41, $46, $F8, $00, $00, $00
+LB031:  .byte $80, $40, $E0, $E0, $E0, $C0, $80, $00, $00, $C0, $60, $60, $60, $40, $00, $00
+LB041:  .byte $00, $FE, $FE, $FE, $00, $EF, $EF, $EF, $00, $00, $00, $00, $00, $00, $00, $00
+LB051:  .byte $00, $FE, $FE, $FE, $00, $EF, $EF, $EF, $00, $00, $00, $00, $00, $00, $00, $00
+LB061:  .byte $3C, $7C, $78, $78, $00, $78, $78, $78, $00, $00, $00, $00, $00, $00, $00, $00
+LB071:  .byte $3C, $3E, $1E, $1E, $00, $1E, $1E, $1E, $00, $00, $00, $00, $00, $00, $00, $00
+LB081:  .byte $07, $0F, $0F, $0D, $0F, $07, $0F, $1F, $00, $00, $00, $07, $07, $03, $00, $00
+LB091:  .byte $C0, $E0, $EE, $6A, $EE, $C4, $FF, $F4, $00, $00, $00, $C4, $C0, $8A, $00, $0A
+LB0A1:  .byte $00, $1C, $22, $3E, $3F, $3F, $1F, $1F, $1C, $00, $3E, $3E, $3F, $38, $10, $00
+LB0B1:  .byte $00, $00, $00, $00, $06, $FE, $FF, $FF, $00, $00, $01, $03, $01, $01, $00, $00
+LB0C1:  .byte $1F, $0F, $47, $63, $20, $20, $10, $10, $00, $00, $B8, $9C, $DF, $DF, $EF, $EF
+LB0D1:  .byte $FF, $FE, $FE, $E8, $00, $00, $01, $01, $00, $00, $01, $17, $FF, $FF, $FE, $FE
+LB0E1:  .byte $00, $00, $40, $40, $8C, $8F, $1F, $1F, $00, $00, $B0, $B8, $70, $70, $E0, $E0
+LB0F1:  .byte $06, $07, $17, $1F, $1F, $FF, $FE, $FE, $06, $07, $17, $1F, $1F, $07, $02, $00
+LB101:  .byte $78, $78, $00, $78, $78, $78, $78, $78, $00, $00, $00, $00, $00, $00, $00, $00
+LB111:  .byte $1E, $1E, $00, $1E, $1E, $1E, $1E, $1E, $00, $00, $00, $00, $00, $00, $00, $00
+LB121:  .byte $00, $E1, $C3, $87, $07, $07, $07, $03, $00, $1F, $3F, $7F, $07, $EF, $E7, $E3
+LB131:  .byte $00, $06, $02, $80, $80, $C0, $C0, $80, $00, $F8, $FC, $FE, $80, $EF, $CF, $8F
+LB141:  .byte $07, $03, $00, $00, $30, $10, $00, $07, $18, $3C, $3F, $3F, $3F, $1F, $0F, $08
+LB151:  .byte $C4, $84, $0E, $0E, $04, $04, $04, $04, $30, $7A, $FE, $FE, $EA, $E0, $E0, $E0
+LB161:  .byte $1F, $3F, $3F, $3F, $3F, $3F, $3F, $1F, $00, $00, $00, $00, $00, $00, $00, $00
+LB171:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FD, $F9, $00, $00, $00, $00, $00, $00, $00, $00
+LB181:  .byte $10, $10, $10, $10, $10, $10, $10, $10, $EF, $EF, $EF, $EF, $EF, $EF, $EF, $EF
+LB191:  .byte $01, $01, $01, $01, $01, $01, $01, $01, $FE, $FE, $FE, $FE, $FE, $FE, $FE, $FE
+LB1A1:  .byte $1F, $1F, $1F, $1F, $1F, $1F, $17, $17, $E0, $E0, $E0, $E0, $E0, $E0, $E0, $E0
+LB1B1:  .byte $FF, $FF, $FF, $FF, $FE, $FE, $FE, $FE, $00, $00, $00, $00, $00, $00, $00, $00
+LB1C1:  .byte $78, $78, $00, $78, $78, $78, $78, $78, $00, $00, $00, $00, $00, $00, $00, $00
+LB1D1:  .byte $1E, $1E, $00, $1E, $1E, $1E, $1E, $1E, $00, $00, $00, $00, $00, $00, $00, $00
+LB1E1:  .byte $00, $08, $06, $00, $07, $83, $C3, $E1, $08, $E7, $E1, $E0, $00, $68, $28, $0C
+LB1F1:  .byte $00, $00, $00, $00, $00, $01, $83, $0F, $20, $EE, $CE, $0E, $C0, $AE, $2C, $60
+LB201:  .byte $07, $0F, $0F, $0F, $1F, $1F, $0F, $08, $00, $00, $01, $05, $07, $03, $01, $07
+LB211:  .byte $C0, $E0, $E0, $E0, $F0, $F0, $FE, $FF, $00, $00, $00, $40, $C0, $C0, $00, $AA
+LB221:  .byte $1F, $1F, $1F, $0F, $0F, $0F, $07, $03, $00, $00, $00, $10, $10, $10, $18, $1C
+LB231:  .byte $F0, $F0, $E1, $E3, $C3, $C3, $87, $07, $01, $01, $00, $00, $00, $00, $00, $00
+LB241:  .byte $10, $18, $08, $0C, $04, $03, $01, $00, $EF, $E7, $F7, $F3, $FB, $FC, $FE, $FF
+LB251:  .byte $01, $03, $02, $06, $04, $18, $10, $A0, $FE, $FC, $FD, $F9, $FB, $E7, $EF, $5F
+LB261:  .byte $03, $03, $11, $19, $19, $1C, $1C, $1C, $F0, $F0, $E0, $E0, $E0, $E0, $E0, $E0
+LB271:  .byte $FC, $FC, $FC, $F8, $F0, $F0, $E0, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB281:  .byte $80, $80, $20, $70, $F8, $FC, $7E, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB291:  .byte $01, $01, $04, $0E, $1E, $3F, $0E, $C1, $00, $00, $00, $00, $00, $00, $00, $00
+LB2A1:  .byte $00, $00, $1F, $0F, $00, $03, $07, $07, $1F, $3F, $20, $00, $07, $07, $07, $06
+LB2B1:  .byte $5F, $7D, $76, $56, $78, $E0, $C0, $C0, $AA, $EA, $EE, $AE, $A0, $00, $C0, $00
+LB2C1:  .byte $00, $00, $14, $14, $14, $14, $1C, $08, $1C, $1C, $08, $08, $08, $08, $00, $00
+LB2D1:  .byte $0E, $1E, $1E, $3E, $7E, $7C, $0C, $00, $01, $01, $01, $01, $01, $03, $03, $07
+LB2E1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+LB2F1:  .byte $A0, $A0, $A0, $A0, $A0, $A0, $00, $00, $5F, $5F, $5F, $5F, $5F, $5F, $FF, $FF
+LB301:  .byte $0E, $0E, $0F, $0F, $0F, $07, $06, $00, $F0, $F0, $F0, $F0, $F0, $F8, $F8, $FC
+LB311:  .byte $00, $00, $00, $80, $C0, $C0, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB321:  .byte $FF, $F0, $E7, $EF, $07, $E0, $F6, $FF, $00, $00, $00, $00, $00, $00, $00, $00
+LB331:  .byte $00, $00, $E0, $F0, $F0, $E4, $0E, $BF, $00, $00, $00, $00, $00, $00, $00, $00
+LB341:  .byte $01, $00, $07, $0F, $07, $20, $76, $FF, $00, $00, $00, $00, $00, $00, $00, $00
+LB351:  .byte $0F, $2F, $F7, $F0, $F2, $E7, $0F, $BF, $00, $00, $00, $00, $00, $00, $00, $00
+LB361:  .byte $00, $07, $06, $03, $01, $18, $38, $B8, $03, $07, $07, $07, $03, $1F, $3F, $2F
+LB371:  .byte $00, $F0, $B0, $E0, $C0, $0C, $8E, $0E, $E0, $F0, $F0, $F0, $E0, $FC, $FE, $FE
+LB381:  .byte $FF, $82, $30, $7C, $FE, $FE, $7E, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB391:  .byte $7F, $01, $FC, $FE, $7E, $3F, $8E, $C1, $00, $00, $00, $00, $00, $00, $00, $00
+LB3A1:  .byte $FF, $86, $38, $7C, $FE, $FE, $7E, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB3B1:  .byte $7F, $00, $FC, $F8, $70, $20, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00
+LB3C1:  .byte $FF, $06, $38, $1C, $0E, $06, $02, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB3D1:  .byte $7F, $01, $FC, $FE, $7E, $3F, $8E, $C1, $00, $00, $00, $00, $00, $00, $00, $00
+LB3E1:  .byte $F8, $CF, $EF, $7E, $3C, $00, $00, $1E, $07, $33, $17, $07, $03, $0F, $0F, $1E
+LB3F1:  .byte $0F, $FF, $C7, $7F, $0E, $00, $78, $7C, $FF, $FF, $3F, $83, $FE, $78, $78, $7C
+LB401:  .byte $FF, $F0, $E7, $EF, $07, $E0, $F6, $FF, $00, $00, $00, $00, $00, $00, $00, $00
+LB411:  .byte $0F, $2F, $F7, $F0, $F2, $E7, $0F, $BF, $00, $00, $00, $00, $00, $00, $00, $00
+LB421:  .byte $FF, $F0, $E4, $E8, $00, $E0, $C0, $80, $00, $00, $00, $00, $00, $00, $00, $00
+LB431:  .byte $0F, $2F, $37, $10, $02, $07, $03, $01, $00, $00, $00, $00, $00, $00, $00, $00
 
-LB440:  .byte $00, $20, $10, $00, $30, $28, $11, $00, $30, $20, $12, $00, $38, $28, $13, $00
-LB450:  .byte $38, $20, $30, $03, $60, $28, $31, $03, $60, $20, $32, $03, $68, $28, $33, $03
-LB460:  .byte $68, $20, $50, $00, $90, $28, $51, $00, $90, $20, $52, $00, $98, $28, $53, $00
-LB470:  .byte $98, $20, $70, $01, $C0, $28, $71, $01, $C0, $20, $72, $01, $C8, $28, $73, $01
-LB480:  .byte $C8, $30, $90, $03, $40, $38, $91, $03, $40, $30, $92, $03, $48, $38, $93, $03
-LB490:  .byte $48, $30, $98, $01, $70, $38, $99, $01, $70, $30, $9A, $01, $78, $38, $9B, $01
-LB4A0:  .byte $78, $30, $A0, $01, $A0, $38, $A1, $01, $A0, $30, $A2, $01, $A8, $38, $A3, $01
-LB4B0:  .byte $A8, $30, $A8, $03, $D0, $38, $A9, $03, $D0, $30, $AA, $03, $D8, $38, $AB, $03
-LB4C0:  .byte $D8, $40, $B0, $02, $30, $48, $B1, $02, $30, $40, $B2, $02, $38, $48, $B3, $02
-LB4D0:  .byte $38, $40, $B8, $00, $60, $48, $B9, $00, $60, $40, $BA, $00, $68, $48, $BB, $00
-LB4E0:  .byte $68, $40, $C0, $01, $90, $48, $C1, $01, $90, $40, $C2, $01, $98, $48, $C3, $01
-LB4F0:  .byte $98, $58, $C8, $03, $60, $60, $C9, $03, $60, $58, $CA, $03, $68, $60, $CB, $03
-LB500:  .byte $68, $70, $C8, $03, $60, $78, $C9, $03, $60, $70, $CA, $03, $68, $78, $CB, $03
-LB510:  .byte $68, $88, $C8, $03, $60, $90, $C9, $03, $60, $88, $CA, $03, $68, $90, $CB, $03
-LB520:  .byte $68, $00, $00, $00, $00, $00, $00, $00, $00, $00, $50, $10, $00, $80, $A0, $00
-LB530:  .byte $00, $00, $55, $11, $00, $88, $AA, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB540:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB550:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB560:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $44, $55
-LB570:  .byte $00, $00, $00, $00, $00, $00, $04, $05, $00, $00, $00, $00, $00, $00, $00, $00
-LB580:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB590:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB5A0:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB5B0:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB5C0:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $55, $11, $00, $00
-LB5D0:  .byte $00, $00, $00, $00, $05, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LB5E0:  .byte $00                                             
+;----------------------------------------------------------------------------------------------------
+
+;These are the sprites that load the small images of the 11 classes.
+
+ClassSpritesDat:
+LB441:  .byte $20, $10, $00, $30, $28, $11, $00, $30, $20, $12, $00, $38, $28, $13, $00, $38
+LB451:  .byte $20, $30, $03, $60, $28, $31, $03, $60, $20, $32, $03, $68, $28, $33, $03, $68
+LB461:  .byte $20, $50, $00, $90, $28, $51, $00, $90, $20, $52, $00, $98, $28, $53, $00, $98
+LB471:  .byte $20, $70, $01, $C0, $28, $71, $01, $C0, $20, $72, $01, $C8, $28, $73, $01, $C8
+LB481:  .byte $30, $90, $03, $40, $38, $91, $03, $40, $30, $92, $03, $48, $38, $93, $03, $48
+LB491:  .byte $30, $98, $01, $70, $38, $99, $01, $70, $30, $9A, $01, $78, $38, $9B, $01, $78
+LB4A1:  .byte $30, $A0, $01, $A0, $38, $A1, $01, $A0, $30, $A2, $01, $A8, $38, $A3, $01, $A8
+LB4B1:  .byte $30, $A8, $03, $D0, $38, $A9, $03, $D0, $30, $AA, $03, $D8, $38, $AB, $03, $D8
+LB4C1:  .byte $40, $B0, $02, $30, $48, $B1, $02, $30, $40, $B2, $02, $38, $48, $B3, $02, $38
+LB4D1:  .byte $40, $B8, $00, $60, $48, $B9, $00, $60, $40, $BA, $00, $68, $48, $BB, $00, $68
+LB4E1:  .byte $40, $C0, $01, $90, $48, $C1, $01, $90, $40, $C2, $01, $98, $48, $C3, $01, $98
+
+;----------------------------------------------------------------------------------------------------
+
+;This is the sprite data for the 3 Lord British NPCs in the load game window.
+
+LBSpritesDat:
+LB4F1:  .byte $58, $C8, $03, $60, $60, $C9, $03, $60, $58, $CA, $03, $68, $60, $CB, $03, $68
+LB501:  .byte $70, $C8, $03, $60, $78, $C9, $03, $60, $70, $CA, $03, $68, $78, $CB, $03, $68
+LB511:  .byte $88, $C8, $03, $60, $90, $C9, $03, $60, $88, $CA, $03, $68, $90, $CB, $03, $68
+
+;----------------------------------------------------------------------------------------------------
+
+LB521:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $50, $10, $00, $80, $A0, $00, $00
+LB531:  .byte $00, $55, $11, $00, $88, $AA, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB541:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB551:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB561:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $44, $55, $00
+LB571:  .byte $00, $00, $00, $00, $00, $04, $05, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB581:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB591:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB5A1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB5B1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LB5C1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $55, $11, $00, $00, $00
+LB5D1:  .byte $00, $00, $00, $05, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00                                             
 
 LB5E1:  LDA #$BB
 LB5E3:  STA $2A
@@ -4418,27 +4516,27 @@ LB61D:  BNE LB616
 LB61F:  LDX #$00
 LB621:  LDY #$01
 LB623:  LDA #$00
-LB625:  STA $0580
+LB625:  STA TextBufferBase
 LB628:  PLA
 LB629:  PHA
 LB62A:  CMP #$1B
 LB62C:  BEQ LB63D
 LB62E:  LDA $BBDE,X
-LB631:  STA $0580,Y
+LB631:  STA TextBuffer,Y
 LB634:  INX
 LB635:  INY
 LB636:  CMP #$FD
 LB638:  BEQ LB64C
 LB63A:  JMP LB62E
 LB63D:  LDA $BBEB,X
-LB640:  STA $0580,Y
+LB640:  STA TextBuffer,Y
 LB643:  INX
 LB644:  INY
 LB645:  CMP #$FD
 LB647:  BEQ LB64C
 LB649:  JMP LB63D
 LB64C:  LDA #$FF
-LB64E:  STA $0580,Y
+LB64E:  STA TextBuffer,Y
 LB651:  STY $2D
 LB653:  LDA #$00
 LB655:  STA $9D
@@ -4458,7 +4556,7 @@ LB66B:  LDY $2D
 LB66D:  LDA $0600,X
 LB670:  CMP #$FD
 LB672:  BEQ LB67C
-LB674:  STA $0580,Y
+LB674:  STA TextBuffer,Y
 LB677:  INX
 LB678:  INY
 LB679:  JMP LB66D
@@ -4473,16 +4571,16 @@ LB687:  STA $A1
 LB689:  JSR L9883
 LB68C:  LDA $A4
 LB68E:  LDY $2D
-LB690:  STA $0580,Y
+LB690:  STA TextBuffer,Y
 LB693:  INY
 LB694:  LDA $A5
-LB696:  STA $0580,Y
+LB696:  STA TextBuffer,Y
 LB699:  INY
 LB69A:  LDA #$FD
-LB69C:  STA $0580,Y
+LB69C:  STA TextBuffer,Y
 LB69F:  INY
 LB6A0:  LDA #$FF
-LB6A2:  STA $0580,Y
+LB6A2:  STA TextBuffer,Y
 LB6A5:  STY $2D
 LB6A7:  LDA $0600,X
 LB6AA:  INX
@@ -4561,29 +4659,29 @@ LB72E:  CMP ($99),Y
 LB730:  BNE LB73F
 LB732:  LDY $2D
 LB734:  LDA #$09
-LB736:  STA $0580,Y
+LB736:  STA TextBuffer,Y
 LB739:  INY
 LB73A:  STY $2D
 LB73C:  JMP LB749
 LB73F:  LDY $2D
 LB741:  LDA #$00
-LB743:  STA $0580,Y
+LB743:  STA TextBuffer,Y
 LB746:  INY
 LB747:  STY $2D
 LB749:  RTS
 LB74A:  PLA
 LB74B:  LDA #$09
-LB74D:  STA $0580
+LB74D:  STA TextBufferBase
 LB750:  JMP LB73F
 LB753:  LDA #$FF
-LB755:  STA $0580,X
+LB755:  STA TextBuffer,X
 LB758:  RTS
 LB759:  LDY #$91
 LB75B:  TYA
 LB75C:  BRK
 LB75D:  BRK
 LB75E:  SBC $F0A9,X
-LB761:  STA $7300,X
+LB761:  STA SpriteBuffer,X
 LB764:  INX
 LB765:  INX
 LB766:  INX
@@ -4675,7 +4773,7 @@ LB84C:  BCS LB851
 LB84E:  JMP LB9AA
 LB851:  LDY $0401,X
 LB854:  LDA #$F0
-LB856:  STA $7300,Y
+LB856:  STA SpriteBuffer,Y
 LB859:  STA $7304,Y
 LB85C:  STA $7308,Y
 LB85F:  STA $730C,Y
@@ -4694,7 +4792,7 @@ LB880:  BPL LB884
 LB882:  LDY #$84
 LB884:  LDA #$04
 LB886:  STA $30
-LB888:  LDA $7300,Y
+LB888:  LDA SpriteBuffer,Y
 LB88B:  CMP #$F0
 LB88D:  BEQ LB89B
 LB88F:  TYA
@@ -4771,7 +4869,7 @@ LB90C:  ADC #$08
 LB90E:  STA $730B,Y
 LB911:  STA $730F,Y
 LB914:  LDA $18
-LB916:  STA $7300,Y
+LB916:  STA SpriteBuffer,Y
 LB919:  STA $7308,Y
 LB91C:  CLC
 LB91D:  ADC #$08
@@ -5107,7 +5205,7 @@ LBC36:  LSR
 LBC37:  STA $2D
 LBC39:  LDA $E1
 LBC3B:  STA $AF
-LBC3D:  JSR L995C
+LBC3D:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LBC40:  LDA $9C
 LBC42:  CLC
 LBC43:  ADC #$01
@@ -5128,7 +5226,7 @@ LBC5C:  ADC $2E
 LBC5E:  ASL
 LBC5F:  ASL
 LBC60:  ASL
-LBC61:  STA $7300
+LBC61:  STA SpriteBufferBase
 LBC64:  LDA $03D0
 LBC67:  CLC
 LBC68:  ADC #$01
@@ -5206,8 +5304,8 @@ LBCF2:  ASL
 LBCF3:  ASL
 LBCF4:  ASL
 LBCF5:  CLC
-LBCF6:  ADC $7300
-LBCF9:  STA $7300
+LBCF6:  ADC SpriteBufferBase
+LBCF9:  STA SpriteBufferBase
 LBCFC:  LDA #$FF
 LBCFE:  STA $9B
 LBD00:  JSR LBE15
@@ -5291,8 +5389,8 @@ LBD8A:  ASL
 LBD8B:  ASL
 LBD8C:  ASL
 LBD8D:  CLC
-LBD8E:  ADC $7300
-LBD91:  STA $7300
+LBD8E:  ADC SpriteBufferBase
+LBD91:  STA SpriteBufferBase
 LBD94:  JMP LBCFC
 LBD97:  LDA $2D
 LBD99:  SEC
@@ -5303,7 +5401,7 @@ LBD9F:  ASL
 LBDA0:  ASL
 LBDA1:  ASL
 LBDA2:  CLC
-LBDA3:  ADC $7300
+LBDA3:  ADC SpriteBufferBase
 LBDA6:  JMP LBD91
 LBDA9:  LDA #$00
 LBDAB:  STA $2B
@@ -5315,7 +5413,7 @@ LBDB3:  ASL
 LBDB4:  ASL
 LBDB5:  ASL
 LBDB6:  SEC
-LBDB7:  SBC $7300
+LBDB7:  SBC SpriteBufferBase
 LBDBA:  EOR #$FF
 LBDBC:  CLC
 LBDBD:  ADC #$01
@@ -5343,7 +5441,7 @@ LBDDE:  PHA
 LBDDF:  TXA
 LBDE0:  PHA
 LBDE1:  LDX #$C4
-LBDE3:  LDA $7300,X
+LBDE3:  LDA SpriteBuffer,X
 LBDE6:  CMP #$F0
 LBDE8:  BEQ LBDF4
 LBDEA:  TXA
@@ -5352,8 +5450,8 @@ LBDEC:  ADC #$04
 LBDEE:  TAX
 LBDEF:  BEQ LBE0C
 LBDF1:  JMP LBDE3
-LBDF4:  LDA $7300
-LBDF7:  STA $7300,X
+LBDF4:  LDA SpriteBufferBase
+LBDF7:  STA SpriteBuffer,X
 LBDFA:  LDA $7301
 LBDFD:  STA $7301,X
 LBE00:  LDA $7302
@@ -5361,26 +5459,26 @@ LBE03:  STA $7302,X
 LBE06:  LDA $7303
 LBE09:  STA $7303,X
 LBE0C:  LDA #$F0
-LBE0E:  STA $7300
+LBE0E:  STA SpriteBufferBase
 LBE11:  PLA
 LBE12:  TAX
 LBE13:  PLA
 LBE14:  RTS
 LBE15:  LDA #$00
 LBE17:  STA $A9
-LBE19:  STA $0A
+LBE19:  STA InputChange
 LBE1B:  LDA $00
 LBE1D:  CMP $00
 LBE1F:  BEQ LBE1D
-LBE21:  LDA $0A
+LBE21:  LDA InputChange
 LBE23:  BEQ LBE15
-LBE25:  LDA $09
+LBE25:  LDA Pad1Input
 LBE27:  AND $9B
 LBE29:  BEQ LBE15
 LBE2B:  RTS
 LBE2C:  LDX #$00
 LBE2E:  LDY #$00
-LBE30:  LDA $0580,X
+LBE30:  LDA TextBuffer,X
 LBE33:  CMP #$FF
 LBE35:  BEQ LBE46
 LBE37:  CMP #$FD
