@@ -2640,7 +2640,7 @@ L991B:  PHP
 L991C:  PHA
 L991D:  JSR L99AE
 L9920:  LDA $C8
-L9922:  STA $AF
+L9922:  STA HideUprSprites
 L9924:  PLA
 L9925:  PLP
 L9926:  BCS L9929
@@ -3021,7 +3021,7 @@ L9E10:  CLC
 L9E11:  ADC #$49
 L9E13:  STA $30
 L9E15:  LDA #$D8
-L9E17:  STA $AF
+L9E17:  STA HideUprSprites
 L9E19:  JSR L99E0
 L9E1C:  LDA #$4D
 L9E1E:  STA $03D4
@@ -4109,7 +4109,7 @@ LADA6:  LDA $03
 LADA8:  ORA #$01
 LADAA:  STA $03
 LADAC:  LDA #$D4
-LADAE:  STA $AF
+LADAE:  STA HideUprSprites
 LADB0:  JSR $C04B
 LADB3:  RTS
 LADB4:  LDA #$00
@@ -5091,8 +5091,8 @@ LBFA0:  LDA #$00                ;Disable NMI.
 LBFA2:  STA PPUControl0         ;
 
 LBFA5:  LDX #$02                ;
-LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.-->
-LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles-->
+LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.
+LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles
 LBFAC:  DEX                     ;after reset or power cycle.
 LBFAD:  BNE -                   ;
 

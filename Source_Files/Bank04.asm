@@ -1306,8 +1306,8 @@ LBFA0:  LDA #$00                ;Disable NMI.
 LBFA2:  STA PPUControl0         ;
 
 LBFA5:  LDX #$02                ;
-LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.-->
-LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles-->
+LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.
+LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles
 LBFAC:  DEX                     ;after reset or power cycle.
 LBFAD:  BNE -                   ;
 

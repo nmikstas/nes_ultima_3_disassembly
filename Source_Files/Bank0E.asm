@@ -206,7 +206,7 @@ L8C11:  JSR _WaitForAFrames     ;($8D23)Wait a certain number of frames before c
 L8C14:  LDA #<_IntroTextData    ;
 L8C16:  STA GenPtr2BLB          ;Set a pointer to the intro text data.
 L8C18:  LDA #>_IntroTextData    ;
-L8C1A:  STA GenPtr2CUB          ;
+L8C1A:  STA GenPtr2BUB          ;
 
 _IntroTextLoop:
 L8C1C:  LDA #$1E                ;Keep screen blank for 30 frames.
@@ -257,7 +257,7 @@ L8C59:  LDA TXTSrcPtrUB         ;
 L8C5B:  ADC #$00                ;
 L8C5D:  STA TXTSrcPtrUB         ;
 
-L8C5F:  LDA TXTYPos             ;Is Y=31? This represents the end of the text-->
+L8C5F:  LDA TXTYPos             ;Is Y=31? This represents the end of the text
 L8C61:  CMP #$1E                ;string for the current display.
 L8C63:  BCS _GotTextStrings     ;If so, branch to start fading in.
 
@@ -402,13 +402,13 @@ L8D2B:  LDA _IntroBkPalPtrTbl,X ;
 L8D2E:  STA GenPtr29LB          ;
 L8D30:  INX                     ;Get pointer to background palette data.
 L8D31:  LDA _IntroBkPalPtrTbl,X ;
-L8D34:  STA GenPtr2AUB          ;
+L8D34:  STA GenPtr29UB          ;
 L8D36:  INX                     ;
 
 L8D37:  LDA #<_IntroSprPalData  ;
 L8D39:  STA GenPtr2DLB          ;Get pointer to sprite palette data.
 L8D3B:  LDA #>_IntroSprPalData  ;
-L8D3D:  STA GenPtr2EUB          ;
+L8D3D:  STA GenPtr2DUB          ;
 
 L8D3F:  TXA                     ;Save X on the stack.
 L8D40:  PHA                     ;
@@ -581,24 +581,24 @@ L8E21:  INY                     ;Zero out the GFX blocks buffer.
 L8E22:  BNE -                   ;
 
 L8E24:  LDA #>BlocksBuffer      ;
-L8E26:  STA GenPtr2AUB          ;Set pointer to the source of PPU data.
+L8E26:  STA GenPtr29UB          ;Set pointer to the source of PPU data.
 L8E28:  LDA #<BlocksBuffer      ;
 L8E2A:  STA GenPtr29LB          ;
 
 L8E2C:  LDA #PPU_NT0_UB         ;
-L8E2E:  STA GenPtr2CUB          ;Set pointer to name table 0 PPU destination.
+L8E2E:  STA GenPtr2BUB          ;Set pointer to name table 0 PPU destination.
 L8E30:  LDA #PPU_NT0_LB         ;
 L8E32:  STA GenPtr2BLB          ;
 
 L8E34:  LDA #$01                ;
-L8E36:  STA GenWord2EUB         ;Prepare to load 256 bytes of data into the PPU.
+L8E36:  STA GenWord2DUB         ;Prepare to load 256 bytes of data into the PPU.
 L8E38:  LDA #$00                ;
 L8E3A:  STA GenWord2DLB         ;
 
 L8E3C:* JSR LoadPPU1            ;($C006)Load values into the PPU.
 
-L8E3F:  INC GenPtr2CUB          ;
-L8E41:  LDA GenPtr2CUB          ;Has all the data been loaded into the PPU?
+L8E3F:  INC GenPtr2BUB          ;
+L8E41:  LDA GenPtr2BUB          ;Has all the data been loaded into the PPU?
 L8E43:  CMP #PPU_NT1_UB         ;If not, branch to load some more.
 L8E45:  BNE -                   ;
 
@@ -611,17 +611,17 @@ L8E4F:  CPY #$40                ;
 L8E51:  BNE -                   ;
 
 L8E53:  LDA #>BlocksBuffer      ;
-L8E55:  STA GenPtr2AUB          ;Set pointer to the source of PPU data.
+L8E55:  STA GenPtr29UB          ;Set pointer to the source of PPU data.
 L8E57:  LDA #<BlocksBuffer      ;
 L8E59:  STA GenPtr29LB          ;
 
 L8E5B:  LDA #PPU_AT0_UB         ;
-L8E5D:  STA GenPtr2CUB          ;Set pointer to attribute table 0 PPU destination.
+L8E5D:  STA GenPtr2BUB          ;Set pointer to attribute table 0 PPU destination.
 L8E5F:  LDA #PPU_AT0_LB         ;
 L8E61:  STA GenPtr2BLB          ;
 
 L8E63:  LDA #$00                ;
-L8E65:  STA GenWord2EUB         ;Prepare to load 64 bytes of data into the PPU.
+L8E65:  STA GenWord2DUB         ;Prepare to load 64 bytes of data into the PPU.
 L8E67:  LDA #$40                ;
 L8E69:  STA GenWord2DLB         ;
 
@@ -1064,7 +1064,7 @@ L99E2:  STA PPUByteCntLB        ;
 L99E4:* JSR LoadPPU1            ;($C006)Load values into the PPU.
 
 L99E7:  INC PPUDstPtrUB         ;
-L99E9:  LDA PPUDstPtrUB         ;Keep loading blank data in the PPU -->
+L99E9:  LDA PPUDstPtrUB         ;Keep loading blank data in the PPU
 L99EB:  CMP #PPU_NT1_UB         ; until Name table zero is zeroed out.
 L99ED:  BNE -                   ;
 
@@ -1627,8 +1627,8 @@ LB004:  LDX #$00                ;Zero out the text buffer index.
 
 TextConvertLoop:
 LB006:  LDA TextBuffer,X        ;
-LB009:  TAY                     ;Get the 6-bit text code and use it as an index-->
-LB00A:  LDA TextConvTbl,Y       ;into the table below to find the correct tile-->
+LB009:  TAY                     ;Get the 6-bit text code and use it as an index
+LB00A:  LDA TextConvTbl,Y       ;into the table below to find the correct tile
 LB00D:  STA TextBuffer,X        ;index for that particular character.
 LB010:  INX                     ;
 
@@ -1684,7 +1684,7 @@ LB053:  RTS                     ;
 LB054:* LDY #$00                ;Zero out index.
 
 TxtShiftLeft:
-LB056:* LDA TextBuffer+1,Y      ;Left shift the text buffer by one byte. This -->
+LB056:* LDA TextBuffer+1,Y      ;Left shift the text buffer by one byte. This
 LB059:  STA TextBuffer,Y        ;gets rid of the one message control byte.
 LB05C:  INY                     ;
 LB05D:  CMP #$3F                ;Have we reached the end of the buffer contents?
@@ -1713,7 +1713,7 @@ LB07A:  STA TextBuffer+3,X      ;
 
 LB07D:  LDA TextBuffer+1,X      ;
 LB080:  ASL TextBuffer+2,X      ;
-LB083:  ROL                     ;Combine 2nd byte 4 LSBs and 3rd byte -->
+LB083:  ROL                     ;Combine 2nd byte 4 LSBs and 3rd byte
 LB084:  ASL TextBuffer+2,X      ;2 MSBs to form 3rd uncompressed byte.
 LB087:  ROL                     ;
 LB088:  AND #$3F                ;
@@ -1723,7 +1723,7 @@ LB08D:  LDA TextBuffer,X        ;
 LB090:  ASL TextBuffer+1,X      ;
 LB093:  ROL                     ;
 LB094:  ASL TextBuffer+1,X      ;
-LB097:  ROL                     ;Combine 1st byte 2 LSBs and 2nd byte -->
+LB097:  ROL                     ;Combine 1st byte 2 LSBs and 2nd byte
 LB098:  ASL TextBuffer+1,X      ;4 MSBs to form 2nd uncompressed byte.
 LB09B:  ROL                     ;
 LB09C:  ASL TextBuffer+1,X      ;
@@ -1960,7 +1960,7 @@ LB859:  LDA TXTSrcPtrUB         ;
 LB85B:  ADC #$00                ;
 LB85D:  STA TXTSrcPtrUB         ;
 
-LB85F:  LDA TXTYPos             ;Is Y=31? This represents the end of the text-->
+LB85F:  LDA TXTYPos             ;Is Y=31? This represents the end of the text
 LB861:  CMP #$1E                ;string for the current display.
 LB863:  BCS GotTextStrings      ;If so, branch to start fading in.
 
@@ -2105,13 +2105,13 @@ LB92B:  LDA IntroBkPalPtrTbl,X  ;
 LB92E:  STA GenPtr29LB          ;
 LB930:  INX                     ;Get pointer to background palette data.
 LB931:  LDA IntroBkPalPtrTbl,X  ;
-LB934:  STA GenPtr2AUB          ;
+LB934:  STA GenPtr29UB          ;
 LB936:  INX                     ;
 
 LB937:  LDA #<IntroSprPalData   ;
 LB939:  STA GenPtr2DLB          ;Get pointer to sprite palette data.
 LB93B:  LDA #>IntroSprPalData   ;
-LB93D:  STA GenPtr2EUB          ;
+LB93D:  STA GenPtr2DUB          ;
 
 LB93F:  TXA                     ;Save X on the stack.
 LB940:  PHA                     ;
@@ -2284,24 +2284,24 @@ LBA21:  INY                     ;Zero out the GFX blocks buffer.
 LBA22:  BNE -                   ;
 
 LBA24:  LDA #>BlocksBuffer      ;
-LBA26:  STA GenPtr2AUB          ;Set pointer to the source of PPU data.
+LBA26:  STA GenPtr29UB          ;Set pointer to the source of PPU data.
 LBA28:  LDA #<BlocksBuffer      ;
 LBA2A:  STA GenPtr29LB          ;
 
 LBA2C:  LDA #PPU_NT0_UB         ;
-LBA2E:  STA GenPtr2CUB          ;Set pointer to name table 0 PPU destination.
+LBA2E:  STA GenPtr2BUB          ;Set pointer to name table 0 PPU destination.
 LBA30:  LDA #PPU_NT0_LB         ;
 LBA32:  STA GenPtr2BLB          ;
 
 LBA34:  LDA #$01                ;
-LBA36:  STA GenWord2EUB         ;Prepare to load 256 bytes of data into the PPU.
+LBA36:  STA GenWord2DUB         ;Prepare to load 256 bytes of data into the PPU.
 LBA38:  LDA #$00                ;
 LBA3A:  STA GenWord2DLB         ;
 
 LBA3C:* JSR LoadPPU1            ;($C006)Load values into the PPU.
 
-LBA3F:  INC GenPtr2CUB          ;
-LBA41:  LDA GenPtr2CUB          ;Has all the data been loaded into the PPU?
+LBA3F:  INC GenPtr2BUB          ;
+LBA41:  LDA GenPtr2BUB          ;Has all the data been loaded into the PPU?
 LBA43:  CMP #PPU_NT1_UB         ;If not, branch to load some more.
 LBA45:  BNE -                   ;
 
@@ -2314,17 +2314,17 @@ LBA4F:  CPY #$40                ;
 LBA51:  BNE -                   ;
 
 LBA53:  LDA #>BlocksBuffer      ;
-LBA55:  STA GenPtr2AUB          ;Set pointer to the source of PPU data.
+LBA55:  STA GenPtr29UB          ;Set pointer to the source of PPU data.
 LBA57:  LDA #<BlocksBuffer      ;
 LBA59:  STA GenPtr29LB          ;
 
 LBA5B:  LDA #PPU_AT0_UB         ;
-LBA5D:  STA GenPtr2CUB          ;Set pointer to attribute table 0 PPU destination.
+LBA5D:  STA GenPtr2BUB          ;Set pointer to attribute table 0 PPU destination.
 LBA5F:  LDA #PPU_AT0_LB         ;
 LBA61:  STA GenPtr2BLB          ;
 
 LBA63:  LDA #$00                ;
-LBA65:  STA GenWord2EUB         ;Prepare to load 64 bytes of data into the PPU.
+LBA65:  STA GenWord2DUB         ;Prepare to load 64 bytes of data into the PPU.
 LBA67:  LDA #$40                ;
 LBA69:  STA GenWord2DLB         ;
 
@@ -2542,8 +2542,8 @@ LBFA0:  LDA #$00                ;Disable NMI.
 LBFA2:  STA PPUControl0         ;
 
 LBFA5:  LDX #$02                ;
-LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.-->
-LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles-->
+LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.
+LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles
 LBFAC:  DEX                     ;after reset or power cycle.
 LBFAD:  BNE -                   ;
 

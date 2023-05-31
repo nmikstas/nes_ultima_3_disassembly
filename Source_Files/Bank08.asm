@@ -245,7 +245,7 @@ GetAttackData:
 L8217:  LDA AttackDatPtrLB,X    ;
 L821A:  STA GenPtrF0LB          ;Load the pointer to the attack data.
 L821C:  LDA AttackDatPtrUB,X    ;
-L821F:  STA GenPtrF1UB          ;
+L821F:  STA GenPtrF0UB          ;
 
 L8221:  LDA ChnNoteLength,X     ;Get remaining time to play attack phase of note.
 L8224:  SBC GenByteF4           ;
@@ -264,7 +264,7 @@ L8237:  BCC GetReleaseData      ;If so, branch.
 L8239:  LDA SustainDatPtrLB,X   ;
 L823C:  STA GenPtrF0LB          ;Load the pointer to the sustain data.
 L823E:  LDA SustainDatPtrUB,X   ;
-L8241:  STA GenPtrF1UB          ;
+L8241:  STA GenPtrF0UB          ;
 
 L8243:  LDA ChnSustainTime,X    ;Get remaining time to play sustain phase of note.
 L8246:  SBC GenByteF4           ;
@@ -280,7 +280,7 @@ GetReleaseData:
 L8256:  LDA ReleaseDatPtrLB,X   ;
 L8259:  STA GenPtrF0LB          ;Load the pointer to the release data.
 L825B:  LDA ReleaseDatPtrUB,X   ;
-L825E:  STA GenPtrF1UB          ;
+L825E:  STA GenPtrF0UB          ;
 
 L8260:  SEC                     ;
 L8261:  LDA ChnReleaseTime,X    ;Get remaining time to play release phase of note.
@@ -409,11 +409,11 @@ L8314:  LDA ChnDatPtrLB,X       ;
 L8316:  PHA                     ;
 L8317:  CLC                     ;
 L8318:  ADC #$02                ;
-L831A:  BCC +                   ;This function jumps the data pointer to a new location.-->
-L831C:  INC ChnDatPtrUB,X       ;The control byte if $FF followed by $00. The next 2-->
-L831E:* STA ChnDatPtrLB,X       ;Bytes are the amount of bytes to jump the pointer. Those-->
-L8320:  PLA                     ;bytes are typically going to be in 2's compliment as the-->
-L8321:  CLC                     ;pointer will most likely jump backwards. The point of-->
+L831A:  BCC +                   ;This function jumps the data pointer to a new location.
+L831C:  INC ChnDatPtrUB,X       ;The control byte if $FF followed by $00. The next 2
+L831E:* STA ChnDatPtrLB,X       ;Bytes are the amount of bytes to jump the pointer. Those
+L8320:  PLA                     ;bytes are typically going to be in 2's compliment as the
+L8321:  CLC                     ;pointer will most likely jump backwards. The point of
 L8322:  ADC (ChnDatPtr,X)       ;reference for the jump is the address of the $FF byte.
 L8324:  INC ChnDatPtrLB,X       ;
 L8326:  BNE +                   ;For example, the following data bytes:
@@ -442,7 +442,7 @@ L8343:  STA AttackDatPtrLB,X    ;
 L8346:  STA GenPtrF4LB          ;Update the attack data pointer for the channel.
 L8348:  LDA AttackPtrTbl+1,Y    ;
 L834B:  STA AttackDatPtrUB,X    ;
-L834E:  STA GenPtrF5UB          ;
+L834E:  STA GenPtrF4UB          ;
 
 L8350:  STY GenByteF8           ;Temporarily save the value of Y.
 
@@ -457,7 +457,7 @@ L835E:  STA SustainDatPtrLB,X   ;
 L8361:  STA GenPtrF4LB          ;Update the sustain data pointer for the channel.
 L8363:  LDA SustainPtrTbl+1,Y   ;
 L8366:  STA SustainDatPtrUB,X   ;
-L8369:  STA GenPtrF5UB          ;
+L8369:  STA GenPtrF4UB          ;
 
 L836B:  STY GenByteF8           ;Temporarily save the value of Y.
 
@@ -472,7 +472,7 @@ L8379:  STA ReleaseDatPtrLB,X   ;
 L837C:  STA GenPtrF4LB          ;Update the release data pointer for the channel.
 L837E:  LDA ReleasePtrTbl+1,Y   ;
 L8381:  STA ReleaseDatPtrUB,X   ;
-L8384:  STA GenPtrF5UB          ;
+L8384:  STA GenPtrF4UB          ;
 
 L8386:  LDY #$00                ;
 L8388:  LDA (GenPtrF4),Y        ;Save the length of the release data string.
@@ -604,9 +604,9 @@ L844F:  CPX #TRI_DAT_OFFSET     ;Are we getting triangle music data?
 L8451:  BNE GetMusData          ;If not, branch.
 
 L8453:  PHA                     ;
-L8454:  LDA TriCompensate       ;Should triangle notes be on the same octive as the SQ notes?-->
-L8457:  CMP #TRI_CHN_COMP       ;If so, look 12 entries ahead in the notes table as the-->
-L8459:  PLA                     ;triangle notes play at half frequency as the SQ notes by-->
+L8454:  LDA TriCompensate       ;Should triangle notes be on the same octive as the SQ notes?
+L8457:  CMP #TRI_CHN_COMP       ;If so, look 12 entries ahead in the notes table as the
+L8459:  PLA                     ;triangle notes play at half frequency as the SQ notes by
 L845A:  BCS GetMusData          ;default. This is 1 octive lower. 
 L845C:  ADC #$0C                ;
 
@@ -615,7 +615,7 @@ L845E:  TAY                     ;
 L845F:  LDA NoteTblLo,Y         ;
 L8462:  STA DivLBF4             ;
 L8464:  LDA NoteTblHi,Y         ;
-L8467:  LSR                     ;Get the upper 8 bits of the note frequency-->
+L8467:  LSR                     ;Get the upper 8 bits of the note frequency
 L8468:  ROR DivLBF4             ;and but it into $F4.
 L846A:  LSR                     ;
 L846B:  ROR DivLBF4             ;
@@ -668,15 +668,15 @@ L8492:  LDY GenByteFD           ;
 L8494:  STA ChnVibBase,Y        ;Spots 0 and 4 in the vibrato lookup table are the base frequency.
 L8497:  STA ChnVibBase+4,Y      ;
 
-L849A:  CLC                     ;Add the delta frequency to base frequency.-->
+L849A:  CLC                     ;Add the delta frequency to base frequency.
 L849B:  ADC ChnVibratoDF,X      ;Creates higher frequency.
 L849E:  BCC +                   ;
 L84A0:  LDA #$FF                ;Make sure value does not wrap around.
 
-L84A2:* STA ChnVibBase+1,Y      ;Higher frequency stored in spots 1 and 3-->
+L84A2:* STA ChnVibBase+1,Y      ;Higher frequency stored in spots 1 and 3
 L84A5:  STA ChnVibBase+3,Y      ;of the vibrato lookup table.
 
-L84A8:  CLC                     ;Add the delta frequency to previous frequency.-->
+L84A8:  CLC                     ;Add the delta frequency to previous frequency.
 L84A9:  ADC ChnVibratoDF,X      ;Creates peak frequency.
 L84AC:  BCC +                   ;
 L84AE:  LDA #$FF                ;Make sure value does not wrap around.
@@ -684,15 +684,15 @@ L84AE:  LDA #$FF                ;Make sure value does not wrap around.
 L84B0:* STA ChnVibBase+2,Y      ;Peak frequency stored in position 2 of vibrato lookup table.
 
 L84B3:  SEC                     ;
-L84B4:  LDA ChnVibBase,Y        ;Subtract the delta frequency from base frequency.-->
+L84B4:  LDA ChnVibBase,Y        ;Subtract the delta frequency from base frequency.
 L84B7:  SBC ChnVibratoDF,X      ;Creates lower frequency.
 L84BA:  BCS +                   ;
 L84BC:  LDA #$FF                ;If wraps, set to max freq. Is this a bug? Should be 0?
 
-L84BE:* STA ChnVibBase+5,Y      ;Lower frequency stored in spots 5 and 7-->
+L84BE:* STA ChnVibBase+5,Y      ;Lower frequency stored in spots 5 and 7
 L84C1:  STA ChnVibBase+7,Y      ;of the vibrato lookup table.
 
-L84C4:  SEC                     ;Subtract the delta frequency from previous frequency.-->
+L84C4:  SEC                     ;Subtract the delta frequency from previous frequency.
 L84C5:  SBC ChnVibratoDF,X      ;Creates minimum frequency.
 L84C8:  BCS +
 L84CA:  LDA #$FF                ;If wraps, set to max freq. Is this a bug? Should be 0?
@@ -815,7 +815,7 @@ L8588:  BCC +                   ;
 L858A:  SBC DivisorF8           ;
 L858C:* ROL DivLBF4             ;
 L858E:  ROL DivUBF5             ;
-L8590:  ROL                     ;This is a division algorithm. It divides the word in $F5,$F4-->
+L8590:  ROL                     ;This is a division algorithm. It divides the word in $F5,$F4
 L8591:  CMP DivisorF8           ;by $F8. The integer word result is placed back into $F5,$F4.
 L8593:  BCC +                   ;
 L8595:  SBC DivisorF8           ;
@@ -7409,8 +7409,8 @@ LBFA0:  LDA #$00                ;Disable NMI.
 LBFA2:  STA PPUControl0         ;
 
 LBFA5:  LDX #$02                ;
-LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.-->
-LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles-->
+LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.
+LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles
 LBFAC:  DEX                     ;after reset or power cycle.
 LBFAD:  BNE -                   ;
 

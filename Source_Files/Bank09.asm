@@ -245,7 +245,7 @@ GetAttackData:
 L8217:  LDA AttackDatPtrLB,X    ;
 L821A:  STA GenPtrF0LB          ;Load the pointer to the attack data.
 L821C:  LDA AttackDatPtrUB,X    ;
-L821F:  STA GenPtrF1UB          ;
+L821F:  STA GenPtrF0UB          ;
 
 L8221:  LDA ChnNoteLength,X     ;Get remaining time to play attack phase of note.
 L8224:  SBC GenByteF4           ;
@@ -264,7 +264,7 @@ L8237:  BCC GetReleaseData      ;If so, branch.
 L8239:  LDA SustainDatPtrLB,X   ;
 L823C:  STA GenPtrF0LB          ;Load the pointer to the sustain data.
 L823E:  LDA SustainDatPtrUB,X   ;
-L8241:  STA GenPtrF1UB          ;
+L8241:  STA GenPtrF0UB          ;
 
 L8243:  LDA ChnSustainTime,X    ;Get remaining time to play sustain phase of note.
 L8246:  SBC GenByteF4           ;
@@ -280,7 +280,7 @@ GetReleaseData:
 L8256:  LDA ReleaseDatPtrLB,X   ;
 L8259:  STA GenPtrF0LB          ;Load the pointer to the release data.
 L825B:  LDA ReleaseDatPtrUB,X   ;
-L825E:  STA GenPtrF1UB          ;
+L825E:  STA GenPtrF0UB          ;
 
 L8260:  SEC                     ;
 L8261:  LDA ChnReleaseTime,X    ;Get remaining time to play release phase of note.
@@ -396,11 +396,11 @@ L8314:  LDA ChnDatPtrLB,X       ;
 L8316:  PHA                     ;
 L8317:  CLC                     ;
 L8318:  ADC #$02                ;
-L831A:  BCC +                   ;This function jumps the data pointer to a new location.-->
-L831C:  INC ChnDatPtrUB,X       ;The control byte if $FF followed by $00. The next 2-->
-L831E:* STA ChnDatPtrLB,X       ;Bytes are the amount of bytes to jump the pointer. Those-->
-L8320:  PLA                     ;bytes are typically going to be in 2's compliment as the-->
-L8321:  CLC                     ;pointer will most likely jump backwards. The point of-->
+L831A:  BCC +                   ;This function jumps the data pointer to a new location.
+L831C:  INC ChnDatPtrUB,X       ;The control byte if $FF followed by $00. The next 2
+L831E:* STA ChnDatPtrLB,X       ;Bytes are the amount of bytes to jump the pointer. Those
+L8320:  PLA                     ;bytes are typically going to be in 2's compliment as the
+L8321:  CLC                     ;pointer will most likely jump backwards. The point of
 L8322:  ADC (ChnDatPtr,X)       ;reference for the jump is the address of the $FF byte.
 L8324:  INC ChnDatPtrLB,X       ;
 L8326:  BNE +                   ;For example, the following data bytes:
@@ -431,7 +431,7 @@ L8346:  STA AttackDatPtrLB,X    ;
 L8349:  STA GenPtrF4LB          ;Update the attack data pointer for the channel.
 L834B:  LDA AttackPtrTbl+1,Y    ;
 L834E:  STA AttackDatPtrUB,X    ;
-L8351:  STA GenPtrF5UB          ;
+L8351:  STA GenPtrF4UB          ;
 
 L8353:  STY $F8
 L8355:  LDY #$00
@@ -697,7 +697,7 @@ L858B:  BCC +                   ;
 L858D:  SBC DivisorF8           ;
 L858F:* ROL DivLBF4             ;
 L8591:  ROL DivUBF5             ;
-L8593:  ROL                     ;This is a division algorithm. It divides the word in $F5,$F4-->
+L8593:  ROL                     ;This is a division algorithm. It divides the word in $F5,$F4
 L8594:  CMP DivisorF8           ;by $F8. The integer word result is placed back into $F5,$F4.
 L8596:  BCC +                   ;
 L8598:  SBC DivisorF8           ;
@@ -1272,7 +1272,7 @@ LA023:  INY
 LA024:  LDA SFXPtrLB,X
 LA027:  STA GenPtrF0LB
 LA029:  LDA SFXPtrUB,X
-LA02C:  STA GenPtrF1UB
+LA02C:  STA GenPtrF0UB
 
 LA02E:  LDY #$00
 LA030:  LDA (GenPtrF0),Y
@@ -1320,7 +1320,7 @@ LA110:  LDY SFXIndex,X
 LA113:  LDA SFXPtrLB,X
 LA116:  STA GenPtrF0LB
 LA118:  LDA SFXPtrUB,X
-LA11B:  STA GenPtrF1UB
+LA11B:  STA GenPtrF0UB
 
 LA11D:  LDA (GenPtrF0),Y
 LA11F:  STA ChnCntrl0,X
@@ -1335,7 +1335,7 @@ LA12C:  LDY SFXIndex,X
 LA12F:  LDA SFXPtrLB,X
 LA132:  STA GenPtrF0LB
 LA134:  LDA SFXPtrUB,X
-LA137:  STA GenPtrF1UB
+LA137:  STA GenPtrF0UB
 LA139:  LDA (GenPtrF0),Y
 LA13B:  STA ChnCntrl0,X
 LA13E:  INY
@@ -1997,8 +1997,8 @@ LBFA0:  LDA #$00                ;Disable NMI.
 LBFA2:  STA PPUControl0         ;
 
 LBFA5:  LDX #$02                ;
-LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.-->
-LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles-->
+LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.
+LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles
 LBFAC:  DEX                     ;after reset or power cycle.
 LBFAD:  BNE -                   ;
 

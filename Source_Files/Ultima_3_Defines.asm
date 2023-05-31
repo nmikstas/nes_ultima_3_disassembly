@@ -1,34 +1,41 @@
 ;-------------------------------------[General Purpose Variables]------------------------------------
 
-.alias GenPtr29         $29     ;General use pointer.
-.alias GenPtr29LB       $29     ;General use pointer, lower byte.
-.alias GenPtr2AUB       $2A     ;General use pointer, upper byte.
+.alias GenByte26        $26     ;General use byte.
+.alias GenByte27        $27     ;General use byte.
+
 .alias GenByte29        $29     ;General use byte.
 .alias GenByte2A        $2A     ;General use byte.
+.alias GenPtr29         $29     ;General use pointer.
+.alias GenPtr29LB       $29     ;General use pointer, lower byte.
+.alias GenPtr29UB       $2A     ;General use pointer, upper byte.
 
+.alias GenByte2B        $2B     ;General use byte.
+.alias GenByte2C        $2C     ;General use byte.
 .alias GenPtr2B         $2B     ;General use pointer.
 .alias GenPtr2BLB       $2B     ;General use pointer, lower byte.
-.alias GenPtr2CUB       $2C     ;General use pointer, upper byte.
+.alias GenPtr2BUB       $2C     ;General use pointer, upper byte.
 
-.alias GenPtr2D         $2D     ;General use pointer.
-.alias GenPtr2DLB       $2D     ;General use pointer, lower byte.
-.alias GenPtr2EUB       $2E     ;General use pointer, upper byte.
 .alias GenByte2D        $2D     ;General use byte.
 .alias GenByte2E        $2E     ;General use byte.
 .alias GenWord2DLB      $2D     ;General use word, lower byte.
-.alias GenWord2EUB      $2E     ;General use word, upper byte.
+.alias GenWord2DUB      $2E     ;General use word, upper byte.
+.alias GenPtr2D         $2D     ;General use pointer.
+.alias GenPtr2DLB       $2D     ;General use pointer, lower byte.
+.alias GenPtr2DUB       $2E     ;General use pointer, upper byte.
+
+.alias GenByte2F        $2F     ;General use byte.
 
 .alias GenByte4E        $4E     ;General use byte.
 
 .alias GenPtrF0         $F0     ;General use pointer.
 .alias GenPtrF0LB       $F0     ;General use pointer, lower byte.
-.alias GenPtrF1UB       $F1     ;General use pointer, upper byte.
+.alias GenPtrF0UB       $F1     ;General use pointer, upper byte.
 
 .alias GenByteF4        $F4     ;General use byte.
 .alias GenByteF5        $F5     ;General use byte.
 .alias GenPtrF4         $F4     ;General use pointer.
 .alias GenPtrF4LB       $F4     ;General use pointer, lower byte.
-.alias GenPtrF5UB       $F5     ;General use pointer, upper byte.
+.alias GenPtrF4UB       $F5     ;General use pointer, upper byte.
 
 .alias GenByteF8        $F8     ;General use byte.
 
@@ -168,6 +175,10 @@
 
 .alias InitNewMusic     $C1     ;MSB start new music, lower nibble is music to be started.
 
+.alias SGDatPtr         $C5     ;Save game data pointer.
+.alias SGDatPtrLB       $C5     ;Save game data pointer, lower byte.
+.alias SGDatPtrUB       $C6     ;Save game data pointer, upper byte.
+
 .alias LastDirMoved     $CB     ;Last direction player moved. $00=none, $01=r, $02=l, $04=d, $08=u.
 .alias LastTalkedNPC0   $CC     ;Last NPC player talked to. Keeps track of one time messages.
 .alias LastTalkedNPC1   $CD     ;Second to last NPC player talked to.
@@ -243,8 +254,22 @@
 
 .alias ScreenBlocks     $0700   ;Through $07FF. The blocks currently on the screen.
 
+;---------- Save Game 1 Data ----------
+.alias SG1Base          $6000   ;Base address of save game 1 data.
+.alias SG1Valid1        $6000   ;Should always be $41 if save game 1 is valid.
+.alias SG1Valid2        $6001   ;Should always be $42 if save game 1 is valid.
 .alias SG1Name          $6002   ;Through $6006. Save game 1 name.
+
+;---------- Save Game 2 Data ----------
+.alias SG2Base          $6600   ;Base address of save game 2 data.
+.alias SG2Valid1        $6600   ;Should always be $41 if save game 2 is valid.
+.alias SG2Valid2        $6601   ;Should always be $42 if save game 2 is valid.
 .alias SG2Name          $6602   ;Through $6606. Save game 2 name.
+
+;---------- Save Game 3 Data ----------
+.alias SG3Base          $6C00   ;Base address of save game 3 data.
+.alias SG3Valid1        $6C00   ;Should always be $41 if save game 3 is valid.
+.alias SG3Valid2        $6C01   ;Should always be $42 if save game 3 is valid.
 .alias SG3Name          $6C02   ;Through $C006. Save game 3 name.
 
 .alias SpriteBufferBase $7300   ;Base address of sprite buffer.

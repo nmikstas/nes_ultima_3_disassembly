@@ -7,6 +7,7 @@
 ;Forward declarations.
 
 .alias  InitMusic               $8000
+.alias  DoCreateMenus           $8000
 .alias  UpdateMusic             $8100
 .alias  UpdateSpriteRAM         $9900
 .alias  InitSFX                 $A000
@@ -86,7 +87,7 @@ LC08A:  DEY                     ;
 LC08B:  BNE -                   ;
 
 LC08D:  LDA #$02                ;
-LC08F:  STA GenPtr2AUB          ;
+LC08F:  STA GenPtr29UB          ;
 LC091:  LDA #$00                ;Prepare to clear RAM $0200 through $07FF.
 LC093:  STA GenPtr29LB          ;
 LC095:  LDX #$06                ;
@@ -97,7 +98,7 @@ LC099:* STA (GenPtr29),Y        ;Has 256 bytes of RAM been zeroed out?
 LC09B:  INY                     ;If not, branch to clear the next byte.
 LC09C:  BNE -                   ;
 
-LC09E:  INC GenPtr2AUB          ;Has the RAM up to $07FF been cleared out?
+LC09E:  INC GenPtr29UB          ;Has the RAM up to $07FF been cleared out?
 LC0A0:  DEX                     ;If not, branch to clear another 256 bytes.
 LC0A1:  BNE RAMClearLoop        ;
 
@@ -155,12 +156,13 @@ LC0F9:  JSR LEF65
 LC0FC:  LDA #BANK_CREATE        ;Prepare to show save game selection screen.
 LC0FE:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 
-LC101:  LDA #ANIM_ENABLE
-LC103:  STA DoAnimations
-LC105:  JSR $8000
+LC101:  LDA #ANIM_ENABLE        ;Enable sprite animations.
+LC103:  STA DoAnimations        ;
 
-LC108:  LDA #ANIM_DISABLE
-LC10A:  STA DoAnimations
+LC105:  JSR DoCreateMenus       ;($8000)Run the load saveed game and other pre-game menus.
+
+LC108:  LDA #ANIM_DISABLE       ;Disable sprite animations.
+LC10A:  STA DoAnimations        ;
 
 LC10C:  LDA $6F
 LC10E:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -6243,7 +6245,7 @@ LF10C:  STA TextCharPtrUB
 
 LF10E:  JSR PrepUncompress      ;($FDB4)Prepare to uncompress a string of text.
 LF111:  BCC +                   ;Was this a one time text that needs to show the alternate text?
-LF113:  INC TextIndex           ;If so, increment the text index and get -->
+LF113:  INC TextIndex           ;If so, increment the text index and get
 LF115:  LDA TextIndex           ;the next text string instead.
 LF117:  JMP ShowTextString      ;($F0F0)Get a text string to show on the screen.
 
@@ -8080,8 +8082,8 @@ LFFA0:  LDA #$00                ;Disable NMI.
 LFFA2:  STA PPUControl0         ;
 
 LFFA5:  LDX #$02                ;
-LFFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.-->
-LFFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles-->
+LFFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.
+LFFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles
 LFFAC:  DEX                     ;after reset or power cycle.
 LFFAD:  BNE -                   ;
 

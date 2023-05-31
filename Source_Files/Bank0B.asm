@@ -243,7 +243,7 @@ L81B6:  RTS
 L81B7:  LDA #$F0
 L81B9:  STA $7300
 L81BC:  LDA #$C4
-L81BE:  STA $AF
+L81BE:  STA HideUprSprites
 L81C0:  JSR L90B7
 L81C3:  RTS
 L81C4:  RTS
@@ -646,7 +646,7 @@ L8626:  PLA
 L8627:  TAY
 L8628:  RTS
 L8629:  LDA #$D4
-L862B:  STA $AF
+L862B:  STA HideUprSprites
 L862D:  JSR L90B7
 L8630:  LDA $03
 L8632:  AND #$FE
@@ -1563,9 +1563,9 @@ L90B0:  BEQ L90B6
 L90B2:  LDA #$01
 L90B4:  STA $0E
 L90B6:  RTS
-L90B7:  LDX $AF
+L90B7:  LDX HideUprSprites
 L90B9:  LDA #$F0
-L90BB:  STA $7300,X
+L90BB:  STA SpriteBuffer,X
 L90BE:  INX
 L90BF:  INX
 L90C0:  INX
@@ -1857,7 +1857,7 @@ L946F:  INX
 L9470:  DEY
 L9471:  BNE L9469
 L9473:  RTS
-L9474:  LDA $AF
+L9474:  LDA HideUprSprites
 L9476:  STA $C8
 L9478:  LDA #$80
 L947A:  STA $C7
@@ -2299,7 +2299,7 @@ L9B6B:  AND #$F0                ;
 L9B6D:  ORA GenByte4E           ;Use upper nibble. 16 blocks rows.
 L9B6F:  TAY                     ;
 
-L9B70:  LDA ScreenBlocks,Y      ;Is there a mask in place in this -->
+L9B70:  LDA ScreenBlocks,Y      ;Is there a mask in place in this
 L9B73:  AND #$E0                ;screen position to hide the sprite?
 L9B75:  BEQ +                   ;If not, branch.
 
@@ -2326,7 +2326,7 @@ L9B9B:  CPX #$C4                ;Have the first 49 sprites been loaded?
 L9B9D:  BNE L9B5F               ;If not, loop to do another.
 
 L9B9F:* LDA SpriteBuffer,X      ;
-L9BA2:  STA SpriteRAM,X         ;The last remaining sprites cannot be hidden so-->
+L9BA2:  STA SpriteRAM,X         ;The last remaining sprites cannot be hidden so
 L9BA5:  INX                     ;they can just be transferred to sprite RAM.
 L9BA6:  BNE -                   ;
 L9BA8:  RTS                     ;
@@ -3692,7 +3692,7 @@ LAA3C:  JSR $C003
 LAA3F:  LDA #$00
 LAA41:  STA $EF
 LAA43:  BCC LAA6E
-LAA45:  LDA $AF
+LAA45:  LDA HideUprSprites
 LAA47:  STA $C8
 LAA49:  LDA #$00
 LAA4B:  STA $C7
@@ -4989,7 +4989,7 @@ LB6DD:  JSR LB9CA
 LB6E0:  RTS
 LB6E1:  PHA
 LB6E2:  LDA #$D4
-LB6E4:  STA $AF
+LB6E4:  STA HideUprSprites
 LB6E6:  PLA
 LB6E7:  STA $30
 LB6E9:  LDA #$15
@@ -5892,8 +5892,8 @@ LBFA0:  LDA #$00                ;Disable NMI.
 LBFA2:  STA PPUControl0         ;
 
 LBFA5:  LDX #$02                ;
-LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.-->
-LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles-->
+LBFA7:* LDA PPUStatus           ;Wait for at least one full screen to be drawn before continuing.
+LBFAA:  BPL -                   ;Writes to PPUControl register are ignored for 30,000 clock cycles
 LBFAC:  DEX                     ;after reset or power cycle.
 LBFAD:  BNE -                   ;
 
