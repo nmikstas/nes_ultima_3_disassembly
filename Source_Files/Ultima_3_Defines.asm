@@ -139,7 +139,7 @@
 
 .alias ChrPtrBaseLB     $91     ;Base address for character pointer data, lower byte.
 .alias ChrPtrBaseUB     $92     ;Base address for character pointer data, upper byte.
-.alias Pos1ChrPtr       $91     ;And $92. Position 1 character data pointer.
+.alias Pos1ChrPtr       $91     ;Position 1 character data pointer.
 .alias Pos1ChrPtrLB     $91     ;Position 1 character data pointer, lower byte.
 .alias Pos1ChrPtrUB     $92     ;Position 1 character data pointer, upper byte.
 .alias Pos2ChrPtr       $93     ;And $94. Position 2 character data pointer.
@@ -171,6 +171,8 @@
 .alias CurPieceYVis     $B4     ;Current piece active on battefield. Upper nibble is their Y
                                 ;position on the battlefiled. 1=top row. LSB 0=invisible, 1=visible.
 
+.alias OnBoat           $B9     ;$01=On boat, $00=Not on boat.
+
 .alias ConstPPUBufLen   $BC     ;Initial PPU buffer length. Does not change during processing.
 
 .alias InitNewMusic     $C1     ;MSB start new music, lower nibble is music to be started.
@@ -193,6 +195,8 @@
 
 .alias BribePray        $DA     ;LSB set=party can pray, 2nd bit set=party can bribe.
 .alias PrevMapProp      $DB     ;Properties of the previous map before a fight was started.
+
+.alias OnHorse          $DE     ;LSB set=Has horses, MSB set=Riding horses.
 
 .alias ExodusDead       $E0     ;$01=Exodus dead, $02=Game won, $FF=Time expired, everyone dies.
 
@@ -225,7 +229,7 @@
 ;   | | | |             +-------String 1 payload.
 ;   | | | |             |
 ;   | | | | |-----------+-----------|
-;   X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X ... Up to 256 bytes.
+;   X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X ... Up to 128 bytes.
 ;                                     | | | |----------+----------|
 ;                                     | | |            |
 ;  String 2 length--------------------+ | |            |
@@ -237,6 +241,14 @@
 .alias PPUBufBase       $0300   ;Contains strings of data to write to the PPU.
 
 ;----------------------------------------------------------------------------------------------------
+
+.alias BoatXPos         $03D5   ;X position of player's boat on the overworld map.
+.alias BoatYPos         $03D6   ;Y position of player's boat on the overworld map.
+
+.alias Ch1Index         $03D9   ;Character 1 index into character pool.
+.alias Ch2Index         $03DA   ;Character 2 index into character pool.
+.alias Ch3Index         $03DB   ;Character 3 index into character pool.
+.alias Ch4Index         $03DC   ;Character 4 index into character pool.
 
 ;The following RAM is used to load the NPC sprites on the current map. There are 4 bytes per sprite.
 ;They do not Keep track of current direction, or movement on screen. They are used as a referecne to 
@@ -259,6 +271,10 @@
 .alias SG1Valid1        $6000   ;Should always be $41 if save game 1 is valid.
 .alias SG1Valid2        $6001   ;Should always be $42 if save game 1 is valid.
 .alias SG1Name          $6002   ;Through $6006. Save game 1 name.
+.alias SG1P1CharIdx     $6010   ;Index in character list of player's first character.
+.alias SG1P2CharIdx     $6011   ;Index in character list of player's second character.
+.alias SG1P3CharIdx     $6012   ;Index in character list of player's third character.
+.alias SG1P4CharIdx     $6013   ;Index in character list of player's fourth character.
 
 ;---------- Save Game 2 Data ----------
 .alias SG2Base          $6600   ;Base address of save game 2 data.
