@@ -99,7 +99,11 @@
 .alias WndHeight        $2D     ;Height of window to draw.
 .alias WndWidth         $2E     ;Width of window to draw.
 
-.alias TextIndex        $30     ;Index to text message. $FF=Buffer already filled.
+.alias TextIndex        $30     ;Index to text message. $FE, $FF=Buffer already filled.
+
+.alias MapDatPtr        $41     ;Map data pointer.
+.alias MapDatPtrLB      $41     ;Map data pointer, lower byte.
+.alias MapDatPtrUB      $42     ;Map data pointer, upper byte.
 
 .alias NPCSrcPtr        $45     ;Base address of NPC data for current map.
 .alias NPCSrcPtrLB      $45     ;Base address of NPC data for current map, lower byte.
@@ -113,6 +117,7 @@
 .alias PPUStringLen     $4D     ;Length of the current PPU sting to process.
 .alias WorkPPUBufLen    $4E     ;Working PPU buffer length. Changes when strings are processed.
 
+.alias MapBank          $6F     ;Contains the bank number the current map data can be found on.
 .alias ThisMap          $70     ;Current map.
 
 .alias EndCreditPtr     $75     ;Pointer to end credits data.
@@ -142,9 +147,15 @@
 .alias Pos1ChrPtr       $91     ;Position 1 character data pointer.
 .alias Pos1ChrPtrLB     $91     ;Position 1 character data pointer, lower byte.
 .alias Pos1ChrPtrUB     $92     ;Position 1 character data pointer, upper byte.
-.alias Pos2ChrPtr       $93     ;And $94. Position 2 character data pointer.
-.alias Pos3ChrPtr       $95     ;And $96. Position 3 character data pointer.
-.alias Pos4ChrPtr       $97     ;And $98. Position 4 character data pointer.
+.alias Pos2ChrPtr       $93     ;Position 2 character data pointer.
+.alias Pos2ChrPtrLB     $93     ;Position 2 character data pointer, lower byte.
+.alias Pos2ChrPtrUB     $94     ;Position 2 character data pointer, upper byte.
+.alias Pos3ChrPtr       $95     ;Position 3 character data pointer.
+.alias Pos3ChrPtrLB     $95     ;Position 3 character data pointer, lower byte.
+.alias Pos3ChrPtrUB     $96     ;Position 3 character data pointer, upper byte.
+.alias Pos4ChrPtr       $97     ;Position 4 character data pointer.
+.alias Pos4ChrPtrLB     $97     ;Position 4 character data pointer, lower byte.
+.alias Pos4ChrPtrUB     $98     ;Position 4 character data pointer, upper byte.
 .alias CrntChrPtr       $99     ;And $9A. Pointer to current character data to change.
 .alias CrntChrPtrLB     $99     ;And $9A. Pointer to current character data to change, lower byte.
 .alias CrntChrPtrUB     $9A     ;And $9A. Pointer to current character data to change, upper byte.
@@ -185,6 +196,10 @@
 .alias LastTalkedNPC0   $CC     ;Last NPC player talked to. Keeps track of one time messages.
 .alias LastTalkedNPC1   $CD     ;Second to last NPC player talked to.
 .alias TimeStopTimer    $CE     ;Time stops if > 0. Decrements every step.
+
+.alias _MapDatPtr       $CF     ;Map data pointer.
+.alias _MapDatPtrLB     $CF     ;Map data pointer, lower byte.
+.alias _MapDatPtrUB     $D0     ;Map data pointer, upper byte. 
 
 .alias FirstMoonPhase   $D3     ;Upper nibble: Phase of the left moon $0-$7.
                                 ;lower nibble: counter for current phase $0-$B.
@@ -298,6 +313,7 @@
 ;---------- Player 1 Data ----------
 ;This data repeats for the additional 3 other characters every 64 bytes.
 
+.alias Ch1Data          $7200   ;Base address of character 1's data.
 .alias ChName           $7200   ;Through $7204. Character name, pattern table indexes.
 .alias ChRace           $7205   ;Character race. Unlisted values are invalid:
                                 ;#$00=Human, #$01=Elf, #$02=Dwarf, #$03=Bobit, #$04=Fuzzy.
@@ -363,6 +379,11 @@
 .alias ChCards          $723C   ;Cards the character has aquired:
                                 ;%00000001=Death, %00000010=Sol, %00000100=Love, %00001000=Moons.
 .alias ChFlower         $723D   ;Non zero number indicates character has a flower.
+
+;---------- Player 2, 3 and 4 Data ----------
+.alias Ch2Data          $7240   ;Base address of character 2's data.
+.alias Ch3Data          $7280   ;Base address of character 3's data.
+.alias Ch4Data          $72C0   ;Base address of character 4's data.
 
 ;--------------------------------------[Sound Engine Variables]--------------------------------------
 
@@ -762,6 +783,9 @@
 .alias NSE_DAT_OFFSET   $0C     ;Offset for Noise data pointer registers. Base is ChnDatPtr.
 
 .alias NPC_DISABLE      $01     ;Disable animations on NPCs and water.
+
+.alias INP_NO_IGNORE    $00     ;Respond to player's input on the controller.
+.alias INP_IGNORE       $01     ;Ignore player's input on the controller.
 
 .alias SCREEN_OFF       $00     ;Turn the screen off.
 .alias SCREEN_ON        $1E     ;Turn the screen on.

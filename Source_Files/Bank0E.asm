@@ -524,6 +524,7 @@ L8DD9:  BCC UpdatePPUBufLen2    ;
 WaitForPPUUpdate2:
 L8DDB:  LDA #$01                ;Indicate the PPU has waiting data.
 L8DDD:  STA UpdatePPU           ;
+
 L8DDF:* LDA UpdatePPU           ;Has the PPU been updated with the new data?
 L8DE1:  BNE -                   ;If not, branch to wait.
 

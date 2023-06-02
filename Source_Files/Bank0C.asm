@@ -9,6 +9,8 @@
 .alias  Reset1                  $C000
 .alias  DisplayText1            $C003
 .alias  LoadPPU1                $C006
+.alias  MapDatTbl               $FEA0
+.alias  SubMapTbl               $FF70
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
 .alias  NMI                     $FFF0
@@ -62,13 +64,16 @@ L8036:  STA TimeStopTimer       ;
 
 L8038:  JSR DoLoadWindow        ;($837F)Show the load game/new game menu.
 
-L803B:  PHA
-L803C:  LDA #$00
-L803E:  STA TimeStopTimer
-L8040:  PLA
+L803B:  PHA                     ;Save A on the stack.
 
-L8041:  CMP #$03
-L8043:  BNE PrepCreateCont
+L803C:  LDA #$00                ;Disable the time stop timer.
+L803E:  STA TimeStopTimer       ;This allows the sprites to fully animate.
+
+L8040:  PLA                     ;Restore A from the stack.
+
+L8041:  CMP #$03                ;Was the register new game option selected?
+L8043:  BNE PrepCreateCont      ;If not branch to load a game.
+
 L8045:  JSR L8679
 L8048:  JSR LBE53
 L804B:  LDA #$01
@@ -166,7 +171,7 @@ L80FC:  CLC
 L80FD:  ADC Increment0
 L80FF:  CMP Increment0
 L8101:  BNE L80FF
-L8103:  JSR LBA41
+L8103:  JSR LoadSGData          ;($BA41)Load save game data into game RAM.
 L8106:  LDA #$00
 L8108:  STA $91
 L810A:  LDA #$72
@@ -291,22 +296,27 @@ L81EB:  ADC #$10
 L81ED:  TAX
 L81EE:  CPX #$40
 L81F0:  BNE L81AB
-L81F2:  LDA #$00
-L81F4:  STA $91
-L81F6:  LDA #$72
-L81F8:  STA $92
-L81FA:  LDA #$40
-L81FC:  STA $93
-L81FE:  LDA #$72
-L8200:  STA $94
-L8202:  LDA #$80
-L8204:  STA $95
-L8206:  LDA #$72
-L8208:  STA $96
-L820A:  LDA #$C0
-L820C:  STA $97
-L820E:  LDA #$72
-L8210:  STA $98
+
+L81F2:  LDA #<Ch1Data
+L81F4:  STA Pos1ChrPtrLB
+L81F6:  LDA #>Ch1Data
+L81F8:  STA Pos1ChrPtrUB
+
+L81FA:  LDA #<Ch2Data
+L81FC:  STA Pos2ChrPtrLB
+L81FE:  LDA #>Ch2Data
+L8200:  STA Pos2ChrPtrUB
+
+L8202:  LDA #<Ch3Data
+L8204:  STA Pos3ChrPtrLB
+L8206:  LDA #>Ch3Data
+L8208:  STA Pos3ChrPtrUB
+
+L820A:  LDA #<Ch4Data
+L820C:  STA Pos4ChrPtrLB
+L820E:  LDA #>Ch4Data
+L8210:  STA Pos4ChrPtrUB
+
 L8212:  JSR $C048
 L8215:  LDX #$00
 L8217:  LDA #$F0
@@ -1010,18 +1020,23 @@ L8677:  .byte $58, $78
 ;----------------------------------------------------------------------------------------------------
 
 L8679:  JSR InitPPU             ;($990C)Initialize the PPU.
-L867C:  LDA #$06
-L867E:  STA $2A
-L8680:  LDA #$06
-L8682:  STA $29
-L8684:  LDA #$17
-L8686:  STA $2E
-L8688:  LDA #$01
-L868A:  STA $2D
-L868C:  LDA #$02
-L868E:  STA TextIndex
+
+L867C:  LDA #$06                ;
+L867E:  STA TXTXPos             ;Text will be located at tile coords X,Y=6,6.
+L8680:  LDA #$06                ;
+L8682:  STA TXTYPos             ;
+
+L8684:  LDA #$17                ;
+L8686:  STA TXTClrCols          ;Clear 23 columns and 1 row for the text string.
+L8688:  LDA #$01                ;
+L868A:  STA TXTClrRows          ;
+
+L868C:  LDA #$02                ;REGISTER YOUR NAME.
+L868E:  STA TextIndex           ;
 L8690:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8693:  JSR L871D
+
 L8696:  LDY #$00
 L8698:  LDA #SG_VALID1
 L869A:  STA (SGDatPtr),Y
@@ -1095,6 +1110,9 @@ L8717:  STA $2A
 L8719:  DEX
 L871A:  BNE L8708
 L871C:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 L871D:  LDA #$08
 L871F:  STA $2A
 L8721:  LDA #$0C
@@ -1103,9 +1121,11 @@ L8725:  LDA #$14
 L8727:  STA $2E
 L8729:  LDA #$06
 L872B:  STA $2D
+
 L872D:  LDA #$03
 L872F:  STA TextIndex
 L8731:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8734:  LDA #$08
 L8736:  STA $2A
 L8738:  LDA #$0A
@@ -1114,13 +1134,16 @@ L873C:  LDA #$05
 L873E:  STA $2E
 L8740:  LDA #$01
 L8742:  STA $2D
+
 L8744:  LDA #$17
 L8746:  STA TextIndex
 L8748:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L874B:  LDX #$00
 L874D:  LDY #$00
 L874F:  LDA #$00
 L8751:  STA $17
+
 L8753:  JSR L8872
 L8756:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8759:  LDA Pad1Input
@@ -1212,6 +1235,8 @@ L884A:  .byte $02, $03, $04, $05, $06, $07, $08, $09, $00, $01, $02, $03, $04, $
 L885A:  .byte $08, $09, $0A, $0B, $0C, $0D, $0E, $0F, $10, $11, $14, $15, $16, $17, $18, $19
 L886A:  .byte $1A, $1B, $12, $13, $22, $24                                          
 
+;----------------------------------------------------------------------------------------------------
+
 L8872:  LDA $8897,X
 L8875:  AND #$0F
 L8877:  ASL
@@ -1220,12 +1245,12 @@ L8879:  ASL
 L887A:  ASL
 L887B:  CLC
 L887C:  ADC #$38
-L887E:  STA $7303
+L887E:  STA SpriteBuffer+3
 L8881:  LDA $8897,X
 L8884:  AND #$F0
 L8886:  CLC
 L8887:  ADC #$60
-L8889:  STA SpriteBufferBase
+L8889:  STA SpriteBuffer
 L888C:  LDA $8897,X
 L888F:  AND #$F0
 L8891:  LSR
@@ -1235,9 +1260,20 @@ L8894:  LSR
 L8895:  TAY
 L8896:  RTS
 
-L8897:  .byte $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $10, $11, $12, $13, $14, $15
-L88A7:  .byte $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $30, $31, $32, $33
-L88B7:  .byte $34, $35, $36, $37, $38, $39, $46, $48
+;----------------------------------------------------------------------------------------------------
+
+;The following data table represents the valid X and Y positions of the selector  sprite when
+;inputting the name of a new save game slot. The data is laid aout the way it appears on the
+;screen in the game.
+
+SelectorDatTbl:
+L8897:  .byte $00, $01, $02, $03, $04, $05, $06, $07, $08, $09
+L88A1:  .byte $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+L88AB:  .byte $20, $21, $22, $23, $24, $25, $26, $27
+L88B3:  .byte $30, $31, $32, $33, $34, $35, $36, $37, $38, $39
+L88BD:  .byte                               $46,      $48
+
+;----------------------------------------------------------------------------------------------------
 
 L88BF:  JSR L88C8
 L88C2:  PHA
@@ -1251,41 +1287,42 @@ L88C8:  JSR InitPPU             ;($990C)Initialize the PPU.
 L88CB:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
 
 L88CE:  LDA #$08
-L88D0:  STA $2A
+L88D0:  STA WndXPos
 L88D2:  LDA #$0E
-L88D4:  STA $29
+L88D4:  STA WndYPos
 
 L88D6:  LDA #$10
-L88D8:  STA $2E
+L88D8:  STA WndWidth
 L88DA:  LDA #$06
-L88DC:  STA $2D
+L88DC:  STA WndHeight
 
 L88DE:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
 L88E1:  LDA #$0A
-L88E3:  STA $2A
+L88E3:  STA TXTXPos
 L88E5:  LDA #$10
-L88E7:  STA $29
+L88E7:  STA TXTYPos
 
 L88E9:  LDA #$0D
-L88EB:  STA $2E
+L88EB:  STA TXTClrCols
 L88ED:  LDA #$02
-L88EF:  STA $2D
+L88EF:  STA TXTClrRows
 
 L88F1:  LDA #$04                ;CREATE CONTINUE text.
 L88F3:  STA TextIndex           ;
 L88F5:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L88F8:  LDA #$80
-L88FA:  STA SpriteBufferBase
+L88FA:  STA SpriteBuffer
 L88FD:  LDA #$48
-L88FF:  STA $7303
+L88FF:  STA SpriteBuffer+3
 L8902:  LDY #$01
 L8904:  LDX #$00
 
+CreateContInptLoop:
 L8906:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+L8909:  LDA Pad1Input           ;
 
-L8909:  LDA Pad1Input
 L890B:  CMP #BTN_UP
 L890D:  BEQ CreateContUpBtn
 
@@ -1293,7 +1330,7 @@ L890F:  CMP #BTN_DOWN
 L8911:  BEQ CreateContSGDnBtn
 
 L8913:  CMP #BTN_A
-L8915:  BNE L8906
+L8915:  BNE CreateContInptLoop
 
 CreateContABtn:
 L8917:  TXA
@@ -1342,6 +1379,8 @@ L895C:  BEQ L8906
 L895E:  INY
 L895F:  JMP L8943
 
+;----------------------------------------------------------------------------------------------------
+
 L8962:  LDA #$1E
 L8964:  STA $E3
 L8966:  RTS
@@ -1354,25 +1393,30 @@ L8967:  .byte $80, $90, $78, $98
 
 L896B:  JSR InitPPU             ;($990C)Initialize the PPU.
 L896E:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
+
 L8971:  LDA #$06
 L8973:  STA $2A
 L8975:  LDA #$0C
 L8977:  STA $29
+
 L8979:  LDA #$14
 L897B:  STA $2E
 L897D:  LDA #$0C
 L897F:  STA $2D
+
 L8981:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 L8984:  LDA #$0A
 L8986:  STA $2A
 L8988:  LDA #$0E
 L898A:  STA $29
+
 L898C:  LDA #$0D
 L898E:  STA $2E
 L8990:  LDA #$05
 L8992:  STA $2D
 
-L8994:  LDA #$05                ;EXAMINE CREATE DISCARD test.
+L8994:  LDA #$05                ;EXAMINE CREATE DISCARD FORM PARTY PREVIOUS MENU.
 L8996:  STA TextIndex           ;
 L8998:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
@@ -1381,15 +1425,19 @@ L899D:  STA SpriteBufferBase
 L89A0:  LDA #$40
 L89A2:  STA $7303
 L89A5:  LDX #$00
-L89A7:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 
+L89A7:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L89AA:  LDA Pad1Input
+
 L89AC:  CMP #BTN_UP
 L89AE:  BEQ L89BA
+
 L89B0:  CMP #BTN_DOWN
 L89B2:  BEQ L89C2
+
 L89B4:  CMP #BTN_A
 L89B6:  BNE L89A7
+
 L89B8:  TXA
 L89B9:  RTS
 L89BA:  CPX #$00
@@ -4651,7 +4699,6 @@ LAEF1:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $0F, $2D, $0F, $
 ;----------------------------------------------------------------------------------------------------
 
 ;Start of GFX.
-
 LAF01:  .byte $04, $83, $81, $82, $83, $89, $88, $88, $01, $00, $06, $07, $07, $17, $17, $37
 LAF11:  .byte $90, $60, $C0, $A0, $E0, $FF, $63, $41, $40, $80, $30, $F0, $F0, $80, $9C, $BE
 LAF21:  .byte $00, $22, $2A, $22, $2A, $E3, $08, $5D, $00, $1C, $14, $1C, $14, $1C, $F7, $A2
@@ -5321,6 +5368,9 @@ LBA3E:  PLA
 LBA3F:  TAX
 LBA40:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+LoadSGData:
 LBA41:  LDY #$30
 LBA43:  LDA (SGDatPtr),Y
 LBA45:  STA BoatXPos
@@ -5373,28 +5423,37 @@ LBA89:  LDA #$72
 LBA8B:  STA $2A
 LBA8D:  LDA #$00
 LBA8F:  STA $29
+
 LBA91:  LDA #$10
 LBA93:  STA $30
+
 LBA95:  LDY $30
 LBA97:  LDA (SGDatPtr),Y
 LBA99:  STA $B5
+
 LBA9B:  LDA #$40
 LBA9D:  STA $B6
+
 LBA9F:  JSR LBA27
+
 LBAA2:  CLC
 LBAA3:  LDA SGDatPtrLB
 LBAA5:  ADC $B7
 LBAA7:  STA $2B
+
 LBAA9:  LDA SGDatPtrUB
 LBAAB:  ADC $B8
 LBAAD:  STA $2C
+
 LBAAF:  INC $2C
 LBAB1:  LDY #$00
-LBAB3:  LDA ($2B),Y
+
+LBAB3:* LDA ($2B),Y
 LBAB5:  STA ($29),Y
 LBAB7:  INY
 LBAB8:  CPY #$40
-LBABA:  BNE LBAB3
+LBABA:  BNE -
+
 LBABC:  CLC
 LBABD:  LDA $29
 LBABF:  ADC #$40
@@ -5403,35 +5462,45 @@ LBAC3:  INC $30
 LBAC5:  LDA $30
 LBAC7:  CMP #$14
 LBAC9:  BNE LBA95
-LBACB:  LDA $70
-LBACD:  ASL
-LBACE:  ASL
-LBACF:  ASL
-LBAD0:  TAX
-LBAD1:  LDA $FEA0,X
-LBAD4:  STA $6F
-LBAD6:  INX
-LBAD7:  LDA $FEA0,X
-LBADA:  STA $CF
-LBADC:  STA $41
-LBADE:  INX
-LBADF:  LDA $FEA0,X
-LBAE2:  STA $42
-LBAE4:  STA $D0
-LBAE6:  INX
-LBAE7:  LDA $FEA0,X
-LBAEA:  STA $45
-LBAEC:  INX
-LBAED:  LDA $FEA0,X
-LBAF0:  STA $46
-LBAF2:  LDA $70
-LBAF4:  ASL
-LBAF5:  TAX
-LBAF6:  LDA $FF70,X
-LBAF9:  STA $4C
-LBAFB:  LDA $FF71,X
-LBAFE:  STA $4B
-LBB00:  RTS
+
+;Load map data.
+LBACB:  LDA ThisMap             ;
+LBACD:  ASL                     ;
+LBACE:  ASL                     ;*8. 8 bytes of data per map.
+LBACF:  ASL                     ;
+LBAD0:  TAX                     ;
+
+LBAD1:  LDA MapDatTbl,X         ;
+LBAD4:  STA MapBank             ;Get the bank the map data is located on.
+LBAD6:  INX                     ;
+
+LBAD7:  LDA MapDatTbl,X         ;
+LBADA:  STA _MapDatPtrLB        ;
+LBADC:  STA MapDatPtrLB         ;
+LBADE:  INX                     ;Get a pointer to the map layout data.
+LBADF:  LDA MapDatTbl,X         ;
+LBAE2:  STA MapDatPtrUB         ;
+LBAE4:  STA _MapDatPtrUB        ;
+LBAE6:  INX                     ;
+
+LBAE7:  LDA MapDatTbl,X         ;
+LBAEA:  STA NPCSrcPtrLB         ;
+LBAEC:  INX                     ;Get a pointer to the map NPC data.
+LBAED:  LDA MapDatTbl,X         ;
+LBAF0:  STA NPCSrcPtrUB         ;
+
+;Load return position when exiting map to the overworld map.
+LBAF2:  LDA ThisMap             ;
+LBAF4:  ASL                     ;*2. 2 bytes of data per map.
+LBAF5:  TAX                     ;
+
+LBAF6:  LDA SubMapTbl,X         ;
+LBAF9:  STA ReturnXPos          ;
+LBAFB:  LDA SubMapTbl+1,X       ;Get the X,Y coordinates on overworld map when exiting current map.
+LBAFE:  STA ReturnYPos          ;
+LBB00:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 ;              D    A    G    G    E    R    _    _    _    \n
 LBB01:  .byte $8D, $8A, $90, $90, $8E, $9B, $00, $00, $00, $FD
@@ -5484,6 +5553,7 @@ LBBEB:  .byte $9C, $94, $92, $97, $00, $00, $00, $00, $00, $00, $00, $00, $FD
 
 LBBF8:  LDA HideUprSprites
 LBBFA:  STA $E1
+
 LBBFC:  LDA $03D0
 LBBFF:  STA $2A
 LBC01:  LDA $03D1
@@ -5493,6 +5563,7 @@ LBC09:  STA $2E
 LBC0B:  LDA $03D3
 LBC0E:  STA $2D
 LBC10:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 LBC13:  LDA $03D4
 LBC16:  STA $30
 LBC18:  LDA $03D0
@@ -5512,8 +5583,10 @@ LBC31:  LDA $03D3
 LBC34:  SBC #$02
 LBC36:  LSR
 LBC37:  STA $2D
+
 LBC39:  LDA $E1
 LBC3B:  STA HideUprSprites
+
 LBC3D:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LBC40:  LDA $9C
 LBC42:  CLC
@@ -5759,7 +5832,7 @@ LBDEC:  ADC #$04
 LBDEE:  TAX
 LBDEF:  BEQ LBE0C
 LBDF1:  JMP LBDE3
-LBDF4:  LDA SpriteBufferBase
+LBDF4:  LDA SpriteBuffer
 LBDF7:  STA SpriteBuffer,X
 LBDFA:  LDA $7301
 LBDFD:  STA $7301,X
@@ -5768,7 +5841,7 @@ LBE03:  STA $7302,X
 LBE06:  LDA $7303
 LBE09:  STA $7303,X
 LBE0C:  LDA #$F0
-LBE0E:  STA SpriteBufferBase
+LBE0E:  STA SpriteBuffer
 LBE11:  PLA
 LBE12:  TAX
 LBE13:  PLA

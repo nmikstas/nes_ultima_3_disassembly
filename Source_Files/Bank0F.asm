@@ -164,7 +164,7 @@ LC105:  JSR DoCreateMenus       ;($8000)Run the load saveed game and other pre-g
 LC108:  LDA #ANIM_DISABLE       ;Disable sprite animations.
 LC10A:  STA DoAnimations        ;
 
-LC10C:  LDA $6F
+LC10C:  LDA MapBank
 LC10E:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC111:  JSR LEE2E
 LC114:  JSR LED76
@@ -179,7 +179,7 @@ LC127:  INX
 LC128:  CPX #$10
 LC12A:  BNE LC121
 LC12C:  JSR LFD93
-LC12F:  JMP LC175
+LC12F:  JMP LoadNewMap          ;($C175)Load a new map.
 
 LC132:  .byte $00, $A1, $00, $A3, $00, $A5, $00, $A7, $00, $A1, $00, $A3, $00, $A5, $00, $A7
 
@@ -202,60 +202,80 @@ LC15E:  LDA ReturnXPos
 LC160:  STA MapXPos
 LC162:  LDA ReturnYPos
 LC164:  STA MapYPos
-LC166:  JMP LC175
+LC166:  JMP LoadNewMap          ;($C175)Load a new map.
 
 LC169:  INX
-LC16A:  LDA $FEA0,X
+LC16A:  LDA MapDatTbl,X
 LC16D:  STA MapYPos
 LC16F:  INX
-LC170:  LDA $FEA0,X
+LC170:  LDA MapDatTbl,X
 LC173:  STA MapXPos
 
-MainGameLoop:
-LC175:  LDA $6F
+;----------------------------------------------------------------------------------------------------
+
+LoadNewMap:
+LC175:  LDA MapBank             ;Load the bank containing the current map data.
 LC177:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LC17A:  JSR LFD6C
-LC17D:  JSR LEFD6
+
+LC17A:  JSR StartMusic          ;($FD6C)Determine which music to start playing.
+LC17D:  JSR ZeroPartyTrail      ;($EFD6)Pile all characters on top of each other.
 LC180:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
-LC183:  LDA MapProperties
-LC185:  AND #$01
-LC187:  BEQ LC18C
-LC189:  JMP LF71F
-LC18C:  LDA #$F0
-LC18E:  LDY #$00
-LC190:  STA $7300,Y
-LC193:  INY
-LC194:  INY
-LC195:  INY
-LC196:  INY
-LC197:  BNE LC190
+
+LC183:  LDA MapProperties       ;Is the map that needs to be loaded a dungeon level?
+LC185:  AND #$01                ;
+LC187:  BEQ +                   ;If not, branch.
+
+LC189:  JMP LoadDungeon         ;($F71F)Load dungeon level.
+
+LC18C:* LDA #$F0                ;Prepare to hide all sprites off screen.
+LC18E:  LDY #$00                ;
+
+LC190:* STA SpriteBuffer,Y      ;
+LC193:  INY                     ;
+LC194:  INY                     ;Hide all 64 sprites.
+LC195:  INY                     ;
+LC196:  INY                     ;
+LC197:  BNE -                   ;
+
 LC199:  JSR LF4EB
-LC19C:  JSR LFCD0
-LC19F:  LDA #ANIM_ENABLE
-LC1A1:  STA DoAnimations
+LC19C:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties.
+
+LC19F:  LDA #ANIM_ENABLE        ;Enable sprite animations.
+LC1A1:  STA DoAnimations        ;
+
 LC1A3:  LDA #$10
 LC1A5:  JSR LE6D0
+
 LC1A8:  LDA #$00
 LC1AA:  STA $C9
 LC1AC:  LDA #$F0
 LC1AE:  STA $7300
 
-LC1B1:  LDA #$00
-LC1B3:  STA IgnoreInput
+;----------------------------------------------------------------------------------------------------
+
+MainGameLoop:
+LC1B1:  LDA #INP_NO_IGNORE      ;React to player's input on the controller.
+LC1B3:  STA IgnoreInput         ;
+
 LC1B5:  STA $B0
+
 LC1B7:  LDA MapProperties
 LC1B9:  AND #$01
 LC1BB:  BEQ +
+
 LC1BD:  JMP LF86C
 
-LC1C0:* LDA $00
-LC1C2:* CMP $00
-LC1C4:  BEQ -
+LC1C0:* LDA Increment0          ;
+LC1C2:* CMP Increment0          ;Wait until next frame to continue.
+LC1C4:  BEQ -                   ;
 
 LC1C6:  JSR LC524
-LC1C9:  LDA #$01
-LC1CB:  STA IgnoreInput
-LC1CD:  JSR LFD1C
+
+LC1C9:  LDA #INP_IGNORE         ;Ignore player's input on the controller.
+LC1CB:  STA IgnoreInput         ;
+
+LC1CD:  JSR BlockAlign          ;($FD1C)Update block aligned position of character 1.
+
 LC1D0:  LDA Pad1Input
 LC1D2:  AND #D_PAD
 LC1D4:  BEQ LC1D9
@@ -266,14 +286,18 @@ LC1DD:  LDA Pad1Input
 LC1DF:  AND #BTN_A
 LC1E1:  BNE LC23A
 LC1E3:  JSR LFB06
-LC1E6:  LDA #$00
-LC1E8:  STA IgnoreInput
+
+LC1E6:  LDA #INP_NO_IGNORE      ;React to player's input on the controller.
+LC1E8:  STA IgnoreInput         ;
+
 LC1EA:  LDA $00
 LC1EC:  CMP $00
 LC1EE:  BEQ LC1EC
 LC1F0:  JSR LC524
-LC1F3:  LDA Pad1Input
-LC1F5:  AND #$CF
+
+LC1F3:  LDA Pad1Input           ;Get button presses minus the select and start buttons.
+LC1F5:  AND #$CF                ;
+
 LC1F7:  BEQ LC211
 LC1F9:  CMP #$40
 LC1FB:  BNE LC207
@@ -294,7 +318,7 @@ LC21A:  LDA #$FF
 LC21C:  STA $9B
 LC21E:  JSR LE6D8
 LC221:  JSR LF4D1
-LC224:  JMP LC1B1
+LC224:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC227:  LDA $01
 LC229:  CMP #$10
 LC22B:  BNE LC237
@@ -302,7 +326,7 @@ LC22D:  LDA #$00
 LC22F:  STA $01
 LC231:  JSR LFDA3
 LC234:  JSR LF4D1
-LC237:  JMP LC1B1
+LC237:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC23A:  LDA #$01
 LC23C:  STA $B0
 LC23E:  JSR LF447
@@ -335,10 +359,10 @@ LC27A:  JSR LE4FF
 LC27D:  BCS LC293
 LC27F:  ASL
 LC280:  TAX
-LC281:  LDA $C611,X
+LC281:  LDA CmdPtrTbl,X
 LC284:  STA $8F
 LC286:  INX
-LC287:  LDA $C611,X
+LC287:  LDA CmdPtrTbl,X
 LC28A:  STA $90
 LC28C:  LDA #$00
 LC28E:  STA $9D
@@ -351,7 +375,7 @@ LC29C:  STA $73C4
 LC29F:  STA $73C8
 LC2A2:  STA $73CC
 LC2A5:  JSR LF4D1
-LC2A8:  JMP LC1B1
+LC2A8:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 LC2AB:  LDA #$01
 LC2AD:  STA $B0
@@ -376,13 +400,13 @@ LC2D2:  LDA Pad1Input
 LC2D4:  AND #BTN_UP
 LC2D6:  BEQ LC2DB
 LC2D8:  JMP LC31E
-LC2DB:  JMP LC1B1
+LC2DB:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC2DE:  STA Pad1Input
 LC2E0:  INC $48
 LC2E2:  LDX #$78
 LC2E4:  JSR LE790
 LC2E7:  BCC LC2EC
-LC2E9:  JMP LC1B1
+LC2E9:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC2EC:  LDA CurPRGBank
 LC2EE:  PHA
 LC2EF:  LDA #$0B
@@ -396,7 +420,7 @@ LC300:  DEC $48
 LC302:  LDX #$76
 LC304:  JSR LE790
 LC307:  BCC LC30C
-LC309:  JMP LC1B1
+LC309:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC30C:  LDA CurPRGBank
 LC30E:  PHA
 LC30F:  LDA #$0B
@@ -410,7 +434,7 @@ LC320:  DEC $47
 LC322:  LDX #$67
 LC324:  JSR LE790
 LC327:  BCC LC32C
-LC329:  JMP LC1B1
+LC329:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC32C:  LDA CurPRGBank
 LC32E:  PHA
 LC32F:  LDA #$0B
@@ -425,7 +449,7 @@ LC340:  INC $47
 LC342:  LDX #$87
 LC344:  JSR LE790
 LC347:  BCC LC34C
-LC349:  JMP LC1B1
+LC349:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC34C:  LDA CurPRGBank
 LC34E:  PHA
 LC34F:  LDA #$0B
@@ -442,7 +466,7 @@ LC366:  STA InitNewMusic
 LC368:  LDA #$01
 LC36A:  STA OnBoat
 LC36C:  JSR LEE4E
-LC36F:  JSR LFCD0
+LC36F:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties.
 LC372:  LDY #$00
 LC374:  LDA NPCSprIndex,Y
 LC377:  CMP #$85
@@ -480,7 +504,7 @@ LC3BD:  BNE LC3BB
 LC3BF:  JSR LFC55
 LC3C2:  LDA ExodusDead
 LC3C4:  BEQ LC3E5
-LC3C6:  JSR LFD1C
+LC3C6:  JSR BlockAlign          ;($FD1C)Update block aligned position of character 1.
 LC3C9:  JSR LFDA3
 LC3CC:  JSR LF4D1
 LC3CF:  LDA MapYPos
@@ -532,15 +556,16 @@ LC41D:  CMP #$22
 LC41F:  BCS LC424
 
 LC421:  JMP LC712
-LC424:  JMP LC1B1
+LC424:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 GetNextMap:
 LC427:  LDA ThisMap
 LC429:  CMP #MAP_AMBROSIA
 LC42B:  BEQ EnterShrine
 
-;Enter a town, castle or dungeon from the Sosaria overworld map.
+;----------------------------------------------------------------------------------------------------
 
+;Enter a town, castle or dungeon from the Sosaria overworld map.
 EnterSubMap:
 LC42D:  LDY #$02
 LC42F:  LDA SubMapTbl,Y
@@ -553,7 +578,7 @@ LC43D:  INY
 LC43E:  INY
 LC43F:  CPY #$2A
 LC441:  BNE LC42F
-LC443:  JMP LC1B1
+LC443:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 LC446:  LDA MapXPos
 LC448:  STA ReturnXPos
@@ -567,7 +592,7 @@ LC453:  ASL
 LC454:  ASL
 LC455:  TAX
 LC456:  LDY #$08
-LC458:  LDA MapPtrTbl+7,X
+LC458:  LDA MapDatTbl+7,X
 LC45B:  BPL LC45F
 LC45D:  LDY #$09
 LC45F:  STY MapProperties
@@ -587,7 +612,7 @@ LC478:  INY
 LC479:  INY
 LC47A:  CPY #$08
 LC47C:  BNE LC46A
-LC47E:  JMP LC1B1
+LC47E:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC481:  TYA
 LC482:  CLC
 LC483:  ADC #$2A
@@ -604,7 +629,7 @@ ChkEnterMoongate:
 LC491:  LDA MapProperties
 LC493:  CMP #$0C
 LC495:  BEQ +
-LC497:  JMP LC1B1
+LC497:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 LC49A:* LDA FirstMoonPhase
 LC49C:  AND #$70
@@ -634,7 +659,7 @@ LC4C7:  LDA #$01
 LC4C9:  STA $EC
 LC4CB:  LDA #SFX_MN_GATE_B+INIT 
 LC4CD:  STA ThisSFX
-LC4CF:  JMP LC175
+LC4CF:  JMP LoadNewMap          ;($C175)Load a new map.
 
 MoonGateTbl:
 LC4D2:  .byte $08, $08, $3B, $2E, $0F, $1B, $24, $3A, $0F, $1D, $0C, $37, $1F, $1F, $3A, $1F
@@ -646,21 +671,21 @@ LC4EC:  ASL
 LC4ED:  ASL
 LC4EE:  ASL
 LC4EF:  TAX
-LC4F0:  LDA $FEA0,X
-LC4F3:  STA $6F
+LC4F0:  LDA MapDatTbl,X
+LC4F3:  STA MapBank
 LC4F5:  INX
-LC4F6:  LDA $FEA0,X
-LC4F9:  STA $CF
-LC4FB:  STA $41
+LC4F6:  LDA MapDatTbl,X
+LC4F9:  STA _MapDatPtrLB
+LC4FB:  STA MapDatPtrLB
 LC4FD:  INX
-LC4FE:  LDA $FEA0,X
-LC501:  STA $42
-LC503:  STA $D0
+LC4FE:  LDA MapDatTbl,X
+LC501:  STA MapDatPtrUB
+LC503:  STA _MapDatPtrUB
 LC505:  INX
-LC506:  LDA $FEA0,X
+LC506:  LDA MapDatTbl,X
 LC509:  STA NPCSrcPtrLB
 LC50B:  INX
-LC50C:  LDA $FEA0,X
+LC50C:  LDA MapDatTbl,X
 LC50F:  STA NPCSrcPtrUB
 LC511:  RTS
 
@@ -759,7 +784,7 @@ LC5B5: STA $2C
 LC5B7: LDA #$03
 LC5B9: JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC5BC: LDA #$40
-LC5BE: JSR LF079
+LC5BE: JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
 LC5C1: LDA $2C
 LC5C3: STA PPUBufBase,X
 LC5C6: INX
@@ -781,7 +806,7 @@ LC5E1: LDA $2C
 LC5E3: ADC #$00
 LC5E5: STA $2C
 LC5E7: LDA #$40
-LC5E9: JSR LF079
+LC5E9: JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
 LC5EC: LDA $2C
 LC5EE: STA PPUBufBase,X
 LC5F1: INX
@@ -803,6 +828,10 @@ LC60C: PLA
 LC60D: JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC610: RTS
 
+;The following table are the functions to run when one of the 14 commands are
+;selected from the command menu.
+
+CmdPtrTbl:
 LC611:  .word $C662, $D338, $C75C, $E200, $DB6B, $E23A, $DD82, $E0E7
 LC621:  .word $E15D, $E19C, $E16F, $E1B2, $E250, $E2C1
 
@@ -864,7 +893,7 @@ LC699:  STA $2A
 LC69B:  LDA #$0D
 LC69D:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC6A0:  JSR LC6E9
-LC6A3:  LDA $6F
+LC6A3:  LDA MapBank
 LC6A5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC6A8:  JMP LD3E3
 LC6AB:  STA $30
@@ -1311,7 +1340,7 @@ LCA2E:  CPY #$0C
 LCA30:  BNE LCA2A
 LCA32:  LDA #$08
 LCA34:  JSR LEFD8
-LCA37:  LDA $6F
+LCA37:  LDA MapBank
 LCA39:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LCA3C:  JSR LEFC6
 LCA3F:  LDX #$00
@@ -1857,7 +1886,7 @@ LCE97:  STA $D2
 LCE99:  LDA PrevMapProp
 LCE9B:  STA MapProperties
 LCE9D:  JSR LFC55
-LCEA0:  JMP LC175
+LCEA0:  JMP LoadNewMap          ;($C175)Load a new map.
 
 LCEA3:  .byte $00, $78, $76, $00, $87, $00, $00, $00, $67, $00, $A1, $00, $A2, $00, $A3, $00
 LCEB3:  .byte $A6, $00, $A8, $00, $A4, $00, $A4, $00, $A4, $00, $A5, $00, $A5, $00, $A5, $00
@@ -2431,7 +2460,7 @@ LD32B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LD32E:  JSR $9380
 LD331:  PLA
 LD332:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LD335:  JMP LC175
+LD335:  JMP LoadNewMap          ;($C175)Load a new map.
 
 LD338:  JSR LE42F
 LD33B:  BCC LD340
@@ -2439,7 +2468,7 @@ LD33D:  JMP LD3E3
 LD340:  JSR LD34D
 LD343:  CMP #$01
 LD345:  BNE LD34A
-LD347:  JMP LC175
+LD347:  JMP LoadNewMap          ;($C175)Load a new map.
 LD34A:  JMP LD3E3
 LD34D:  LDY #$06
 LD34F:  LDA (CrntChrPtr),Y
@@ -2694,7 +2723,7 @@ LD5B6:  LDA DungeonLevel
 LD5B8:  CMP #$07
 LD5BA:  BEQ LD5C8
 LD5BC:  INC DungeonLevel
-LD5BE:  INC $42
+LD5BE:  INC MapDatPtrUB
 LD5C0:  JSR LDB0E
 LD5C3:  LDA #$1B
 LD5C5:  JMP LD5CA
@@ -2709,7 +2738,7 @@ LD5D7:  LDA DungeonLevel
 LD5D9:  BEQ LD5E7
 LD5DB:  JSR LDB0E
 LD5DE:  DEC DungeonLevel
-LD5E0:  DEC $42
+LD5E0:  DEC MapDatPtrUB
 LD5E2:  LDA #$1C
 LD5E4:  JMP LD5EA
 LD5E7:  JMP LD7E9
@@ -3364,7 +3393,7 @@ LDB08:  STA $30
 LDB0A:  JSR LE675
 LDB0D:  RTS
 LDB0E:  LDY $00
-LDB10:  LDA ($41),Y
+LDB10:  LDA (MapDatPtr),Y
 LDB12:  CMP #$0D
 LDB14:  BEQ LDB1A
 LDB16:  INY
@@ -3575,7 +3604,7 @@ LDC9D:  CMP #$00
 LDC9F:  BEQ LDCA6
 LDCA1:  PLA
 LDCA2:  PLA
-LDCA3:  JMP LC175
+LDCA3:  JMP LoadNewMap          ;($C175)Load a new map.
 LDCA6:  RTS
 
 UseCompass:
@@ -3674,8 +3703,8 @@ LDD5C:  LDA #$30
 LDD5E:  STA $7F45
 LDD61:  PLA
 LDD62:  PLA
-LDD63:  JMP LC175
-LDD66:  JSR LFD6C
+LDD63:  JMP LoadNewMap          ;($C175)Load a new map.
+LDD66:  JSR StartMusic          ;($FD6C)Determine which music to start playing.
 LDD69:  LDA #$5C
 LDD6B:  JMP LDC23
 LDD6E:  STA $30
@@ -4075,14 +4104,14 @@ LE07E:  STA ScreenBlocks,Y
 LE081:  RTS
 LE082:  JSR LF974
 LE085:  LDA #$0D
-LE087:  STA ($41),Y
+LE087:  STA (MapDatPtr),Y
 LE089:  LDA DisNPCMovement
 LE08B:  ORA #$80
 LE08D:  STA DisNPCMovement
 LE08F:  RTS
 LE090:  LDA CurPRGBank
 LE092:  PHA
-LE093:  LDA $6F
+LE093:  LDA MapBank
 LE095:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE098:  LDA MapXPos
 LE09A:  STA $48
@@ -4090,10 +4119,10 @@ LE09C:  LDA MapYPos
 LE09E:  STA $47
 LE0A0:  JSR LF5B0
 LE0A3:  SEC
-LE0A4:  LDA $CF
+LE0A4:  LDA _MapDatPtrLB
 LE0A6:  SBC #$00
 LE0A8:  STA $29
-LE0AA:  LDA $D0
+LE0AA:  LDA _MapDatPtrUB
 LE0AC:  SBC #$78
 LE0AE:  STA $2A
 LE0B0:  CLC
@@ -4157,7 +4186,7 @@ LE11E:  BNE LE143
 LE120:  LDA DungeonLevel
 LE122:  BEQ LE133
 LE124:  DEC DungeonLevel
-LE126:  DEC $42
+LE126:  DEC MapDatPtrUB
 LE128:  LDA DisNPCMovement
 LE12A:  ORA #$80
 LE12C:  STA DisNPCMovement
@@ -4173,7 +4202,7 @@ LE143:  LDA DungeonLevel
 LE145:  CMP #$07
 LE147:  BEQ LE158
 LE149:  INC DungeonLevel
-LE14B:  INC $42
+LE14B:  INC MapDatPtrUB
 LE14D:  LDA DisNPCMovement
 LE14F:  ORA #$80
 LE151:  STA DisNPCMovement
@@ -4269,7 +4298,7 @@ LE20F:  JSR $A000
 LE212:  LDA #$00
 LE214:  STA CurPPUConfig1
 LE216:  STA PPUControl1
-LE219:  LDA $6F
+LE219:  LDA MapBank
 LE21B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE21E:  JSR LED76
 LE221:  LDA #$FE
@@ -4283,7 +4312,7 @@ LE22F:  LDA #$FF
 LE231:  STA $D2
 LE233:  LDA #$1E
 LE235:  STA CurPPUConfig1
-LE237:  JMP LC175
+LE237:  JMP LoadNewMap          ;($C175)Load a new map.
 LE23A:  LDA CurPRGBank
 LE23C:  PHA
 LE23D:  LDA #$0B
@@ -4344,7 +4373,7 @@ LE2A8:  LDA #$FF
 LE2AA:  STA NPCSprIndex,Y
 LE2AD:  STX $30
 LE2AF:  JSR LE675
-LE2B2:  JMP LC175
+LE2B2:  JMP LoadNewMap          ;($C175)Load a new map.
 LE2B5:  STX $30
 LE2B7:  JSR LE675
 LE2BA:  JMP LC293
@@ -5159,9 +5188,9 @@ LE8E0:  BEQ LE920
 LE8E2:  LDA #$00
 LE8E4:  STA OnBoat
 LE8E6:  JSR LEE4E
-LE8E9:  JSR LFCD0
-LE8EC:  JSR LEFD6
-LE8EF:  JSR LFD6C
+LE8E9:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties.
+LE8EC:  JSR ZeroPartyTrail      ;($EFD6)Pile all characters on top of each other.
+LE8EF:  JSR StartMusic          ;($FD6C)Determine which music to start playing.
 LE8F2:  LDA MapXPos
 LE8F4:  STA $047E
 LE8F7:  LDA MapYPos
@@ -5703,31 +5732,40 @@ LED25:  RTS
 
 LED26:  .byte $00, $01, $00, $FF, $01, $00, $FF, $00, $01, $02, $04, $08
 
+;----------------------------------------------------------------------------------------------------
+
 IRQ:
 LED32:  RTI
 
+;----------------------------------------------------------------------------------------------------
+
 LED33:  LDY #$00
-LED35:  LDA ($29),Y
+LED35:* LDA ($29),Y
 LED37:  STA $7500,Y
 LED3A:  INY
 LED3B:  CPY #$20
-LED3D:  BNE LED35
+LED3D:  BNE -
+
 LED3F:  LDA #$20
-LED41:  JSR LF079
+LED41:  JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
 LED44:  LDA #$3F
 LED46:  STA PPUBufBase,X
 LED49:  INX
 LED4A:  LDA #$00
 LED4C:  STA PPUBufBase,X
+
 LED4F:  LDY #$00
-LED51:  LDA ($29),Y
+
+LED51:* LDA ($29),Y
 LED53:  INX
 LED54:  STA PPUBufBase,X
 LED57:  INY
 LED58:  CPY #$20
-LED5A:  BNE LED51
+LED5A:  BNE -
+
 LED5C:  LDA #$01
-LED5E:  JSR LF079
+LED5E:  JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
+
 LED61:  LDA #$00
 LED63:  STA PPUBufBase,X
 LED66:  INX
@@ -5736,8 +5774,10 @@ LED69:  STA PPUBufBase,X
 LED6C:  INX
 LED6D:  LDA #$00
 LED6F:  STA PPUBufBase,X
-LED72:  JSR LF0B4
+LED72:  JSR SetPPUUpdate        ;($F0B4)Check if PPU update flag needs to be set.
 LED75:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LED76:  LDA CurPRGBank
 LED78:  PHA
@@ -5926,7 +5966,7 @@ LEEDC:  INX
 LEEDD:  STA SpriteBuffer,X
 LEEE0:  INX
 LEEE1:  STA SpriteBuffer,X
-LEEE4:  LDA $6F
+LEEE4:  LDA MapBank
 LEEE6:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEEE9:  LDA OnBoat
 LEEEB:  AND #$7F
@@ -5953,8 +5993,8 @@ LEF15:  PHA
 LEF16:  JSR LEE4E
 LEF19:  LDA ScrollDirAmt
 LEF1B:  BNE LEF19
-LEF1D:  JSR LFCD0
-LEF20:  JSR LEFD6
+LEF1D:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties.
+LEF20:  JSR ZeroPartyTrail      ;($EFD6)Pile all characters on top of each other.
 LEF23:  PLA
 LEF24:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEF27:  RTS
@@ -5979,7 +6019,7 @@ LEF4C:  INC $2C
 LEF4E:  INC $2C
 LEF50:  DEC $30
 LEF52:  BNE LEF49
-LEF54:  LDA $6F
+LEF54:  LDA MapBank
 LEF56:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEF59:  RTS
 
@@ -6043,13 +6083,16 @@ LEFD1:  PLA
 LEFD2:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEFD5:  RTS
 
-LEFD6:  LDA #$00
-LEFD8:  STA Ch1Dir
-LEFDA:  STA Ch2Dir
-LEFDC:  STA Ch3Dir
-LEFDE:  STA Ch4Dir
-LEFE0:  STA LastDirMoved
-LEFE2:  RTS
+;----------------------------------------------------------------------------------------------------
+
+ZeroPartyTrail:
+LEFD6:  LDA #$00                ;
+LEFD8:  STA Ch1Dir              ;
+LEFDA:  STA Ch2Dir              ;
+LEFDC:  STA Ch3Dir              ;Place all party members on top of each other.
+LEFDE:  STA Ch4Dir              ;
+LEFE0:  STA LastDirMoved        ;
+LEFE2:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6061,7 +6104,7 @@ LEFE2:  RTS
 LoadPPU2:
 LEFE3:  LDA DisSpriteAnim
 LEFE5:  PHA
-LEFE6:  LDA $30
+LEFE6:  LDA TextIndex
 LEFE8:  PHA
 LEFE9:  LDA $2F
 LEFEB:  PHA
@@ -6148,48 +6191,68 @@ LF06D:  STA PPUSrcPtrUB
 LF06F:  PLA
 LF070:  STA $2F
 LF072:  PLA
-LF073:  STA $30
+LF073:  STA TextIndex
 LF075:  PLA
 LF076:  STA DisSpriteAnim
 LF078:  RTS
 
-LF079:  PHA
-LF07A:  CLC
-LF07B:  ADC PPUBufLength
-LF07E:  BCS LF094
-LF080:  TAX
-LF081:  LDA DisSpriteAnim
-LF083:  ORA DisNPCMovement
-LF085:  BEQ LF08F
-LF087:  TXA
-LF088:  CMP #$60
-LF08A:  BCC LF09C
-LF08C:  JMP LF094
-LF08F:  TXA
-LF090:  CMP #$20
-LF092:  BCC LF09C
-LF094:  LDA #$01
-LF096:  STA UpdatePPU
-LF098:  LDA UpdatePPU
-LF09A:  BNE LF098
-LF09C:  LDA #$00
-LF09E:  STA UpdatePPU
-LF0A0:  LDX PPUBufLength
-LF0A3:  INX
-LF0A4:  CLC
-LF0A5:  PLA
-LF0A6:  ADC #$02
-LF0A8:  STA PPUBufBase,X
-LF0AB:  INX
-LF0AC:  SEC
-LF0AD:  ADC PPUBufLength
-LF0B0:  STA PPUBufLength
-LF0B3:  RTS
-LF0B4:  LDA PPUBufLength
-LF0B7:  BEQ LF0BD
-LF0B9:  LDA #$01
-LF0BB:  STA UpdatePPU
-LF0BD:  RTS
+;----------------------------------------------------------------------------------------------------
+
+SetPPUBufNewSize:
+LF079:  PHA                     ;Save A on the stack.
+LF07A:  CLC                     ;
+LF07B:  ADC PPUBufLength        ;Update the buffer length by adding A to it.
+LF07E:  BCS WaitForPPUUpdate    ;Branch if buffer length has exceeded 256 bytes.
+
+LF080:  TAX                     ;
+LF081:  LDA DisSpriteAnim       ;Are animations and NPC movements disabled?
+LF083:  ORA DisNPCMovement      ;If so, branch. Buffer might be big.
+LF085:  BEQ ChkBufLen20         ;
+
+LF087:  TXA                     ;Is the PPU buffer currently over 96 bytes in length?
+LF088:  CMP #$60                ;If so, wait for the buffer to be emptied.
+LF08A:  BCC UpdatePPUBufLen     ;
+
+LF08C:  JMP WaitForPPUUpdate   ;($F094)Wait for the next PPU update to complete.
+
+ChkBufLen20:
+LF08F:  TXA                     ;Is the buffer under 32 bytes of data?
+LF090:  CMP #$20                ;If so, branch to update buffer length.
+LF092:  BCC UpdatePPUBufLen     ;
+
+WaitForPPUUpdate:
+LF094:  LDA #$01                ;Indicate the PPU needs to update.
+LF096:  STA UpdatePPU           ;
+
+LF098:* LDA UpdatePPU           ;Wait until the PPU is updated.
+LF09A:  BNE -                   ;
+
+UpdatePPUBufLen:
+LF09C:  LDA #$00                ;Clear PPU update flag.
+LF09E:  STA UpdatePPU           ;
+
+LF0A0:  LDX PPUBufLength        ;Set the index to the next available spot in the PPU buffer.
+LF0A3:  INX                     ;
+
+LF0A4:  CLC                     ;
+LF0A5:  PLA                     ;
+LF0A6:  ADC #$02                ;Set the PPU string length. Add 2 for the PPU destination address.
+LF0A8:  STA PPUBufBase,X        ;
+LF0AB:  INX                     ;
+
+LF0AC:  SEC                     ;
+LF0AD:  ADC PPUBufLength        ;Add thei PPU string length to the total PPU buffer length.
+LF0B0:  STA PPUBufLength        ;
+LF0B3:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+SetPPUUpdate:
+LF0B4:  LDA PPUBufLength        ;
+LF0B7:  BEQ +                   ;Is there data in the PPU buffer?
+LF0B9:  LDA #$01                ;If so, set the flag indicating the PPU needs to be updated.
+LF0BB:  STA UpdatePPU           ;
+LF0BD:* RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6416,7 +6479,7 @@ LF261:  AND #$02
 LF263:  BEQ LF267
 LF265:  LDX #$90
 LF267:  STX $7303
-LF26A:  JSR LF0B4
+LF26A:  JSR SetPPUUpdate        ;($F0B4)Check if PPU update flag needs to be set.
 LF26D:  LDA #$FF
 LF26F:  STA $9B
 LF271:  JSR LE6D8
@@ -6451,7 +6514,7 @@ LF2A8:  LDA #$00
 LF2AA:  STA $AD
 LF2AC:  STA $AE
 LF2AE:  JMP LF180
-LF2B1:  JSR LF0B4
+LF2B1:  JSR SetPPUUpdate        ;($F0B4)Check if PPU update flag needs to be set.
 LF2B4:  PLA
 LF2B5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF2B8:  CLC
@@ -6669,7 +6732,7 @@ LF429:  RTS
 LF42A:  LDA ScrollDirAmt
 LF42C:  BNE LF42A
 
-LF42E:  JSR LFD1C
+LF42E:  JSR BlockAlign          ;($FD1C)Update block aligned position of character 1.
 LF431:  LDA TimeStopTimer
 LF433:  ORA #$80
 LF435:  STA TimeStopTimer
@@ -6704,7 +6767,7 @@ LF466:  CLC
 LF467:  ADC #$01
 LF469:  JMP LF46E
 LF46C:  LDA $2E
-LF46E:  JSR LF079
+LF46E:  JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
 LF471:  RTS
 LF472:  INC $19
 LF474:  LDA $19
@@ -6715,7 +6778,7 @@ LF47B:  LDA $19
 LF47D:  AND #$3F
 LF47F:  STA $19
 LF481:  LDA $2E
-LF483:  JSR LF079
+LF483:  JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
 LF486:  LDA $2A
 LF488:  PHA
 LF489:  LDA $29
@@ -6770,6 +6833,9 @@ LF4E4:  STA TimeStopTimer
 LF4E6:  LDA #$00
 LF4E8:  STA $E4
 LF4EA:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LF4EB:  LDA CurPRGBank
 LF4ED:  PHA
 LF4EE:  LDA #$01
@@ -6778,7 +6844,7 @@ LF4F2:  LDA #$00
 LF4F4:  STA CurPPUConfig1
 LF4F6:  LDA #$01
 LF4F8:  JSR LE6D0
-LF4FB:  LDA $6F
+LF4FB:  LDA MapBank
 LF4FD:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF500:  LDY #$00
 LF502:  LDX #$08
@@ -6786,11 +6852,11 @@ LF504:  LDA #$78
 LF506:  STA $2A
 LF508:  LDA #$00
 LF50A:  STA $29
-LF50C:  LDA ($41),Y
+LF50C:  LDA (MapDatPtr),Y
 LF50E:  STA ($29),Y
 LF510:  INY
 LF511:  BNE LF50C
-LF513:  INC $42
+LF513:  INC MapDatPtrUB
 LF515:  INC $2A
 LF517:  DEX
 LF518:  BNE LF50C
@@ -6832,6 +6898,9 @@ LF568:  STA $EC
 LF56A:  LDA #$03
 LF56C:  JSR LDB2D
 LF56F:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LF570:  LDA CurPRGBank
 LF572:  PHA
 LF573:  LDA #$0B
@@ -6840,6 +6909,7 @@ LF578:  JSR $8A00
 LF57B:  PLA
 LF57C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF57F:  RTS
+
 LF580:  LDA CurPRGBank
 LF582:  PHA
 LF583:  LDA #$0B
@@ -6866,6 +6936,7 @@ LF5A8:  JSR $8E00
 LF5AB:  PLA
 LF5AC:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF5AF:  RTS
+
 LF5B0:  LDA CurPRGBank
 LF5B2:  PHA
 LF5B3:  LDA #$0B
@@ -6932,6 +7003,7 @@ LF61F:  STA $047F
 LF622:  LDA #$85
 LF624:  STA $047C
 LF627:  RTS
+
 LF628:  LDA CurPRGBank
 LF62A:  PHA
 LF62B:  LDA #$0B
@@ -7035,10 +7107,10 @@ LF6E8:  ASL
 LF6E9:  ASL
 LF6EA:  TAX
 LF6EB:  INX
-LF6EC:  LDA $FEA0,X
+LF6EC:  LDA MapDatTbl,X
 LF6EF:  STA $29
 LF6F1:  INX
-LF6F2:  LDA $FEA0,X
+LF6F2:  LDA MapDatTbl,X
 LF6F5:  STA $2A
 LF6F7:  LDA #$78
 LF6F9:  STA $2C
@@ -7055,12 +7127,14 @@ LF70C:  INC $2C
 LF70E:  DEX
 LF70F:  BNE LF703
 LF711:  LDA #$78
-LF713:  STA $42
+LF713:  STA MapDatPtrUB
 LF715:  LDA #$00
-LF717:  STA $41
+LF717:  STA MapDatPtrLB
 LF719:  LDA #$01
 LF71B:  STA MapXPos
 LF71D:  STA MapYPos
+
+LoadDungeon:
 LF71F:  LDA #ANIM_DISABLE
 LF721:  STA DoAnimations
 LF723:  LDA #MUS_DUNGEON+INIT
@@ -7195,7 +7269,7 @@ LF827:  CMP #$03
 LF829:  BCS LF869
 LF82B:  JSR LF974
 LF82E:  LDA #$0B
-LF830:  STA ($41),Y
+LF830:  STA (MapDatPtr),Y
 LF832:  JMP LC723
 LF835:  CMP #$0C
 LF837:  BNE LF84D
@@ -7211,13 +7285,13 @@ LF84D:  CMP #$0A
 LF84F:  BNE LF85B
 LF851:  JSR LF974
 LF854:  LDA #$0D
-LF856:  STA ($41),Y
+LF856:  STA (MapDatPtr),Y
 LF858:  JMP LF869
 LF85B:  CMP #$08
 LF85D:  BNE LF869
 LF85F:  JSR LF974
 LF862:  LDA #$0D
-LF864:  STA ($41),Y
+LF864:  STA (MapDatPtr),Y
 LF866:  JMP LF86C
 LF869:  JMP LF8B5
 LF86C:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
@@ -7227,7 +7301,7 @@ LF873:  JMP LF8CB
 LF876:  LDA #$01
 LF878:  STA DisSpriteAnim
 LF87A:  LDA #$40
-LF87C:  JSR LF079
+LF87C:  JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
 LF87F:  LDA #$27
 LF881:  STA PPUBufBase,X
 LF884:  INX
@@ -7348,7 +7422,7 @@ LF979:  ASL
 LF97A:  CLC
 LF97B:  ADC MapXPos
 LF97D:  TAY
-LF97E:  LDA ($41),Y
+LF97E:  LDA (MapDatPtr),Y
 LF980:  RTS
 
 LF981:  LDA CurPRGBank
@@ -7367,7 +7441,7 @@ LF999:  INX
 LF99A:  INX
 LF99B:  INX
 LF99C:  BNE LF995
-LF99E:  JSR LF0B4
+LF99E:  JSR SetPPUUpdate        ;($F0B4)Check if PPU update flag needs to be set.
 LF9A1:  LDA #$20
 LF9A3:  STA $2C
 LF9A5:  LDA #$00
@@ -7458,7 +7532,7 @@ LFA57:  STA $2E
 LFA59:  LDA #$B0
 LFA5B:  STA $2D
 LFA5D:  JSR LEFE3
-LFA60:  LDA $6F
+LFA60:  LDA MapBank
 LFA62:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFA65:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
 LFA68:  JSR LFAF6
@@ -7486,7 +7560,7 @@ LFA9A:  LDA #$F0
 LFA9C:  STA $7300
 LFA9F:  JMP LF86C
 LFAA2:  STA $2E
-LFAA4:  JSR LF079
+LFAA4:  JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
 LFAA7:  LDA $2A
 LFAA9:  STA PPUBufBase,X
 LFAAC:  INX
@@ -7794,9 +7868,13 @@ LFCCB:  PLA
 LFCCC:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFCCF:  RTS
 
-LFCD0:  LDA MapProperties
-LFCD2:  AND #$01
-LFCD4:  BNE LFCE5
+;----------------------------------------------------------------------------------------------------
+
+_SetCharSprites:
+LFCD0:  LDA MapProperties       ;Is this a dungeon map?
+LFCD2:  AND #$01                ;
+LFCD4:  BNE +                   ;If so, branch to exit.
+
 LFCD6:  LDA CurPRGBank
 LFCD8:  PHA
 LFCD9:  LDA #$0B
@@ -7804,7 +7882,9 @@ LFCDB:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFCDE:  JSR $BC00
 LFCE1:  PLA
 LFCE2:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LFCE5:  RTS
+LFCE5:* RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LFCE6:  LDY #$0B
 LFCE8:  LDA (Pos2ChrPtr),Y
@@ -7835,15 +7915,21 @@ LFD17:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFD1A:  PLP
 LFD1B:  RTS
 
-LFD1C:  LDA NTXPosLB
-LFD1E:  STA NTXPosLB16
-LFD20:  LDA NTXPosUB
-LFD22:  STA NTXPosUB16
-LFD24:  LDA NTYPosLB
-LFD26:  STA NTYPosLB16
-LFD28:  LDA NTYPosUB
-LFD2A:  STA NTYPosUB16
-LFD2C:  RTS
+;----------------------------------------------------------------------------------------------------
+
+BlockAlign:
+LFD1C:  LDA NTXPosLB            ;
+LFD1E:  STA NTXPosLB16          ;Update block aligned X coordinates of character 1.
+LFD20:  LDA NTXPosUB            ;
+LFD22:  STA NTXPosUB16          ;
+
+LFD24:  LDA NTYPosLB            ;
+LFD26:  STA NTYPosLB16          ;
+LFD28:  LDA NTYPosUB            ;Update block aligned Y coordinates of character 1.
+LFD2A:  STA NTYPosUB16          ;
+LFD2C:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 LFD2D:  LDA MapProperties
 LFD2F:  AND #$01
@@ -7879,22 +7965,23 @@ LFD67:  RTS
 LFD68:  JSR LF981
 LFD6B:  RTS
 
-LFD6C:  LDX #$82
+StartMusic:
+LFD6C:  LDX #MUS_BOAT+INIT
 LFD6E:  LDA OnBoat
 LFD70:  BNE LFD90
-LFD72:  LDX #$88
+LFD72:  LDX #MUS_WORLD+INIT
 LFD74:  LDA MapProperties
 LFD76:  AND #$04
 LFD78:  BNE LFD90
-LFD7A:  LDX #$84
+LFD7A:  LDX #MUS_AMBROSIA+INIT
 LFD7C:  LDA ThisMap
 LFD7E:  CMP #MAP_AMBROSIA
 LFD80:  BEQ LFD90
-LFD82:  LDX #$86
-LFD84:  CMP #$14
+LFD82:  LDX #MUS_EXODUS+INIT
+LFD84:  CMP #MAP_EXODUS
 LFD86:  BEQ LFD90
-LFD88:  LDX #$89
-LFD8A:  CMP #$06
+LFD88:  LDX #MUS_CASTLE+INIT
+LFD8A:  CMP #MAP_LB_CSTL
 LFD8C:  BEQ LFD90
 LFD8E:  LDX #MUS_TOWN+INIT
 LFD90:  STX InitNewMusic
@@ -8019,33 +8106,47 @@ LFE7E:  .byte $10, $10, $10, $10, $10, $29, $0A, $19, $10, $34, $38, $3C, $10, $
 LFE8E:  .byte $10, $30, $15, $36, $10, $30, $02, $36, $10, $06, $15, $26, $10, $30, $0A, $26
 LFE9E:  .byte $FF, $FF
 
-MapPtrTbl:
-LFEA0:  .byte $00, $00, $80, $00, $B8, $16, $2A, $00
-LFEA8:  .byte $00, $00, $98, $00, $BB, $21, $00, $03
-LFEB0:  .byte $02, $00, $90, $00, $BB, $20, $00, $81
-LFEB8:  .byte $02, $00, $98, $00, $BB, $20, $00, $80
-LFEC0:  .byte $00, $00, $A8, $00, $BD, $20, $00, $05
-LFEC8:  .byte $00, $00, $A0, $00, $BC, $20, $00, $04
-LFED0:  .byte $00, $00, $88, $00, $B9, $3F, $20, $01
-LFED8:  .byte $00, $00, $90, $00, $BA, $20, $00, $02
-LFEE0:  .byte $02, $00, $88, $00, $BB, $20, $00, $85
-LFEE8:  .byte $02, $00, $B0, $00, $BB, $20, $00, $82
-LFEF0:  .byte $01, $00, $98, $00, $BB, $1E, $00, $0A
-LFEF8:  .byte $01, $00, $90, $00, $BA, $20, $00, $09
-LFF00:  .byte $02, $00, $80, $00, $BB, $20, $00, $83
-LFF08:  .byte $01, $00, $88, $00, $B9, $20, $00, $08
-LFF10:  .byte $02, $00, $A8, $00, $BB, $20, $00, $86
-LFF18:  .byte $01, $00, $A8, $00, $BD, $36, $20, $0C
-LFF20:  .byte $02, $00, $A0, $00, $BB, $20, $00, $84
-LFF28:  .byte $01, $00, $80, $00, $B8, $20, $00, $07
-LFF30:  .byte $00, $00, $B0, $00, $BE, $20, $00, $06
-LFF38:  .byte $01, $00, $A0, $00, $BC, $20, $00, $0B
-LFF40:  .byte $01, $00, $B0, $00, $BE, $3F, $20, $0D
-LFF48:  .byte $06, $00, $90, $00, $98, $00, $1F, $0D
-LFF50:  .byte $06, $00, $90, $00, $98, $1F, $00, $0D
-LFF58:  .byte $06, $00, $90, $00, $98, $1F, $3F, $0D
-LFF60:  .byte $06, $00, $90, $00, $98, $3F, $1F, $0D
-LFF68:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+;----------------------------------------------------------------------------------------------------
+
+;Byte 0 - The bank containing the map data.
+;Byte 2, byte 1 - Pointer to map data.
+;Byte 4, byte 3 - Pointer to NPC data(not used for cave maps).
+;Byte 5 - Y start position on map(except dungeons and overworld).
+;Byte 6 - X start position on map(except dungeons and overworld).
+;Byte 7 - ?
+
+MapDatTbl:
+LFEA0:  .byte $00, $00, $80, $00, $B8, $16, $2A, $00 ;Overworld.
+LFEA8:  .byte $00, $00, $98, $00, $BB, $21, $00, $03 ;Town of Fawn.
+LFEB0:  .byte $02, $00, $90, $00, $BB, $20, $00, $81 ;Cave of Gold.
+LFEB8:  .byte $02, $00, $98, $00, $BB, $20, $00, $80 ;Cave of Death.
+LFEC0:  .byte $00, $00, $A8, $00, $BD, $20, $00, $05 ;Town of Moon.
+LFEC8:  .byte $00, $00, $A0, $00, $BC, $20, $00, $04 ;Town of Yew.
+LFED0:  .byte $00, $00, $88, $00, $B9, $3F, $20, $01 ;Lord British castle.
+LFED8:  .byte $00, $00, $90, $00, $BA, $20, $00, $02 ;Royal city.
+LFEE0:  .byte $02, $00, $88, $00, $BB, $20, $00, $85 ;Cave of Madness.
+LFEE8:  .byte $02, $00, $B0, $00, $BB, $20, $00, $82 ;Cave of Moon.
+LFEF0:  .byte $01, $00, $98, $00, $BB, $1E, $00, $0A ;Town of Devil Guard.
+LFEF8:  .byte $01, $00, $90, $00, $BA, $20, $00, $09 ;Town of Death Gulch.
+LFF00:  .byte $02, $00, $80, $00, $BB, $20, $00, $83 ;Cave of Fire.
+LFF08:  .byte $01, $00, $88, $00, $B9, $20, $00, $08 ;Town of Gray
+LFF10:  .byte $02, $00, $A8, $00, $BB, $20, $00, $86 ;Cave of Sol.
+LFF18:  .byte $01, $00, $A8, $00, $BD, $36, $20, $0C ;Ambrosia.
+LFF20:  .byte $02, $00, $A0, $00, $BB, $20, $00, $84 ;Cave of Fool.
+LFF28:  .byte $01, $00, $80, $00, $B8, $20, $00, $07 ;Town of Montor West.
+LFF30:  .byte $00, $00, $B0, $00, $BE, $20, $00, $06 ;Town of Montor East.
+LFF38:  .byte $01, $00, $A0, $00, $BC, $20, $00, $0B ;Town of Dawn.
+LFF40:  .byte $01, $00, $B0, $00, $BE, $3F, $20, $0D ;Castle of Exodus.
+LFF48:  .byte $06, $00, $90, $00, $98, $00, $1F, $0D ;Shrine of intelligence
+LFF50:  .byte $06, $00, $90, $00, $98, $1F, $00, $0D ;Shrine of Wisdom.
+LFF58:  .byte $06, $00, $90, $00, $98, $1F, $3F, $0D ;Shrine of Strength.
+LFF60:  .byte $06, $00, $90, $00, $98, $3F, $1F, $0D ;Shrine of Dexterity.
+LFF68:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF ;Not used.
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table contains the X,Y return coordinates
+;on the overworld map when exiting sub map.
 
 SubMapTbl:
 LFF70:  .byte $00, $00          ;Not used.
