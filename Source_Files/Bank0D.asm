@@ -7,6 +7,7 @@
 ;Forward declarations.
 
 .alias  Reset1                  $C000
+.alias  ShowWindow1             $C015
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
 .alias  NMI                     $FFF0
@@ -981,7 +982,7 @@ L894B:  LDY #$20
 L894D:  LDA OnHorse
 L894F:  STA (SGDatPtr),Y
 L8951:  LDY #$21
-L8953:  LDA $DA
+L8953:  LDA BribePray
 L8955:  STA (SGDatPtr),Y
 L8957:  LDY #$22
 L8959:  LDA $4A
@@ -1384,9 +1385,9 @@ L8CF5:  LDA $29
 L8CF7:  STA $99
 L8CF9:  JSR L98DB
 L8CFC:  RTS
-L8CFD:  BRK
-L8CFE:  BRK
-L8CFF:  BRK
+
+L8CFD:  .byte $00, $00, $00
+
 L8D00:  LDA #$77
 L8D02:  STA $30
 L8D04:  JSR L99E0
@@ -2957,7 +2958,7 @@ L9D67:  LDA #$08
 L9D69:  STA $2E
 L9D6B:  LDA #$04
 L9D6D:  STA $2D
-L9D6F:  JSR $C015
+L9D6F:  JSR ShowWindow1         ;($C015)Show a window on the screen.
 L9D72:  LDY #$30
 L9D74:  LDA ($99),Y
 L9D76:  STA $A0

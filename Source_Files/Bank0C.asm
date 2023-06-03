@@ -74,7 +74,7 @@ L8040:  PLA                     ;Restore A from the stack.
 L8041:  CMP #$03                ;Was the register new game option selected?
 L8043:  BNE PrepCreateCont      ;If not branch to load a game.
 
-L8045:  JSR L8679
+L8045:  JSR NameSaveGame        ;($8679)Load screen where player enters save game name.
 L8048:  JSR LBE53
 L804B:  LDA #$01
 L804D:  STA NewGmCreated
@@ -1019,6 +1019,7 @@ L8677:  .byte $58, $78
 
 ;----------------------------------------------------------------------------------------------------
 
+NameSaveGame:
 L8679:  JSR InitPPU             ;($990C)Initialize the PPU.
 
 L867C:  LDA #$06                ;
@@ -1035,14 +1036,16 @@ L868C:  LDA #$02                ;REGISTER YOUR NAME.
 L868E:  STA TextIndex           ;
 L8690:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8693:  JSR L871D
+L8693:  JSR EnterName           ;($871D)Show screen for entring name info.
 
 L8696:  LDY #$00
 L8698:  LDA #SG_VALID1
 L869A:  STA (SGDatPtr),Y
+
 L869C:  INY
 L869D:  LDA #SG_VALID2
 L869F:  STA (SGDatPtr),Y
+
 L86A1:  LDY #$02
 L86A3:  LDA $057E,Y
 L86A6:  CMP #$FF
@@ -1052,6 +1055,7 @@ L86AC:  INY
 L86AD:  CPY #$07
 L86AF:  BNE L86A3
 L86B1:  JMP L86BD
+
 L86B4:  LDA #$00
 L86B6:  STA (SGDatPtr),Y
 L86B8:  INY
@@ -1113,152 +1117,224 @@ L871C:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
+EnterName:
 L871D:  LDA #$08
-L871F:  STA $2A
+L871F:  STA TXTXPos
 L8721:  LDA #$0C
-L8723:  STA $29
-L8725:  LDA #$14
-L8727:  STA $2E
-L8729:  LDA #$06
-L872B:  STA $2D
+L8723:  STA TXTYPos
 
-L872D:  LDA #$03
-L872F:  STA TextIndex
+L8725:  LDA #$14
+L8727:  STA TXTClrCols
+L8729:  LDA #$06
+L872B:  STA TXTClrRows
+
+L872D:  LDA #$03                ;Letters and numbers for name entries.
+L872F:  STA TextIndex           ;
 L8731:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L8734:  LDA #$08
-L8736:  STA $2A
+L8736:  STA TXTXPos
 L8738:  LDA #$0A
-L873A:  STA $29
-L873C:  LDA #$05
-L873E:  STA $2E
-L8740:  LDA #$01
-L8742:  STA $2D
+L873A:  STA TXTYPos
 
-L8744:  LDA #$17
-L8746:  STA TextIndex
+L873C:  LDA #$05
+L873E:  STA TXTClrCols
+L8740:  LDA #$01
+L8742:  STA TXTClrRows
+
+L8744:  LDA #$17                ;----- 5 dashes for the 5 name characters.
+L8746:  STA TextIndex           ;
 L8748:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L874B:  LDX #$00
 L874D:  LDY #$00
 L874F:  LDA #$00
-L8751:  STA $17
+L8751:  STA NameLength
 
-L8753:  JSR L8872
+UpdateSelectorLoop:
+L8753:  JSR SetSelectorXY       ;($8872)Set XY position of the selector sprite.
+
 L8756:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L8759:  LDA Pad1Input
-L875B:  CMP #BTN_RIGHT
-L875D:  BNE L876A
-L875F:  CPX #$27
-L8761:  BNE L8766
-L8763:  JMP L8753
-L8766:  INX
-L8767:  JMP L8753
-L876A:  CMP #$02
-L876C:  BNE L8779
+L8759:  LDA Pad1Input           ;
+
+L875B:  CMP #BTN_RIGHT          ;Was the right button pressed?
+L875D:  BNE ChkBtnLt1           ;If not, branch if other buttons have been pressed.
+
+L875F:  CPX #$27                ;Are we at the last entry in the character table?
+L8761:  BNE +                   ;If not, branch to increment to next index.
+
+L8763:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+L8766:* INX                     ;Increment to the next character index.
+L8767:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+ChkBtnLt1:
+L876A:  CMP #BTN_LEFT
+L876C:  BNE ChkBtnUp1
+
 L876E:  CPX #$00
-L8770:  BNE L8775
-L8772:  JMP L8753
-L8775:  DEX
-L8776:  JMP L8753
-L8779:  CMP #$08
-L877B:  BNE L8784
-L877D:  LDA $884A,X
+L8770:  BNE +
+L8772:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+L8775:* DEX
+L8776:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+ChkBtnUp1:
+L8779:  CMP #BTN_UP
+L877B:  BNE ChkBtnDn1
+
+L877D:  LDA NextIndexUpTbl,X
 L8780:  TAX
-L8781:  JMP L8753
-L8784:  CMP #$04
-L8786:  BNE L878F
-L8788:  LDA $8822,X
+L8781:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+ChkBtnDn1:
+L8784:  CMP #BTN_DOWN
+L8786:  BNE ChkBtnA1
+
+L8788:  LDA NextIndexDnTbl,X
 L878B:  TAX
-L878C:  JMP L8753
-L878F:  CMP #$80
-L8791:  BEQ L8796
-L8793:  JMP L8753
-L8796:  STX $19
-L8798:  STY $18
+L878C:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+ChkBtnA1:
+L878F:  CMP #BTN_A
+L8791:  BEQ +
+
+L8793:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+L8796:* STX NameCharIndex
+L8798:  STY NameSelRow
 L879A:  CPX #$26
 L879C:  BCC L87B6
 L879E:  BEQ L87A1
 L87A0:  RTS
-L87A1:  LDA $17
-L87A3:  BNE L87A8
-L87A5:  JMP L8753
-L87A8:  DEC $17
-L87AA:  LDY $17
+
+L87A1:  LDA NameLength
+L87A3:  BNE +
+L87A5:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+L87A8:* DEC NameLength
+L87AA:  LDY NameLength
 L87AC:  LDA #$FF
 L87AE:  STA TextBuffer,Y
-L87B1:  DEC $17
+L87B1:  DEC NameLength
 L87B3:  JMP L87CC
-L87B6:  LDA $17
+
+L87B6:  LDA NameLength
 L87B8:  CMP #$05
-L87BA:  BNE L87BF
-L87BC:  JMP L8753
-L87BF:  LDA $87FC,X
-L87C2:  LDY $17
+L87BA:  BNE +
+
+L87BC:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
+
+L87BF:* LDA NameCharsTbl,X
+L87C2:  LDY NameLength
 L87C4:  STA TextBuffer,Y
 L87C7:  LDA #$FF
-L87C9:  STA $0581,Y
+L87C9:  STA TextBuffer+1,Y
+
 L87CC:  LDA #$08
-L87CE:  STA $2A
+L87CE:  STA TXTXPos
 L87D0:  LDA #$09
-L87D2:  STA $29
+L87D2:  STA TXTYPos
 L87D4:  LDA #$0A
-L87D6:  STA $2E
+L87D6:  STA TXTClrCols
 L87D8:  LDA #$01
-L87DA:  STA $2D
-L87DC:  LDA #$FF
+L87DA:  STA TXTClrRows
+
+L87DC:  LDA #TXT_DBL_SPACE
 L87DE:  STA TextIndex
-L87E0:  LDA $19
+
+L87E0:  LDA NameCharIndex
 L87E2:  PHA
-L87E3:  LDA $18
+L87E3:  LDA NameSelRow
 L87E5:  PHA
-L87E6:  LDA $17
+L87E6:  LDA NameLength
 L87E8:  PHA
+
 L87E9:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L87EC:  PLA
-L87ED:  STA $17
+L87ED:  STA NameLength
 L87EF:  PLA
-L87F0:  STA $18
+L87F0:  STA NameSelRow
 L87F2:  TAY
 L87F3:  PLA
-L87F4:  STA $19
+L87F4:  STA NameCharIndex
 L87F6:  TAX
-L87F7:  INC $17
-L87F9:  JMP L8753
 
-L87FA:  .byte $8A, $8B, $8C, $8D, $8E, $8F, $90, $91, $92, $93, $94, $95, $96, $97, $98, $99
-L880A:  .byte $9A, $9B, $9C, $9D, $9E, $9F, $A0, $A1, $A2, $A3, $42, $43, $38, $39, $3A, $3B
-L881A:  .byte $3C, $3D, $3E, $3F, $40, $41, $0A, $0B, $0C, $0D, $0E, $0F, $10, $11, $12, $13
-L882A:  .byte $14, $15, $16, $17, $18, $19, $1A, $1B, $24, $25, $1C, $1D, $1E, $1F, $20, $21
-L883A:  .byte $22, $23, $26, $26, $26, $26, $26, $26, $26, $26, $26, $26, $26, $27, $00, $01
-L884A:  .byte $02, $03, $04, $05, $06, $07, $08, $09, $00, $01, $02, $03, $04, $05, $06, $07
-L885A:  .byte $08, $09, $0A, $0B, $0C, $0D, $0E, $0F, $10, $11, $14, $15, $16, $17, $18, $19
-L886A:  .byte $1A, $1B, $12, $13, $22, $24                                          
+L87F7:  INC NameLength
+L87F9:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
 ;----------------------------------------------------------------------------------------------------
 
-L8872:  LDA $8897,X
-L8875:  AND #$0F
-L8877:  ASL
-L8878:  ASL
-L8879:  ASL
-L887A:  ASL
-L887B:  CLC
-L887C:  ADC #$38
-L887E:  STA SpriteBuffer+3
-L8881:  LDA $8897,X
-L8884:  AND #$F0
-L8886:  CLC
-L8887:  ADC #$60
-L8889:  STA SpriteBuffer
-L888C:  LDA $8897,X
-L888F:  AND #$F0
-L8891:  LSR
-L8892:  LSR
-L8893:  LSR
-L8894:  LSR
-L8895:  TAY
-L8896:  RTS
+;These are the valid character that can be used in a name.
+
+NameCharsTbl:
+;              A    B    C    D    E    F    G    H    I    J
+L87FC:  .byte $8A, $8B, $8C, $8D, $8E, $8F, $90, $91, $92, $93
+;              K    L    M    N    O    P    Q    R    S    T
+L8806:  .byte $94, $95, $96, $97, $98, $99, $9A, $9B, $9C, $9D
+;              U    V    W    X    Y    Z    ,    .
+L8810:  .byte $9E, $9F, $A0, $A1, $A2, $A3, $42, $43
+;              0    1    2    3    4    5    6    7    8    9
+L8818:  .byte $38, $39, $3A, $3B, $3C, $3D, $3E, $3F, $40, $41
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table is used to figure out what the next index value to load into X after the
+;down button has been pressed. For example, if the selector is in the 4th row and the
+;down button is pressed, the selector will always move to the backspace selection (index $26).
+
+NextIndexDnTbl:
+L8822:  .byte $0A, $0B, $0C, $0D, $0E, $0F, $10, $11, $12, $13
+L882C:  .byte $14, $15, $16, $17, $18, $19, $1A, $1B, $24, $25
+L8836:  .byte $1C, $1D, $1E, $1F, $20, $21, $22, $23
+L883E:  .byte $26, $26, $26, $26, $26, $26, $26, $26, $26, $26
+L8848:  .byte                               $26,      $27
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table is similar to the above table but is indicates what the next index will
+;be if the player presses the up button.
+
+NextIndexUpTbl:
+L884A:  .byte $00, $01, $02, $03, $04, $05, $06, $07, $08, $09
+L8854:  .byte $00, $01, $02, $03, $04, $05, $06, $07, $08, $09
+L885E:  .byte $0A, $0B, $0C, $0D, $0E, $0F, $10, $11
+L8866:  .byte $14, $15, $16, $17, $18, $19, $1A, $1B, $12, $13
+L8870:  .byte                               $22,      $24                                          
+
+;----------------------------------------------------------------------------------------------------
+
+SetSelectorXY:
+L8872:  LDA SelectorDatTbl,X    ;Get the X position of the selector.
+L8875:  AND #$0F                ;
+
+L8877:  ASL                     ;
+L8878:  ASL                     ;*16. Characters are spaced 16 pixels apart.
+L8879:  ASL                     ;
+L887A:  ASL                     ;
+
+L887B:  CLC                     ;Offset selector by 56 pixels to the right.
+L887C:  ADC #$38                ;
+
+L887E:  STA SpriteBuffer+3      ;Save final X position of the selector sprite.
+
+L8881:  LDA SelectorDatTbl,X    ;Get the Y position of the selector.
+L8884:  AND #$F0                ;
+
+L8886:  CLC                     ;Offset selector by 96 pixels down.
+L8887:  ADC #$60                ;
+
+L8889:  STA SpriteBuffer        ;Save final Y position of the selector sprite.
+
+L888C:  LDA SelectorDatTbl,X   ;
+L888F:  AND #$F0               ;
+L8891:  LSR                    ;
+L8892:  LSR                    ;Get the row number where the selector is and put it in Y
+L8893:  LSR                    ;
+L8894:  LSR                    ;
+L8895:  TAY                    ;
+L8896:  RTS                    ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1395,26 +1471,26 @@ L896B:  JSR InitPPU             ;($990C)Initialize the PPU.
 L896E:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
 
 L8971:  LDA #$06
-L8973:  STA $2A
+L8973:  STA WndXPos
 L8975:  LDA #$0C
-L8977:  STA $29
+L8977:  STA WndYPos
 
 L8979:  LDA #$14
-L897B:  STA $2E
+L897B:  STA WndWidth
 L897D:  LDA #$0C
-L897F:  STA $2D
+L897F:  STA WndHeight
 
 L8981:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
 L8984:  LDA #$0A
-L8986:  STA $2A
+L8986:  STA TXTXPos
 L8988:  LDA #$0E
-L898A:  STA $29
+L898A:  STA TXTYPos
 
 L898C:  LDA #$0D
-L898E:  STA $2E
+L898E:  STA TXTClrCols
 L8990:  LDA #$05
-L8992:  STA $2D
+L8992:  STA TXTClrRows
 
 L8994:  LDA #$05                ;EXAMINE CREATE DISCARD FORM PARTY PREVIOUS MENU.
 L8996:  STA TextIndex           ;
@@ -1440,6 +1516,7 @@ L89B6:  BNE L89A7
 
 L89B8:  TXA
 L89B9:  RTS
+
 L89BA:  CPX #$00
 L89BC:  BEQ L89A7
 L89BE:  DEX
@@ -1480,14 +1557,19 @@ L8A07:  STA SpriteBufferBase
 L8A0A:  LDA #$30
 L8A0C:  STA $7303
 L8A0F:  LDX #$00
+
 L8A11:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8A14:  LDA Pad1Input
+
 L8A16:  CMP #BTN_UP
 L8A18:  BEQ L8A63
+
 L8A1A:  CMP #$04
 L8A1C:  BEQ L8A6B
+
 L8A1E:  CMP #$80
 L8A20:  BNE L8A11
+
 L8A22:  LDY #$01
 L8A24:  TXA
 L8A25:  CPX #$02
@@ -1539,16 +1621,18 @@ L8A79:  .byte $80, $90, $A0
 
 L8A7C:  JSR InitPPU             ;($990C)Initialize the PPU.
 L8A7F:  LDA #$02
-L8A81:  STA $2A
+L8A81:  STA TXTXPos
 L8A83:  LDA #$04
-L8A85:  STA $29
+L8A85:  STA TXTYPos
 L8A87:  LDA #$1C
-L8A89:  STA $2E
+L8A89:  STA TXTClrCols
 L8A8B:  LDA #$01
-L8A8D:  STA $2D
-L8A8F:  LDA #$07
-L8A91:  STA TextIndex
+L8A8D:  STA TXTClrRows
+
+L8A8F:  LDA #$07                ;CHARACTER LIST.
+L8A91:  STA TextIndex           ;
 L8A93:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8A96:  LDX SGDatPtrLB
 L8A98:  STX $99
 L8A9A:  LDX SGDatPtrUB
@@ -2396,7 +2480,7 @@ L9164:  STA $2D
 L9166:  LDA #$0E
 L9168:  STA TextIndex
 L916A:  JSR ShowTextString      ;($995C)Show a text string on the screen.
-L916D:  JSR L871D
+L916D:  JSR EnterName           ;($871D)Show screen for entring name info.
 L9170:  LDY #$0B
 L9172:  LDA #$00
 L9174:  STA ($99),Y
@@ -3728,20 +3812,22 @@ L9F2B:  .byte $C0
 
 L9F2C:  AND #$7C
 L9F2E:  TAY
-L9F2F:  LDA $0400,Y
-L9F32:  CMP #$18
+L9F2F:  LDA NPCSprIndex,Y
+L9F32:  CMP #NPC_WTR_EN_5
 L9F34:  BEQ L9F42
-L9F36:  CMP #$1B
+L9F36:  CMP #NPC_WTR_EN_7
 L9F38:  BEQ L9F42
-L9F3A:  CMP #$1C
+L9F3A:  CMP #NPC_EN_SHIP
 L9F3C:  BEQ L9F42
-L9F3E:  CMP #$1E
+L9F3E:  CMP #NPC_WHIRLPOOL
 L9F40:  BNE L9F4B
-L9F42:  LDA $4E
+
+L9F42:  LDA WorkPPUBufLen
 L9F44:  CMP #$03
 L9F46:  BNE L9F88
 L9F48:  JMP L9F70
-L9F4B:  LDA $4E
+
+L9F4B:  LDA WorkPPUBufLen
 L9F4D:  CMP #$03
 L9F4F:  BEQ L9F88
 L9F51:  CMP #$04
@@ -3754,9 +3840,11 @@ L9F5D:  CMP #$09
 L9F5F:  BEQ L9F88
 L9F61:  CMP #$05
 L9F63:  BNE L9F6B
-L9F65:  LDA $A8
+
+L9F65:  LDA MapProperties
 L9F67:  CMP #$0C
 L9F69:  BNE L9F88
+
 L9F6B:  LDA $C0
 L9F6D:  AND #$7C
 L9F6F:  TAY
@@ -3770,6 +3858,7 @@ L9F7D:  LDA $A0A4,X
 L9F80:  ADC $0403,Y
 L9F83:  AND #$3F
 L9F85:  STA $0403,Y
+
 L9F88:  LDA $C0
 L9F8A:  AND #$7C
 L9F8C:  TAY
@@ -3816,13 +3905,13 @@ LA000:  JSR $990C
 LA003:  LDA #$00
 LA005:  STA CurPPUConfig1
 LA007:  LDY #$06
-LA009:  LDA ($91),Y
+LA009:  LDA (Pos1ChrPtr),Y
 LA00B:  STA $30
-LA00D:  LDA ($93),Y
+LA00D:  LDA (Pos2ChrPtr),Y
 LA00F:  STA $2E
-LA011:  LDA ($95),Y
+LA011:  LDA (Pos3ChrPtr),Y
 LA013:  STA $2D
-LA015:  LDA ($97),Y
+LA015:  LDA (Pos4ChrPtr),Y
 LA017:  STA $2C
 LA019:  JSR $C009
 LA01C:  LDA #$20
@@ -4442,22 +4531,45 @@ LA545:  .byte $92, $97, $9D, $00, $FD, $A0, $92, $9C, $00, $FD, $96, $96, $99, $
 ;              H    P    _    \n   E    X    P    _    \n   G    O    L    D    \n  END
 LA555:  .byte $91, $99, $00, $FD, $8E, $A1, $99, $00, $FD, $90, $98, $95, $8D, $FD, $FF
 
+;----------------------------------------------------------------------------------------------------
+
+;              H    U    M    A    N    \n   E    L    F    \n   D    W    A    R    F    \n
 LA564:  .byte $91, $9E, $96, $8A, $97, $FD, $8E, $95, $8F, $FD, $8D, $A0, $8A, $9B, $8F, $FD
+;              B    O    B    I    T    \n   F    U    Z    Z    Y    \n  END
 LA565:  .byte $8B, $98, $8B, $92, $9D, $FD, $8F, $9E, $A3, $A3, $A2, $FD, $FF
 
+;----------------------------------------------------------------------------------------------------
+
+;              F    T    R    \n   C    L    R    C    \n   W    Z    R    D    \n   T    H
 LA572:  .byte $8F, $9D, $9B, $FD, $8C, $95, $9B, $8C, $FD, $A0, $A3, $9B, $8D, $FD, $9D, $91
+;              I    E    F    \n   P    L    D    N    \n   B    R    B    R    N    \n   L
 LA575:  .byte $92, $8E, $8F, $FD, $99, $95, $8D, $97, $FD, $8B, $9B, $8B, $9B, $97, $FD, $95
+;              A    R    K    \n   I    L    S    N    T    \n   D    R    U    I    D    \n
 LA585:  .byte $8A, $9B, $94, $FD, $92, $95, $9C, $97, $9D, $FD, $8D, $9B, $9E, $92, $8D, $FD
+;              A    L    C    M    T    \n   R    N    G    R   END
 LA595:  .byte $8A, $95, $8C, $96, $9D, $FD, $9B, $97, $90, $9B, $FF
 
+;----------------------------------------------------------------------------------------------------
+
+;              T    O    R    C    H    _    _    \n   K    E    Y    _    _    _    _    \n
 LA5A0:  .byte $9D, $98, $9B, $8C, $91, $00, $00, $FD, $94, $8E, $A2, $00, $00, $00, $00, $FD
+;              G    E    M    _    _    _    _    \n   S    A    N    D    S    _    _    \n
 LA5A5:  .byte $90, $8E, $96, $00, $00, $00, $00, $FD, $9C, $8A, $97, $8D, $9C, $00, $00, $FD
+;              T    E    N    T    _    _    _    \n   G    L    D    _    P    I    C    K
 LA5B5:  .byte $9D, $8E, $97, $9D, $00, $00, $00, $FD, $90, $95, $8D, $00, $99, $92, $8C, $94
+;              \n   S    L    V    _    P    I    C    K    \n   G    L    D    _    H    O
 LA5C5:  .byte $FD, $9C, $95, $9F, $00, $99, $92, $8C, $94, $FD, $90, $95, $8D, $00, $91, $98
+;              R    N    \n   C    O    M    P    A    S    S    \n  END
 LA5D5:  .byte $9B, $97, $FD, $8C, $98, $96, $99, $8A, $9C, $9C, $FD, $FF
 
+;----------------------------------------------------------------------------------------------------
+
+;              F    O    R    C    E    \n   F    I    R    E    \n   S    N    A    K    E
 LA5E1:  .byte $8F, $98, $9B, $8C, $8E, $FD, $8F, $92, $9B, $8E, $FD, $9C, $97, $8A, $94, $8E
+;              \n   K    I    N    G    \n  END
 LA5F1:  .byte $FD, $94, $92, $97, $90, $FD, $FF
+
+;----------------------------------------------------------------------------------------------------
 
 ;              D    E    A    T    H    \n   S    O    L    \n   L    O    V    E    \n   M
 LA61F:  .byte $8D, $8E, $8A, $9D, $91, $FD, $9C, $98, $95, $FD, $95, $98, $9F, $8E, $FD, $96
@@ -4477,25 +4589,28 @@ LA665:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $
 ;The following table points to the uncompressed text strings below.
 
 StringPtrTbl:
-LA675:  .word $A6C7, $A6D0, $A6D6, $A6E9, $A74E, $A75E, $A78E, $A7B1
-LA685:  .word $A870, $A87A, $A88B, $A8AC, $A8C5, $A8D8, $A928, $A937
-LA695:  .word $A949, $A9C2, $AA3B, $AAB4, $AB2D, $ABA6, $AC1F, $AC20
-LA6A5:  .word $AC26, $AC27, $AC28, $ACDF, $ADA0, $ADAD, $ADB8, $ADC2
-LA6B5:  .word $ADCF, $ADED, $AE10, $AE2C, $AE50, $AE7A, $AEA1, $AEA8
-LA6C5:  .word $AEB2
+LA675:  .word TB0E00, TB0E01, TB0E02, TB0E03, TB0E04, TB0E05, TB0E06, TB0E07
+LA685:  .word TB0E08, TB0E09, TB0E0A, TB0E0B, TB0E0C, TB0E0D, TB0E0E, TB0E0F
+LA695:  .word TB0E10, TB0E11, TB0E12, TB0E13, TB0E14, TB0E15, TB0E16, TB0E17
+LA6A5:  .word TB0E18, TB0E19, TB0E1A, TB0E1B, TB0E1C, TB0E1D, TB0E1E, TB0E1F
+LA6B5:  .word TB0E20, TB0E21, TB0E22, TB0E23, TB0E24, TB0E25, TB0E26, TB0E27
+LA6C5:  .word TB0E28
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E00:
 ;              R    E    G    I    S    T    E    R   END
 LA6C7:  .byte $9B, $8E, $90, $92, $9C, $9D, $8E, $9B, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E01:
 ;              E    R    A    S    E   END
 LA6D0:  .byte $8E, $9B, $8A, $9C, $8E, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E02:
 ;              R    E    G    I    S    T    E    R    _    Y    O    U    R    _    N    A
 LA6D6:  .byte $9B, $8E, $90, $92, $9C, $9D, $8E, $9B, $00, $A2, $98, $9E, $9B, $00, $97, $8A
 ;              M    E   END
@@ -4503,6 +4618,7 @@ LA6E6:  .byte $96, $8E, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E03:
 ;              A    _    B    _    C    _    D    _    E    _    F    _    G    _    H    _   
 LA6E9:  .byte $8A, $00, $8B, $00, $8C, $00, $8D, $00, $8E, $00, $8F, $00, $90, $00, $91, $00
 ;              I    _    J    _    \n   K    _    L    _    M    _    N    _    O    _    P
@@ -4520,11 +4636,13 @@ LA749:  .byte $00, $8E, $97, $8D, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E04:
 ;              C    R    E    A    T    E    \n   C    O    N    T    I    N    U    E   END
 LA74E:  .byte $8C, $9B, $8E, $8A, $9D, $8E, $FD, $8C, $98, $97, $9D, $92, $97, $9E, $8E, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E05:
 ;              E    X    A    M    I    N    E    \n   C    R    E    A    T    E    \n   D
 LA75E:  .byte $8E, $A1, $8A, $96, $92, $97, $8E, $FD, $8C, $9B, $8E, $8A, $9D, $8E, $FD, $8D
 ;              I    S    C    A    R    D    \n   F    O    R    M    _    P    A    R    T
@@ -4534,6 +4652,7 @@ LA77E:  .byte $A2, $FD, $99, $9B, $8E, $9F, $92, $98, $9E, $9C, $00, $96, $8E, $
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E06:
 ;              H    A    N    D    -    M    A    D    E    \n   R    E    A    D    Y    -
 LA78E:  .byte $91, $8A, $97, $8D, $02, $96, $8A, $8D, $8E, $FD, $9B, $8E, $8A, $8D, $A2, $02
 ;              M    A    D    E    \n   P    R    E    V    I    O    U    S    _    M    E
@@ -4543,6 +4662,7 @@ LA7AE:  .byte $97, $9E, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E07:
 ;              _    _    _    _    _    _    C    H    A    R    A    C    T    E    R    _
 LA7B1:  .byte $00, $00, $00, $00, $00, $00, $8C, $91, $8A, $9B, $8A, $8C, $9D, $8E, $9B, $00
 ;              L    I    S    T    \n   0    1    _    _    _    _    _    _    _    _    _
@@ -4570,108 +4690,245 @@ LA861:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $3A, $
 
 ;----------------------------------------------------------------------------------------------------
 
+TB0E08:
+;              _    _    _    _    _    _    E    N    D   END
 LA870:  .byte $00, $00, $00, $00, $00, $00, $8E, $97, $8D, $FF
 
+;----------------------------------------------------------------------------------------------------
+
+TB0E09:
+;              C    H    A    R    A    C    T    E    R    _    M    A    K    I    N    G
 LA87A:  .byte $8C, $91, $8A, $9B, $8A, $8C, $9D, $8E, $9B, $00, $96, $8A, $94, $92, $97, $90
+;             END
 LA88A:  .byte $FF
 
-LA88B:  .byte $9B, $8A, $8C, $8E, $FD, $91, $9E, $96, $8A, $97
-LA895:  .byte $FD, $8E, $95, $8F, $FD, $8D, $A0, $8A, $9B, $8F, $FD, $8B, $98, $8B, $92, $9D
-LA8A5:  .byte $FD, $8F, $9E, $A3, $A3, $A2, $FF, $9B, $8E, $9C, $9D, $00, $00, $9C, $9D, $9B
-LA8B5:  .byte $00, $00, $8D, $8E, $A1, $00, $00, $92, $97, $9D, $00, $00, $A0, $92, $9C, $FF
-LA8C5:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $98, $94, $00, $8C, $8A, $97, $8C
-LA8D5:  .byte $8E, $95, $FF, $99, $9B, $98, $8F, $8E, $9C, $9C, $92, $98, $97, $FD, $8F, $9D
-LA8E5:  .byte $9B, $00, $00, $00, $00, $95, $8A, $9B, $94, $FD, $8C, $95, $9B, $8C, $00, $00
-LA8F5:  .byte $00, $92, $95, $9C, $97, $9D, $FD, $A0, $A3, $9B, $8D, $00, $00, $00, $8D, $9B
-LA905:  .byte $9E, $92, $8D, $FD, $9D, $91, $92, $8E, $8F, $00, $00, $8A, $95, $8C, $96, $9D
-LA915:  .byte $FD, $99, $95, $8D, $97, $00, $00, $00, $9B, $97, $90, $9B, $FD, $8B, $9B, $8B
-LA925:  .byte $9B, $97, $FF, $8C, $91, $8A, $9B, $8A, $8C, $9D, $8E, $9B, $00, $97, $8A, $96
-LA935:  .byte $8E, $FF, $9C, $8E, $95, $8E, $8C, $9D, $00, $8C, $91, $8A, $9B, $8A, $8C, $9D
-LA945:  .byte $8E, $9B, $9C, $FF, $8F, $9D, $9B, $00, $00, $00, $99, $9B, $98, $8F, $8E, $9C
-LA955:  .byte $00, $00, $9B, $97, $90, $9B, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A
-LA965:  .byte $8C, $8E, $00, $00, $91, $9E, $96, $8A, $97, $FD, $00, $00, $00, $00, $8A, $9D
-LA975:  .byte $9D, $9B, $92, $8B, $9E, $9D, $8E, $9C, $FD, $00, $00, $3A, $3D, $00, $00, $00
-LA985:  .byte $9C, $9D, $9B, $00, $00, $00, $00, $3A, $3D, $FD, $00, $00, $39, $3D, $00, $00
-LA995:  .byte $00, $8D, $8E, $A1, $00, $00, $00, $00, $39, $3D, $FD, $00, $00, $38, $3D, $00
-LA9A5:  .byte $00, $00, $92, $97, $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D
-LA9B5:  .byte $00, $00, $00, $A0, $92, $9C, $00, $00, $00, $00, $38, $3D, $FF, $8C, $95, $9B
-LA9C5:  .byte $8C, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8D, $9B, $9E, $92, $8D, $FD
-LA9D5:  .byte $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00, $8B, $98, $8B
-LA9E5:  .byte $92, $9D, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B, $9E, $9D, $8E
-LA9F5:  .byte $9C, $FD, $00, $00, $38, $3D, $00, $00, $00, $9C, $9D, $9B, $00, $00, $00, $00
-LAA05:  .byte $38, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1, $00, $00, $00
-LAA15:  .byte $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97, $9D, $00, $00
-LAA25:  .byte $00, $00, $3A, $38, $FD, $00, $00, $3A, $3D, $00, $00, $00, $A0, $92, $9C, $00
-LAA35:  .byte $00, $00, $00, $3A, $38, $FF, $9D, $91, $92, $8E, $8F, $00, $99, $9B, $98, $8F
-LAA45:  .byte $8E, $9C, $00, $92, $95, $9C, $97, $9D, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00
-LAA55:  .byte $9B, $8A, $8C, $8E, $00, $00, $8F, $9E, $A3, $A3, $A2, $FD, $00, $00, $00, $00
-LAA65:  .byte $8A, $9D, $9D, $9B, $92, $8B, $9E, $9D, $8E, $9C, $FD, $00, $00, $39, $3D, $00
-LAA75:  .byte $00, $00, $9C, $9D, $9B, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $3A, $3D
-LAA85:  .byte $00, $00, $00, $8D, $8E, $A1, $00, $00, $00, $00, $3A, $3D, $FD, $00, $00, $38
-LAA95:  .byte $3D, $00, $00, $00, $92, $97, $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00
-LAAA5:  .byte $38, $3D, $00, $00, $00, $A0, $92, $9C, $00, $00, $00, $00, $39, $3D, $FF, $A0
-LAAB5:  .byte $A3, $9B, $8D, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8A, $95, $8C, $96
-LAAC5:  .byte $9D, $FD, $8F, $9E, $A3, $A3, $A2, $00, $00, $9B, $8A, $8C, $8E, $00, $00, $00
-LAAD5:  .byte $00, $8E, $95, $8F, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B, $9E
-LAAE5:  .byte $9D, $8E, $9C, $FD, $00, $00, $38, $3D, $00, $00, $00, $9C, $9D, $9B, $00, $00
-LAAF5:  .byte $00, $00, $38, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1, $00
-LAB05:  .byte $00, $00, $00, $3A, $38, $FD, $00, $00, $3A, $3D, $00, $00, $00, $92, $97, $9D
-LAB15:  .byte $00, $00, $00, $00, $3A, $38, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0, $92
-LAB25:  .byte $9C, $00, $00, $00, $00, $38, $3D, $FF, $99, $95, $8D, $97, $00, $00, $99, $9B
-LAB35:  .byte $98, $8F, $8E, $9C, $00, $00, $95, $8A, $9B, $94, $FD, $8B, $98, $8B, $92, $9D
-LAB45:  .byte $00, $00, $9B, $8A, $8C, $8E, $00, $00, $00, $00, $8E, $95, $8F, $FD, $00, $00
-LAB55:  .byte $00, $00, $8A, $9D, $9D, $9B, $92, $8B, $9E, $9D, $8E, $9C, $FD, $00, $00, $3A
-LAB65:  .byte $3D, $00, $00, $00, $9C, $9D, $9B, $00, $00, $00, $00, $3A, $3D, $FD, $00, $00
-LAB75:  .byte $39, $3D, $00, $00, $00, $8D, $8E, $A1, $00, $00, $00, $00, $39, $3D, $FD, $00
-LAB85:  .byte $00, $38, $3D, $00, $00, $00, $92, $97, $9D, $00, $00, $00, $00, $38, $3D, $FD
-LAB95:  .byte $00, $00, $38, $3D, $00, $00, $00, $A0, $92, $9C, $00, $00, $00, $00, $38, $3D
-LABA5:  .byte $FF, $8F, $9D, $9B, $00, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8B, $9B
-LABB5:  .byte $8B, $9B, $97, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00
-LABC5:  .byte $00, $8D, $A0, $8A, $9B, $8F, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92
-LABD5:  .byte $8B, $9E, $9D, $8E, $9C, $FD, $00, $00, $3A, $3D, $00, $00, $00, $9C, $9D, $9B
-LABE5:  .byte $00, $00, $00, $00, $3A, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E
-LABF5:  .byte $A1, $00, $00, $00, $00, $39, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92
-LAC05:  .byte $97, $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00
-LAC15:  .byte $A0, $92, $9C, $00, $00, $00, $00, $38, $3D, $FF, $FF, $02, $02, $02, $02, $02
-LAC25:  .byte $FF, $FF, $FF, $8F, $98, $9B, $96, $00, $8A, $00, $99, $8A, $9B, $9D, $A2, $FD
-LAC35:  .byte $38, $39, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $39
-LAC45:  .byte $FD, $38, $3A, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39
-LAC55:  .byte $3A, $FD, $38, $3B, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAC65:  .byte $39, $3B, $FD, $38, $3C, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAC75:  .byte $00, $39, $3C, $FD, $38, $3D, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAC85:  .byte $00, $00, $39, $3D, $FD, $38, $3E, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAC95:  .byte $00, $00, $00, $39, $3E, $FD, $38, $3F, $00, $00, $00, $00, $00, $00, $00, $00
-LACA5:  .byte $00, $00, $00, $00, $39, $3F, $FD, $38, $40, $00, $00, $00, $00, $00, $00, $00
-LACB5:  .byte $00, $00, $00, $00, $00, $39, $40, $FD, $38, $41, $00, $00, $00, $00, $00, $00
-LACC5:  .byte $00, $00, $00, $00, $00, $00, $39, $41, $FD, $39, $38, $00, $00, $00, $00, $00
-LACD5:  .byte $00, $00, $00, $00, $00, $00, $00, $3A, $38, $FF, $8D, $92, $9C, $8C, $8A, $9B
-LACE5:  .byte $8D, $9C, $00, $9D, $91, $8E, $00, $8C, $91, $8A, $9B, $8A, $8C, $9D, $8E, $9B
-LACF5:  .byte $FD, $38, $39, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39
-LAD05:  .byte $39, $FD, $38, $3A, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAD15:  .byte $39, $3A, $FD, $38, $3B, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAD25:  .byte $00, $39, $3B, $FD, $38, $3C, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAD35:  .byte $00, $00, $39, $3C, $FD, $38, $3D, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LAD45:  .byte $00, $00, $00, $39, $3D, $FD, $38, $3E, $00, $00, $00, $00, $00, $00, $00, $00
-LAD55:  .byte $00, $00, $00, $00, $39, $3E, $FD, $38, $3F, $00, $00, $00, $00, $00, $00, $00
-LAD65:  .byte $00, $00, $00, $00, $00, $39, $3F, $FD, $38, $40, $00, $00, $00, $00, $00, $00
-LAD75:  .byte $00, $00, $00, $00, $00, $00, $39, $40, $FD, $38, $41, $00, $00, $00, $00, $00
-LAD85:  .byte $00, $00, $00, $00, $00, $00, $00, $39, $41, $FD, $39, $38, $00, $00, $00, $00
-LAD95:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $3A, $38, $FF, $00, $A0, $8E, $8A, $99
-LADA5:  .byte $98, $97, $FD, $91, $8A, $97, $8D, $FF, $8A, $9B, $96, $98, $9B, $FD, $9C, $94
-LADB5:  .byte $92, $97, $FF, $98, $94, $FD, $8C, $8A, $97, $8C, $8E, $95, $FF, $8E, $9B, $8A
-LADC5:  .byte $9C, $8E, $FD, $A2, $8E, $9C, $00, $97, $98, $FF, $A0, $8E, $95, $8C, $98, $96
-LADD5:  .byte $8E, $42, $00, $A2, $8E, $FD, $8F, $98, $9E, $9B, $00, $8B, $9B, $8A, $9F, $8E
-LADE5:  .byte $00, $9C, $98, $9E, $95, $9C, $43, $FF, $8E, $A1, $98, $8D, $9E, $9C, $42, $8D
-LADF5:  .byte $9B, $8E, $8A, $8D, $8F, $9E, $95, $FD, $8D, $8E, $9F, $92, $95, $42, $00, $92
-LAE05:  .byte $9C, $00, $8A, $8B, $98, $9E, $9D, $00, $9D, $98, $FF, $A0, $8A, $94, $8E, $00
-LAE15:  .byte $9E, $99, $00, $97, $98, $A0, $00, $92, $97, $00, $9D, $91, $92, $9C, $FD, $9B
-LAE25:  .byte $8E, $90, $92, $98, $97, $43, $FF, $92, $8F, $00, $9C, $98, $42, $00, $98, $9E
-LAE35:  .byte $9B, $00, $A0, $98, $9B, $95, $8D, $FD, $A0, $92, $95, $95, $00, $8B, $8E, $00
-LAE45:  .byte $8C, $98, $9F, $8E, $9B, $8E, $8D, $00, $8B, $A2, $FF, $8D, $8A, $9B, $94, $97
-LAE55:  .byte $8E, $9C, $9C, $43, $8B, $9B, $8A, $9F, $8E, $00, $98, $97, $8E, $9C, $42, $FD
-LAE65:  .byte $9C, $8E, $8A, $95, $00, $8E, $A1, $98, $8D, $9E, $9C, $00, $8A, $97, $8D, $00
-LAE75:  .byte $9C, $8A, $9F, $8E, $FF
+;----------------------------------------------------------------------------------------------------
 
+TB0E0A:
+;              R    A    C    E    \n   H    U    M    A    N    \n   E    L    F    \n   D
+LA88B:  .byte $9B, $8A, $8C, $8E, $FD, $91, $9E, $96, $8A, $97, $FD, $8E, $95, $8F, $FD, $8D
+;              W    A    R    F    \n   B    O    B    I    T    \n   F    U    Z    Z    Y
+LA89B:  .byte $A0, $8A, $9B, $8F, $FD, $8B, $98, $8B, $92, $9D, $FD, $8F, $9E, $A3, $A3, $A2
+;             END
+LA8AB:  .byte $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E0B:
+LA8AC:  .byte $9B, $8E, $9C, $9D, $00, $00, $9C, $9D, $9B, $00, $00, $8D, $8E, $A1, $00, $00
+LA8BC:  .byte $92, $97, $9D, $00, $00, $A0, $92, $9C, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E0C:
+LA8C5:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $98, $94, $00, $8C, $8A, $97, $8C
+LA8D5:  .byte $8E, $95, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E0D:
+LA8D8:  .byte $99, $9B, $98, $8F, $8E, $9C, $9C, $92, $98, $97, $FD, $8F, $9D, $9B, $00, $00
+LA8E8:  .byte $00, $00, $95, $8A, $9B, $94, $FD, $8C, $95, $9B, $8C, $00, $00, $00, $92, $95
+LA8F8:  .byte $9C, $97, $9D, $FD, $A0, $A3, $9B, $8D, $00, $00, $00, $8D, $9B, $9E, $92, $8D
+LA908:  .byte $FD, $9D, $91, $92, $8E, $8F, $00, $00, $8A, $95, $8C, $96, $9D, $FD, $99, $95
+LA918:  .byte $8D, $97, $00, $00, $00, $9B, $97, $90, $9B, $FD, $8B, $9B, $8B, $9B, $97, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E0E:
+LA928:  .byte $8C, $91, $8A, $9B, $8A, $8C, $9D, $8E, $9B, $00, $97, $8A, $96, $8E, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E0F:
+LA937:  .byte $9C, $8E, $95, $8E, $8C, $9D, $00, $8C, $91, $8A, $9B, $8A, $8C, $9D, $8E, $9B
+LA947:  .byte $9C, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E10:
+LA949:  .byte $8F, $9D, $9B, $00, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $00, $9B, $97
+LA959:  .byte $90, $9B, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+LA969:  .byte $91, $9E, $96, $8A, $97, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+LA979:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $3A, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+LA989:  .byte $00, $00, $00, $3A, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+LA999:  .byte $00, $00, $00, $00, $39, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+LA9A9:  .byte $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+LA9B9:  .byte $92, $9C, $00, $00, $00, $00, $38, $3D, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E11:
+LA9C2:  .byte $8C, $95, $9B, $8C, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8D, $9B, $9E
+LA9D2:  .byte $92, $8D, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+LA9E2:  .byte $8B, $98, $8B, $92, $9D, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+LA9F2:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $38, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+LAA02:  .byte $00, $00, $00, $38, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+LAA12:  .byte $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+LAA22:  .byte $9D, $00, $00, $00, $00, $3A, $38, $FD, $00, $00, $3A, $3D, $00, $00, $00, $A0
+LAA32:  .byte $92, $9C, $00, $00, $00, $00, $3A, $38, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E12:
+LAA3B:  .byte $9D, $91, $92, $8E, $8F, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $92, $95, $9C
+LAA4B:  .byte $97, $9D, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+LAA5B:  .byte $8F, $9E, $A3, $A3, $A2, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+LAA6B:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $39, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+LAA7B:  .byte $00, $00, $00, $38, $3D, $FD, $00, $00, $3A, $3D, $00, $00, $00, $8D, $8E, $A1
+LAA8B:  .byte $00, $00, $00, $00, $3A, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+LAA9B:  .byte $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+LAAAB:  .byte $92, $9C, $00, $00, $00, $00, $39, $3D, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E13:
+LAAB4:  .byte $A0, $A3, $9B, $8D, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8A, $95, $8C
+LAAC4:  .byte $96, $9D, $FD, $8F, $9E, $A3, $A3, $A2, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+LAAD4:  .byte $00, $00, $8E, $95, $8F, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+LAAE4:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $38, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+LAAF4:  .byte $00, $00, $00, $38, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+LAB04:  .byte $00, $00, $00, $00, $3A, $38, $FD, $00, $00, $3A, $3D, $00, $00, $00, $92, $97
+LAB14:  .byte $9D, $00, $00, $00, $00, $3A, $38, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+LAB24:  .byte $92, $9C, $00, $00, $00, $00, $38, $3D, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E14:
+LAB2D:  .byte $99, $95, $8D, $97, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $00, $95, $8A
+LAB3D:  .byte $9B, $94, $FD, $8B, $98, $8B, $92, $9D, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+LAB4D:  .byte $00, $00, $8E, $95, $8F, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+LAB5D:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $3A, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+LAB6D:  .byte $00, $00, $00, $3A, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+LAB7D:  .byte $00, $00, $00, $00, $39, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+LAB8D:  .byte $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+LAB9D:  .byte $92, $9C, $00, $00, $00, $00, $38, $3D, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E15:
+LABA6:  .byte $8F, $9D, $9B, $00, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8B, $9B, $8B
+LABB6:  .byte $9B, $97, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+LABC6:  .byte $8D, $A0, $8A, $9B, $8F, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+LABD6:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $3A, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+LABE6:  .byte $00, $00, $00, $3A, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+LABF6:  .byte $00, $00, $00, $00, $39, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+LAC06:  .byte $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+LAC16:  .byte $92, $9C, $00, $00, $00, $00, $38, $3D, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E16:
+;             END
+LAC1F:  .byte $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E17:
+;              -    -    -    -    -   END
+LAC20:  .byte $02, $02, $02, $02, $02, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E18:
+;             END
+LAC26:  .byte $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E19:
+;             END
+LAC27:  .byte $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E1A:
+LAC28:  .byte $8F, $98, $9B, $96, $00, $8A, $00, $99, $8A, $9B, $9D, $A2, $FD, $38, $39, $00
+LAC38:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $39, $FD, $38, $3A
+LAC48:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3A, $FD, $38
+LAC58:  .byte $3B, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3B, $FD
+LAC68:  .byte $38, $3C, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3C
+LAC78:  .byte $FD, $38, $3D, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39
+LAC88:  .byte $3D, $FD, $38, $3E, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LAC98:  .byte $39, $3E, $FD, $38, $3F, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LACA8:  .byte $00, $39, $3F, $FD, $38, $40, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LACB8:  .byte $00, $00, $39, $40, $FD, $38, $41, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LACC8:  .byte $00, $00, $00, $39, $41, $FD, $39, $38, $00, $00, $00, $00, $00, $00, $00, $00
+LACD8:  .byte $00, $00, $00, $00, $3A, $38, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E1B:
+LACDF:  .byte $8D, $92, $9C, $8C, $8A, $9B, $8D, $9C, $00, $9D, $91, $8E, $00, $8C, $91, $8A
+LACEF:  .byte $9B, $8A, $8C, $9D, $8E, $9B, $FD, $38, $39, $00, $00, $00, $00, $00, $00, $00
+LACFF:  .byte $00, $00, $00, $00, $00, $39, $39, $FD, $38, $3A, $00, $00, $00, $00, $00, $00
+LAD0F:  .byte $00, $00, $00, $00, $00, $00, $39, $3A, $FD, $38, $3B, $00, $00, $00, $00, $00
+LAD1F:  .byte $00, $00, $00, $00, $00, $00, $00, $39, $3B, $FD, $38, $3C, $00, $00, $00, $00
+LAD2F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $39, $3C, $FD, $38, $3D, $00, $00, $00
+LAD3F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3D, $FD, $38, $3E, $00, $00
+LAD4F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3E, $FD, $38, $3F, $00
+LAD5F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3F, $FD, $38, $40
+LAD6F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $40, $FD, $38
+LAD7F:  .byte $41, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $41, $FD
+LAD8F:  .byte $39, $38, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $3A, $38
+LAD9F:  .byte $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E1C:
+LADA0:  .byte $00, $A0, $8E, $8A, $99, $98, $97, $FD, $91, $8A, $97, $8D, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E1D:
+LADAD:  .byte $8A, $9B, $96, $98, $9B, $FD, $9C, $94, $92, $97, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E1E:
+LADB8:  .byte $98, $94, $FD, $8C, $8A, $97, $8C, $8E, $95, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E1F:
+LADC2:  .byte $8E, $9B, $8A, $9C, $8E, $FD, $A2, $8E, $9C, $00, $97, $98, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E20:
+LADCF:  .byte $A0, $8E, $95, $8C, $98, $96, $8E, $42, $00, $A2, $8E, $FD, $8F, $98, $9E, $9B
+LADDF:  .byte $00, $8B, $9B, $8A, $9F, $8E, $00, $9C, $98, $9E, $95, $9C, $43, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E21:
+LADED:  .byte $8E, $A1, $98, $8D, $9E, $9C, $42, $8D, $9B, $8E, $8A, $8D, $8F, $9E, $95, $FD
+LADFD:  .byte $8D, $8E, $9F, $92, $95, $42, $00, $92, $9C, $00, $8A, $8B, $98, $9E, $9D, $00
+LAE0D:  .byte $9D, $98, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E22:
+LAE10:  .byte $A0, $8A, $94, $8E, $00, $9E, $99, $00, $97, $98, $A0, $00, $92, $97, $00, $9D
+LAE20:  .byte $91, $92, $9C, $FD, $9B, $8E, $90, $92, $98, $97, $43, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E23:
+LAE2C:  .byte $92, $8F, $00, $9C, $98, $42, $00, $98, $9E, $9B, $00, $A0, $98, $9B, $95, $8D
+LAE3C:  .byte $FD, $A0, $92, $95, $95, $00, $8B, $8E, $00, $8C, $98, $9F, $8E, $9B, $8E, $8D
+LAE4C:  .byte $00, $8B, $A2, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E24:
+LAE50:  .byte $8D, $8A, $9B, $94, $97, $8E, $9C, $9C, $43, $8B, $9B, $8A, $9F, $8E, $00, $98
+LAE60:  .byte $97, $8E, $9C, $42, $FD, $9C, $8E, $8A, $95, $00, $8E, $A1, $98, $8D, $9E, $9C
+LAE70:  .byte $00, $8A, $97, $8D, $00, $9C, $8A, $9F, $8E, $FF
+
+;----------------------------------------------------------------------------------------------------
+
+TB0E25:
 ;              T    H    I    S    _    W    O    R    L    D    .    G    E    T    _    R
 LAE7A:  .byte $9D, $91, $92, $9C, $00, $A0, $98, $9B, $95, $8D, $43, $90, $8E, $9D, $00, $9B
 ;              E    A    D    Y    \n   F    O    R    _    Y    O    U    R    _    J    O
@@ -4679,12 +4936,21 @@ LAE8A:  .byte $8E, $8A, $8D, $A2, $FD, $8F, $98, $9B, $00, $A2, $98, $9E, $9B, $
 ;              U    R    N    E    Y    .   END
 LAE9A:  .byte $9E, $9B, $97, $8E, $A2, $43, $FF
 
+;----------------------------------------------------------------------------------------------------
+
+TB0E26:
 ;              F    L    O    W    E    R   END
 LAEA1:  .byte $8F, $95, $98, $A0, $8E, $9B, $FF
 
+;----------------------------------------------------------------------------------------------------
+
+TB0E27:
 ;              W    E    L    C    O    M    E    _    !   END
 LAEA8:  .byte $A0, $8E, $95, $8C, $98, $96, $8E, $00, $7C, $FF
 
+;----------------------------------------------------------------------------------------------------
+
+TB0E28:
 ;              D    I    S    C    A    R    D    \n   Y    E    S    _    N    O   END
 LAEB2:  .byte $8D, $92, $9C, $8C, $8A, $9B, $8D, $FD, $A2, $8E, $9C, $00, $97, $98, $FF
 
@@ -5419,9 +5685,9 @@ LBA83:  INY
 LBA84:  LDA (SGDatPtr),Y
 LBA86:  STA Ch4Index
 
-LBA89:  LDA #$72
+LBA89:  LDA #>Ch1Data
 LBA8B:  STA $2A
-LBA8D:  LDA #$00
+LBA8D:  LDA #<Ch1Data
 LBA8F:  STA $29
 
 LBA91:  LDA #$10

@@ -69,6 +69,11 @@
 .alias NTYPosLB16       $15     ;Name table pixel Y position, lower byte, block aligned.
 .alias NTYPosUB16       $16     ;Name table pixel Y position, upper byte, block aligned.
 
+;Name entry variables.
+.alias NameLength       $17     ;The current length of the name being entered.
+.alias NameSelRow       $18     ;The current row of the selector is on.
+.alias NameCharIndex    $19     ;The index of the character the selector is on.
+
 .alias PPUPyLdPtr       $29     ;PPU buffer payload pointer.
 .alias PPUPyLdPtrLB     $29     ;PPU buffer payload pointer, lower byte.
 .alias PPUPyLdPtrUB     $2A     ;PPU buffer payload pointer, upper byte.
@@ -253,17 +258,18 @@
 ;  String 2 payload------------------------------------+
 
 .alias PPUBufLength     $0300   ;Length of data in bytes to write to PPU.
-.alias PPUBufBase       $0300   ;Contains strings of data to write to the PPU.
+.alias PPUBufBase       $0300   ;Base address of PPU buffer.
+.alias PPUBuffer        $0300   ;Contains strings of data to write to the PPU.
 
 ;----------------------------------------------------------------------------------------------------
 
 .alias BoatXPos         $03D5   ;X position of player's boat on the overworld map.
 .alias BoatYPos         $03D6   ;Y position of player's boat on the overworld map.
 
-.alias Ch1Index         $03D9   ;Character 1 index into character pool.
-.alias Ch2Index         $03DA   ;Character 2 index into character pool.
-.alias Ch3Index         $03DB   ;Character 3 index into character pool.
-.alias Ch4Index         $03DC   ;Character 4 index into character pool.
+.alias Ch1Index         $03D9   ;Character 1 index in character pool.
+.alias Ch2Index         $03DA   ;Character 2 index in character pool.
+.alias Ch3Index         $03DB   ;Character 3 index in character pool.
+.alias Ch4Index         $03DC   ;Character 4 index in character pool.
 
 ;The following RAM is used to load the NPC sprites on the current map. There are 4 bytes per sprite.
 ;They do not Keep track of current direction, or movement on screen. They are used as a referecne to 
@@ -782,7 +788,8 @@
 .alias TRI_DAT_OFFSET   $08     ;Offset for Triangle data pointer registers. Base is ChnDatPtr.
 .alias NSE_DAT_OFFSET   $0C     ;Offset for Noise data pointer registers. Base is ChnDatPtr.
 
-.alias NPC_DISABLE      $01     ;Disable animations on NPCs and water.
+.alias ENABLE           $00     ;Enable for various registers.
+.alias DISABLE          $01     ;Disable for various registers.
 
 .alias INP_NO_IGNORE    $00     ;Respond to player's input on the controller.
 .alias INP_IGNORE       $01     ;Ignore player's input on the controller.

@@ -8,6 +8,7 @@
 
 .alias  InitMusic               $8000
 .alias  DoCreateMenus           $8000
+.alias  _DrawWindow             $8000
 .alias  UpdateMusic             $8100
 .alias  UpdateSpriteRAM         $9900
 .alias  InitSFX                 $A000
@@ -29,9 +30,12 @@ LC006:  JMP LoadPPU2            ;($EFE3)Load values into PPU.
 
 LC009:  JMP LFB16
 LC00C:  JMP LE42F
-LC00F:  JMP LE675
+LC00F:  JMP ShowText            ;($E675)Show text in window.
 LC012:  JMP LE4FF
-LC015:  JMP LF42A
+
+ShowWindow1:
+LC015:  JMP ShowWindow          ;($F42A)Show a window on the display.
+
 LC018:  JMP LE50B
 LC01B:  JMP LE4A5
 LC01E:  JMP LED76
@@ -278,10 +282,12 @@ LC1CD:  JSR BlockAlign          ;($FD1C)Update block aligned position of charact
 
 LC1D0:  LDA Pad1Input
 LC1D2:  AND #D_PAD
-LC1D4:  BEQ LC1D9
+LC1D4:  BEQ +
 LC1D6:  JMP LC2AB
-LC1D9:  LDA ExodusDead
+
+LC1D9:* LDA ExodusDead
 LC1DB:  BNE LC227
+
 LC1DD:  LDA Pad1Input
 LC1DF:  AND #BTN_A
 LC1E1:  BNE LC23A
@@ -327,6 +333,7 @@ LC22F:  STA $01
 LC231:  JSR LFDA3
 LC234:  JSR LF4D1
 LC237:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
+
 LC23A:  LDA #$01
 LC23C:  STA $B0
 LC23E:  JSR LF447
@@ -356,7 +363,7 @@ LC274:  STA $9D
 LC276:  LDA #$08
 LC278:  STA $9C
 LC27A:  JSR LE4FF
-LC27D:  BCS LC293
+LC27D:  BCS FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LC27F:  ASL
 LC280:  TAX
 LC281:  LDA CmdPtrTbl,X
@@ -367,6 +374,8 @@ LC28A:  STA $90
 LC28C:  LDA #$00
 LC28E:  STA $9D
 LC290:  JMP ($008F)
+
+FinishCommand:
 LC293:  LDA #$00
 LC295:  STA $E9
 LC297:  LDA #$F0
@@ -376,6 +385,8 @@ LC29F:  STA $73C8
 LC2A2:  STA $73CC
 LC2A5:  JSR LF4D1
 LC2A8:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
+
+;----------------------------------------------------------------------------------------------------
 
 LC2AB:  LDA #$01
 LC2AD:  STA $B0
@@ -828,12 +839,18 @@ LC60C: PLA
 LC60D: JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC610: RTS
 
+;----------------------------------------------------------------------------------------------------
+
 ;The following table are the functions to run when one of the 14 commands are
 ;selected from the command menu.
 
 CmdPtrTbl:
-LC611:  .word $C662, $D338, $C75C, $E200, $DB6B, $E23A, $DD82, $E0E7
-LC621:  .word $E15D, $E19C, $E16F, $E1B2, $E250, $E2C1
+LC611:  .word DoTalkCmd,  DoMagicCmd, DoFightCmd, DoStatusCmd
+LC619:  .word DoToolsCmd, DoGiveCmd,  DoGetCmd,   DoClimbCmd
+LC621:  .word DoFoodCmd,  DoGoldCmd,  DoHorseCmd, DoOrderCmd
+LC629:  .word DoBribeCmd, DoPrayCmd
+
+;----------------------------------------------------------------------------------------------------
 
 LC62D:  LDA #$0C
 LC62F:  STA $03D0
@@ -862,6 +879,9 @@ LC65E:  RTS
 LC65F:  LDA #$01
 LC661:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+DoTalkCmd:
 LC662:  JSR LC6EC
 LC665:  BCS LC6C3
 LC667:  LDA LastTalkedNPC0
@@ -876,7 +896,7 @@ LC678:  CMP #$15
 LC67A:  BCC LC683
 LC67C:  CMP #$1D
 LC67E:  BCS LC683
-LC680:  JMP LC293
+LC680:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LC683:  INY
 LC684:  LDA (NPCSrcPtr),Y
 LC686:  STY LastTalkedNPC0
@@ -886,36 +906,43 @@ LC68C:  SEC
 LC68D:  SBC #$F0
 LC68F:  ASL
 LC690:  TAX
+
 LC691:  LDA $C6CD,X
 LC694:  STA $29
 LC696:  LDA $C6CE,X
 LC699:  STA $2A
-LC69B:  LDA #$0D
+
+LC69B:  LDA #BANK_HELPERS2
 LC69D:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC6A0:  JSR LC6E9
+
 LC6A3:  LDA MapBank
 LC6A5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC6A8:  JMP LD3E3
-LC6AB:  STA $30
+
+LC6AB:  STA TextIndex
 LC6AD:  LDA #$9D
 LC6AF:  STA TextBasePtrUB
 LC6B1:  LDA #$80
 LC6B3:  STA TextBasePtrLB
-LC6B5:  JSR LE675
+LC6B5:  JSR ShowText            ;($E675)Show text in window.
 LC6B8:  LDA #$80
 LC6BA:  STA TextBasePtrUB
 LC6BC:  LDA #$00
 LC6BE:  STA TextBasePtrLB
-LC6C0:  JMP LC293
+LC6C0:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LC6C3:  LDA #$02
-LC6C5:  STA $30
-LC6C7:  JSR LE675
-LC6CA:  JMP LC293
+LC6C5:  STA TextIndex
+LC6C7:  JSR ShowText            ;($E675)Show text in window.
+LC6CA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
-LC6CD:  .byte $00, $8A, $00, $8B, $00, $8D, $00, $8F, $00, $90, $00, $91, $00, $92, $00, $93
-LC6DD:  .byte $00, $94, $00, $95, $00, $96, $00, $97, $00, $98, $00, $89
+LC6CD:  .word $8A00, $8B00, $8D00, $8F00, $9000, $9100, $9200, $9300
+LC6DD:  .word $9400, $9500, $9600, $9700, $9800, $8900
 
 LC6E9:  JMP ($0029)
+
+;----------------------------------------------------------------------------------------------------
+
 LC6EC:  JSR LE6EF
 LC6EF:  BCS LC704
 LC6F1:  STA $30
@@ -974,6 +1001,10 @@ LC755:  PLA
 LC756:  PHA
 LC757:  LDX #$0A
 LC759:  JMP LC7D4
+
+;----------------------------------------------------------------------------------------------------
+
+DoFightCmd:
 LC75C:  JSR LE6EF
 LC75F:  BCC LC764
 LC761:  JMP LC6C3
@@ -998,7 +1029,7 @@ LC785:  CMP #$1E
 LC787:  BNE LC790
 LC789:  LDA #$00
 LC78B:  STA $E6
-LC78D:  JMP LC293
+LC78D:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
 LC790:  STA EnemyNum
 LC792:  PHA
@@ -1037,6 +1068,7 @@ LC7CC:  LDX #$04
 LC7CE:  CMP #$1C
 LC7D0:  BEQ LC7D4
 LC7D2:  LDX #$03
+
 LC7D4:  LDA OnBoat
 LC7D6:  BEQ LC7E8
 LC7D8:  LDY #$10
@@ -1633,8 +1665,8 @@ LCC7E:  LDY #$0B
 LCC80:  LDA #$01
 LCC82:  STA (CrntChrPtr),Y
 LCC84:  LDA #$2E
-LCC86:  STA $30
-LCC88:  JSR LE675
+LCC86:  STA TextIndex
+LCC88:  JSR ShowText            ;($E675)Show text in window.
 LCC8B:  JMP LCD07
 LCC8E:  CMP #$01
 LCC90:  BNE LCD07
@@ -1697,8 +1729,8 @@ LCCFB:  SEC
 LCCFC:  SBC #$01
 LCCFE:  STA (CrntChrPtr),Y
 LCD00:  LDA #$D7
-LCD02:  STA $30
-LCD04:  JSR LE675
+LCD02:  STA TextIndex
+LCD04:  JSR ShowText            ;($E675)Show text in window.
 LCD07:  JMP LCAD0
 LCD0A:  STA $30
 LCD0C:  JSR LD2BA
@@ -2255,7 +2287,7 @@ LD1B8:  LDA #$0C
 LD1BA:  STA $2E
 LD1BC:  LDA #$08
 LD1BE:  STA $2D
-LD1C0:  JSR LF42A
+LD1C0:  JSR ShowWindow          ;($F42A)Show a window on the display.
 LD1C3:  JSR LFAE3
 LD1C6:  RTS
 LD1C7:  LDX #$00
@@ -2462,6 +2494,9 @@ LD331:  PLA
 LD332:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LD335:  JMP LoadNewMap          ;($C175)Load a new map.
 
+;----------------------------------------------------------------------------------------------------
+
+DoMagicCmd:
 LD338:  JSR LE42F
 LD33B:  BCC LD340
 LD33D:  JMP LD3E3
@@ -2541,13 +2576,13 @@ LD3D1:  JSR LDD6E
 LD3D4:  BCS LD3D9
 LD3D6:  JMP ($008F)
 LD3D9:  LDA #$17
-LD3DB:  STA $30
-LD3DD:  JSR LE675
+LD3DB:  STA TextIndex
+LD3DD:  JSR ShowText            ;($E675)Show text in window.
 LD3E0:  LDA #$00
 LD3E2:  RTS
 LD3E3:  JSR LD3EC
 LD3E6:  JSR LF4D1
-LD3E9:  JMP LC293
+LD3E9:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LD3EC:  JSR LF4D1
 LD3EF:  RTS
 LD3F0:  LDA #$00
@@ -2616,8 +2651,8 @@ LD4E3:  BEQ LD4F3
 LD4E5:  CMP #$01
 LD4E7:  BEQ LD4F3
 LD4E9:  LDX #$17
-LD4EB:  STX $30
-LD4ED:  JSR LE675
+LD4EB:  STX TextIndex
+LD4ED:  JSR ShowText            ;($E675)Show text in window.
 LD4F0:  LDA #$00
 LD4F2:  RTS
 
@@ -2728,8 +2763,8 @@ LD5C0:  JSR LDB0E
 LD5C3:  LDA #$1B
 LD5C5:  JMP LD5CA
 LD5C8:  LDA #$17
-LD5CA:  STA $30
-LD5CC:  JSR LE675
+LD5CA:  STA TextIndex
+LD5CC:  JSR ShowText            ;($E675)Show text in window.
 LD5CF:  LDA #$00
 LD5D1:  RTS
 LD5D2:  LDA #$14
@@ -2742,8 +2777,8 @@ LD5E0:  DEC MapDatPtrUB
 LD5E2:  LDA #$1C
 LD5E4:  JMP LD5EA
 LD5E7:  JMP LD7E9
-LD5EA:  STA $30
-LD5EC:  JSR LE675
+LD5EA:  STA TextIndex
+LD5EC:  JSR ShowText            ;($E675)Show text in window.
 LD5EF:  LDA #$00
 LD5F1:  RTS
 LD5F2:  LDX #$19
@@ -2806,8 +2841,8 @@ LD662:  LDA #SFX_PLYR_MISS+INIT
 LD664:  STA ThisSFX
 LD666:  JSR LF981
 LD669:  PLA
-LD66A:  STA $30
-LD66C:  JSR LE675
+LD66A:  STA TextIndex
+LD66C:  JSR ShowText            ;($E675)Show text in window.
 LD66F:  JSR LF974
 LD672:  CMP #$09
 LD674:  BNE LD690
@@ -2820,8 +2855,8 @@ LD682:  LDA #$00
 LD684:  STA $B1
 LD686:  JSR LF981
 LD689:  LDA #$34
-LD68B:  STA $30
-LD68D:  JSR LE675
+LD68B:  STA TextIndex
+LD68D:  JSR ShowText            ;($E675)Show text in window.
 LD690:  LDA #$00
 LD692:  RTS
 LD693:  LDA #$2D
@@ -2841,8 +2876,8 @@ LD6B3:  STA TimeStopTimer
 LD6B5:  LDA #SFX_TIME_STOP+INIT
 LD6B7:  STA ThisSFX
 LD6B9:  LDA #$32
-LD6BB:  STA $30
-LD6BD:  JSR LE675
+LD6BB:  STA TextIndex
+LD6BD:  JSR ShowText            ;($E675)Show text in window.
 LD6C0:  LDA #$00
 LD6C2:  RTS
 LD6C3:  LDA #$41
@@ -2908,8 +2943,8 @@ LD73E:  BEQ LD74E
 LD740:  CMP #$03
 LD742:  BEQ LD74E
 LD744:  LDX #$17
-LD746:  STX $30
-LD748:  JSR LE675
+LD746:  STX TextIndex
+LD748:  JSR ShowText            ;($E675)Show text in window.
 LD74B:  LDA #$00
 LD74D:  RTS
 LD74E:  LDX #$24
@@ -2933,8 +2968,8 @@ LD774:  STA $DF
 LD776:  LDA #$00
 LD778:  RTS
 LD779:  LDA #$F6
-LD77B:  STA $30
-LD77D:  JSR LE675
+LD77B:  STA TextIndex
+LD77D:  JSR ShowText            ;($E675)Show text in window.
 LD780:  JMP LD776
 LD783:  LDA #$0A
 LD785:  JSR LDA2B
@@ -2958,8 +2993,8 @@ LD7AD:  LDA #$1E
 LD7AF:  JSR LDA62
 LD7B2:  JSR LDB0E
 LD7B5:  LDA #$1E
-LD7B7:  STA $30
-LD7B9:  JSR LE675
+LD7B7:  STA TextIndex
+LD7B9:  JSR ShowText            ;($E675)Show text in window.
 LD7BC:  LDA #$00
 LD7BE:  RTS
 LD7BF:  LDA #$23
@@ -2974,8 +3009,8 @@ LD7CF:  LDA #$00
 LD7D1:  STA (CrntChrPtr),Y
 LD7D3:  TXA
 LD7D4:  LDA $D7DF,X
-LD7D7:  STA $30
-LD7D9:  JSR LE675
+LD7D7:  STA TextIndex
+LD7D9:  JSR ShowText            ;($E675)Show text in window.
 LD7DC:  LDA #$00
 LD7DE:  RTS
 
@@ -2984,8 +3019,8 @@ LD7DF:  .byte $17, $42, $17, $43, $44
 LD7E4:  LDA #$28
 LD7E6:  JSR LDA62
 LD7E9:  LDA #$1F
-LD7EB:  STA $30
-LD7ED:  JSR LE675
+LD7EB:  STA TextIndex
+LD7ED:  JSR ShowText            ;($E675)Show text in window.
 LD7F0:  LDA #$00
 LD7F2:  STA CurPPUConfig1
 LD7F4:  STA PPUControl1
@@ -3016,13 +3051,13 @@ LD828:  BEQ LD853
 LD82A:  CMP #MAP_AMBROSIA
 LD82C:  BEQ LD853
 LD82E:  LDA #$17
-LD830:  STA $30
-LD832:  JSR LE675
+LD830:  STA TextIndex
+LD832:  JSR ShowText            ;($E675)Show text in window.
 LD835:  LDA #$00
 LD837:  RTS
 LD838:  LDA #$20
-LD83A:  STA $30
-LD83C:  JSR LE675
+LD83A:  STA TextIndex
+LD83C:  JSR ShowText            ;($E675)Show text in window.
 LD83F:  LDA #$A3
 LD841:  STA ThisSFX
 LD843:  LDA DisNPCMovement
@@ -3034,8 +3069,8 @@ LD84D:  STA PPUControl1
 LD850:  LDA #$00
 LD852:  RTS
 LD853:  LDA #$20
-LD855:  STA $30
-LD857:  JSR LE675
+LD855:  STA TextIndex
+LD857:  JSR ShowText            ;($E675)Show text in window.
 LD85A:  LDA #$A3
 LD85C:  STA ThisSFX
 LD85E:  LDA #$06
@@ -3193,8 +3228,8 @@ LD999:  JMP LD9A0
 LD99C:  LDA #$04
 LD99E:  STA (CrntChrPtr),Y
 LD9A0:  LDA $D9AB,X
-LD9A3:  STA $30
-LD9A5:  JSR LE675
+LD9A3:  STA TextIndex
+LD9A5:  JSR ShowText            ;($E675)Show text in window.
 LD9A8:  LDA #$00
 LD9AA:  RTS
 
@@ -3257,8 +3292,8 @@ LDA19:  STA (CrntChrPtr),Y
 LDA1B:  JSR LEF13
 LDA1E:  LDX #$45
 LDA20:  JMP LDA23
-LDA23:  STX $30
-LDA25:  JSR LE675
+LDA23:  STX TextIndex
+LDA25:  JSR ShowText            ;($E675)Show text in window.
 LDA28:  LDA #$00
 LDA2A:  RTS
 
@@ -3389,8 +3424,8 @@ LDB00:  STA $A1
 LDB02:  LDA CurPPUConfig1
 LDB04:  BEQ LDB0D
 LDB06:  LDA #$5A
-LDB08:  STA $30
-LDB0A:  JSR LE675
+LDB08:  STA TextIndex
+LDB0A:  JSR ShowText            ;($E675)Show text in window.
 LDB0D:  RTS
 LDB0E:  LDY $00
 LDB10:  LDA (MapDatPtr),Y
@@ -3443,6 +3478,9 @@ LDB64:  JSR LDB7E
 LDB67:  JSR LF4D1
 LDB6A:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+DoToolsCmd:
 LDB6B:  JSR LE42F
 LDB6E:  BCS LDB7B
 LDB70:  JSR LE602
@@ -3535,8 +3573,8 @@ LDC1B:  STA ThisSFX
 LDC1D:  LDA #$0A
 LDC1F:  STA TimeStopTimer
 LDC21:  LDA #$32
-LDC23:  STA $30
-LDC25:  JSR LE675
+LDC23:  STA TextIndex
+LDC25:  JSR ShowText            ;($E675)Show text in window.
 LDC28:  RTS
 
 UseKey:
@@ -3609,8 +3647,8 @@ LDCA6:  RTS
 
 UseCompass:
 LDCA7:  LDA #$D3
-LDCA9:  STA $30
-LDCAB:  JSR LE675
+LDCA9:  STA TextIndex
+LDCAB:  JSR ShowText            ;($E675)Show text in window.
 LDCAE:  LDA #$0C
 LDCB0:  STA MapProperties
 LDCB2:  LDA #MAP_OVERWORLD
@@ -3718,6 +3756,9 @@ LDD7D:  PLA
 LDD7E:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LDD81:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+DoGetCmd:
 LDD82:  JSR LDD9B
 LDD85:  BCC LDD8A
 LDD87:  JMP LDD95
@@ -3726,7 +3767,7 @@ LDD8D:  BCC LDD92
 LDD8F:  JMP LD3E6
 LDD92:  JSR LDDDB
 LDD95:  JSR LF4D1
-LDD98:  JMP LC293
+LDD98:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LDD9B:  LDA MapProperties
 LDD9D:  AND #$01
 LDD9F:  BEQ LDDAA
@@ -3752,8 +3793,8 @@ LDDC8:  JMP LDEB5
 LDDCB:  JSR LDECF
 LDDCE:  BCC LDDD9
 LDDD0:  LDA #$0F
-LDDD2:  STA $30
-LDDD4:  JSR LE675
+LDDD2:  STA TextIndex
+LDDD4:  JSR ShowText            ;($E675)Show text in window.
 LDDD7:  SEC
 LDDD8:  RTS
 LDDD9:  CLC
@@ -3770,8 +3811,8 @@ LDDEB:  PLA
 LDDEC:  CMP $E2
 LDDEE:  BEQ LDDF7
 LDDF0:  LDA #$F7
-LDDF2:  STA $30
-LDDF4:  JSR LE675
+LDDF2:  STA TextIndex
+LDDF4:  JSR ShowText            ;($E675)Show text in window.
 LDDF7:  LDA ThisMap
 LDDF9:  CMP #MAP_DAWN
 LDDFB:  BNE LDE27
@@ -3792,8 +3833,8 @@ LDE17:  BNE LDE27
 LDE19:  LDX #$D5
 LDE1B:  LDA #$01
 LDE1D:  STA (CrntChrPtr),Y
-LDE1F:  STX $30
-LDE21:  JSR LE675
+LDE1F:  STX TextIndex
+LDE21:  JSR ShowText            ;($E675)Show text in window.
 LDE24:  JMP LE00C
 LDE27:  LDA MapProperties
 LDE29:  AND #$01
@@ -3851,8 +3892,8 @@ LDE8E:  INY
 LDE8F:  LDA $2C
 LDE91:  STA (CrntChrPtr),Y
 LDE93:  LDA #$10
-LDE95:  STA $30
-LDE97:  JSR LE675
+LDE95:  STA TextIndex
+LDE97:  JSR ShowText            ;($E675)Show text in window.
 LDE9A:  LDA #$64
 LDE9C:  JSR LE64E
 LDE9F:  CMP #$32
@@ -3872,8 +3913,8 @@ LDEC0:  BNE LDEC8
 LDEC2:  LDX #$63
 LDEC4:  LDA #$01
 LDEC6:  STA (CrntChrPtr),Y
-LDEC8:  STX $30
-LDECA:  JSR LE675
+LDEC8:  STX TextIndex
+LDECA:  JSR ShowText            ;($E675)Show text in window.
 LDECD:  SEC
 LDECE:  RTS
 LDECF:  JSR LE739
@@ -3936,8 +3977,8 @@ LDF38:  RTS
 LDF39:  JSR LDF18
 LDF3C:  BCS LDF48
 LDF3E:  LDA #$2F
-LDF40:  STA $30
-LDF42:  JSR LE675
+LDF40:  STA TextIndex
+LDF42:  JSR ShowText            ;($E675)Show text in window.
 LDF45:  JMP LE00C
 LDF48:  LDA #$64
 LDF4A:  JSR LE64E
@@ -4029,8 +4070,8 @@ LDFEF:  BCS LDFFC
 LDFF1:  LDA #$01
 LDFF3:  STA (CrntChrPtr),Y
 LDFF5:  LDA #$2E
-LDFF7:  STA $30
-LDFF9:  JSR LE675
+LDFF7:  STA TextIndex
+LDFF9:  JSR ShowText            ;($E675)Show text in window.
 LDFFC:  PLA
 LDFFD:  TAX
 LDFFE:  INX
@@ -4038,8 +4079,8 @@ LDFFF:  INX
 LE000:  CPX #$08
 LE002:  BNE LDFDF
 LE004:  JMP LE00C
-LE007:  STA $30
-LE009:  JSR LE675
+LE007:  STA TextIndex
+LE009:  JSR ShowText            ;($E675)Show text in window.
 LE00C:  LDA MapProperties
 LE00E:  AND #$01
 LE010:  BNE LE082
@@ -4158,6 +4199,10 @@ LE0E0:  PLA
 LE0E1:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE0E4:  LDA $2A
 LE0E6:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+DoClimbCmd:
 LE0E7:  LDA DisNPCMovement
 LE0E9:  BEQ LE139
 LE0EB:  JSR LF974
@@ -4193,11 +4238,12 @@ LE12C:  STA DisNPCMovement
 LE12E:  LDA #$1C
 LE130:  JMP LE13B
 LE133:  JSR LD7E9
-LE136:  JMP LC293
+LE136:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE139:  LDA #$11
-LE13B:  STA $30
-LE13D:  JSR LE675
-LE140:  JMP LC293
+
+LE13B:  STA TextIndex
+LE13D:  JSR ShowText            ;($E675)Show text in window.
+LE140:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE143:  LDA DungeonLevel
 LE145:  CMP #$07
 LE147:  BEQ LE158
@@ -4210,6 +4256,10 @@ LE153:  LDA #$1B
 LE155:  JMP LE13B
 LE158:  LDA #$17
 LE15A:  JMP LE13B
+
+;----------------------------------------------------------------------------------------------------
+
+DoFoodCmd:
 LE15D:  LDA CurPRGBank
 LE15F:  PHA
 LE160:  LDA #$0B
@@ -4217,7 +4267,11 @@ LE162:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE165:  JSR $B300
 LE168:  PLA
 LE169:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LE16C:  JMP LC293
+LE16C:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
+;--------------------------------------------------------------------------------------------------
+
+DoHorseCmd:
 LE16F:  LDA OnHorse
 LE171:  AND #$01
 LE173:  BEQ LE18C
@@ -4234,22 +4288,32 @@ LE185:  JSR LEE4E
 LE188:  PLA
 LE189:  JMP LE18E
 LE18C:  LDA #$13
-LE18E:  STA $30
-LE190:  JSR LE675
+LE18E:  STA TextIndex
+LE190:  JSR ShowText            ;($E675)Show text in window.
 LE193:  LDA $C0
 LE195:  AND #$7C
 LE197:  STA $C0
-LE199:  JMP LC293
+LE199:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
+;----------------------------------------------------------------------------------------------------
+
+DoGoldCmd:
 LE19C:  LDA CurPRGBank
 LE19E:  PHA
+
 LE19F:  LDA #$0D
 LE1A1:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
+
 LE1A4:  LDA #$01
 LE1A6:  STA $E9
 LE1A8:  JSR $9F00
 LE1AB:  PLA
 LE1AC:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LE1AF:  JMP LC293
+LE1AF:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
+;----------------------------------------------------------------------------------------------------
+
+DoOrderCmd:
 LE1B2:  JSR LE42F
 LE1B5:  PHA
 LE1B6:  BCS LE1D5
@@ -4264,12 +4328,12 @@ LE1C6:  LDA #$04
 LE1C8:  STA $2E
 LE1CA:  JSR LEE4E
 LE1CD:  LDA #$16
-LE1CF:  STA $30
-LE1D1:  JSR LE675
+LE1CF:  STA TextIndex
+LE1D1:  JSR ShowText            ;($E675)Show text in window.
 LE1D4:  PHA
 LE1D5:  PLA
 LE1D6:  JSR LF4D1
-LE1D9:  JMP LC293
+LE1D9:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE1DC:  LDA CurPRGBank
 LE1DE:  PHA
 LE1DF:  LDX $19
@@ -4286,6 +4350,10 @@ LE1F8:  JSR $B780
 LE1FB:  PLA
 LE1FC:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE1FF:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+DoStatusCmd:
 LE200:  LDA MapProperties
 LE202:  PHA
 LE203:  LDA #$80
@@ -4295,24 +4363,33 @@ LE207:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select namet
 LE20A:  LDA #BANK_CREATE
 LE20C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE20F:  JSR $A000
+
 LE212:  LDA #$00
 LE214:  STA CurPPUConfig1
 LE216:  STA PPUControl1
+
 LE219:  LDA MapBank
 LE21B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
+
 LE21E:  JSR LED76
 LE221:  LDA #$FE
 LE223:  STA $2A
 LE225:  LDA #$3E
 LE227:  STA $29
 LE229:  JSR LED33
+
 LE22C:  PLA
 LE22D:  STA MapProperties
+
 LE22F:  LDA #$FF
 LE231:  STA $D2
 LE233:  LDA #$1E
 LE235:  STA CurPPUConfig1
 LE237:  JMP LoadNewMap          ;($C175)Load a new map.
+
+;----------------------------------------------------------------------------------------------------
+
+DoGiveCmd:
 LE23A:  LDA CurPRGBank
 LE23C:  PHA
 LE23D:  LDA #$0B
@@ -4322,7 +4399,11 @@ LE244:  STA $E9
 LE246:  JSR $A800
 LE249:  PLA
 LE24A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LE24D:  JMP LC293
+LE24D:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
+;----------------------------------------------------------------------------------------------------
+
+DoBribeCmd:
 LE250:  LDA BribePray
 LE252:  AND #CMD_BRIBE
 LE254:  BEQ LE2BE
@@ -4371,28 +4452,38 @@ LE2A4:  CMP #$0E
 LE2A6:  BNE LE2B5
 LE2A8:  LDA #$FF
 LE2AA:  STA NPCSprIndex,Y
-LE2AD:  STX $30
-LE2AF:  JSR LE675
+LE2AD:  STX TextIndex
+LE2AF:  JSR ShowText            ;($E675)Show text in window.
 LE2B2:  JMP LoadNewMap          ;($C175)Load a new map.
-LE2B5:  STX $30
-LE2B7:  JSR LE675
-LE2BA:  JMP LC293
+LE2B5:  STX TextIndex
+LE2B7:  JSR ShowText            ;($E675)Show text in window.
+LE2BA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE2BD:  PLA
-LE2BE:  JMP LC293
-LE2C1:  LDA ThisMap
-LE2C3:  CMP #MAP_EXODUS
-LE2C5:  BEQ LE2FD
+LE2BE:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
+;----------------------------------------------------------------------------------------------------
+
+DoPrayCmd:
+LE2C1:  LDA ThisMap             ;Is the player praying in Exodus castle?
+LE2C3:  CMP #MAP_EXODUS         ;If so, branch to check if they are praying
+LE2C5:  BEQ ChkEndPray          ;in th right place to start the end game.
+
 LE2C7:  JSR LE42F
-LE2CA:  BCC LE2CF
-LE2CC:  JMP LE38F
-LE2CF:  LDA #$03
+LE2CA:  BCC +
+
+LE2CC:  JMP PrayerNotHeard      ;($E38F)Indicate nothing was found after praying.
+
+LE2CF:* LDA #$03
 LE2D1:  JSR LDB2D
+
 LE2D4:  LDA BribePray
 LE2D6:  AND #CMD_PRAY
 LE2D8:  BEQ LE2F7
+
 LE2DA:  LDA ThisMap
 LE2DC:  CMP #MAP_YEW
 LE2DE:  BNE LE2F7
+
 LE2E0:  LDA MapXPos
 LE2E2:  CMP #$30
 LE2E4:  BNE LE2CC
@@ -4404,9 +4495,12 @@ LE2EE:  LDA #$01
 LE2F0:  STA (CrntChrPtr),Y
 LE2F2:  LDA #$56
 LE2F4:  JMP LE391
+
 LE2F7:  LDA ThisMap
 LE2F9:  CMP #MAP_EXODUS
 LE2FB:  BNE LE354
+
+ChkEndPray:
 LE2FD:  LDA MapYPos
 LE2FF:  CMP #$0B
 LE301:  BNE LE2CC
@@ -4422,7 +4516,7 @@ LE313:  ORA (Pos3ChrPtr),Y
 LE315:  ORA (Pos4ChrPtr),Y
 LE317:  CMP #$0F
 LE319:  BEQ LE31E
-LE31B:  JMP LE38F
+LE31B:  JMP PrayerNotHeard      ;($E38F)Indicate nothing was found after praying.
 LE31E:  LDA #$03
 LE320:  JSR LDB2D
 
@@ -4452,13 +4546,13 @@ LE34B:  STA EndGmTimerUB        ;
 LE34D:  LDA #GME_EX_DEAD        ;Set Exodus dead flag to start the screen shaking.
 LE34F:  STA ExodusDead          ;
 
-LE351:  JMP LC293
+LE351:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
 LE354:  JSR LC6EC
-LE357:  BCS LE38F
+LE357:  BCS PrayerNotHeard      ;($E38F)Indicate nothing was found after praying.
 LE359:  LDA ThisMap
 LE35B:  CMP #MAP_SH_INT
-LE35D:  BCC LE38F
+LE35D:  BCC PrayerNotHeard      ;($E38F)Indicate nothing was found after praying.
 LE35F:  LDA ThisMap
 LE361:  SEC
 LE362:  SBC #$15
@@ -4468,25 +4562,29 @@ LE368:  STA $30
 LE36A:  LDY #$3C
 LE36C:  LDA (CrntChrPtr),Y
 LE36E:  AND $30
-LE370:  BNE LE38F
+LE370:  BNE PrayerNotHeard      ;($E38F)Indicate nothing was found after praying.
 LE372:  LDA (CrntChrPtr),Y
 LE374:  ORA $30
 LE376:  STA (CrntChrPtr),Y
 LE378:  CLC
+
 LE379:  LDA ThisMap
 LE37B:  ADC #$8D
-LE37D:  STA $30
-LE37F:  JSR LE675
+LE37D:  STA TextIndex
+LE37F:  JSR ShowText            ;($E675)Show text in window.
 LE382:  CLC
 LE383:  LDA ThisMap
 LE385:  ADC #$91
-LE387:  STA $30
-LE389:  JSR LE675
-LE38C:  JMP LC293
-LE38F:  LDA #$57
-LE391:  STA $30
-LE393:  JSR LE675
-LE396:  JMP LC293
+LE387:  STA TextIndex
+LE389:  JSR ShowText            ;($E675)Show text in window.
+LE38C:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
+PrayerNotHeard:
+LE38F:  LDA #$57                ;YOUR PRAYER WAS NOT HEARD.
+LE391:  STA TextIndex           ;
+LE393:  JSR ShowText            ;($E675)Show text in window.
+LE396:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
 LE399:  LDX #$00
 LE39B:  LDA ChrPtrBaseLB,X
 LE39D:  STA CrntChrPtrLB
@@ -4539,7 +4637,7 @@ LE3EF:  LDA #$78
 LE3F1:  JSR LE6D0
 LE3F4:  LDA #$1E
 LE3F6:  STA CurPPUConfig1
-LE3F8:  LDA #$83
+LE3F8:  LDA #MUS_END+INIT
 LE3FA:  STA InitNewMusic
 LE3FC:  LDA #$0D
 LE3FE:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -4563,6 +4661,7 @@ LE424:  LDA #$FF
 LE426:  STA $05FF
 LE429:  JSR UpdateSpriteRAM     ;($9900)Move sprite buffer data into sprite RAM.
 LE42C:  JMP LE42C
+
 LE42F:  LDA #$02
 LE431:  STA $2A
 LE433:  LDA #$04
@@ -4571,7 +4670,8 @@ LE437:  LDA #$08
 LE439:  STA $2E
 LE43B:  LDA #$0C
 LE43D:  STA $2D
-LE43F:  JSR LF42A
+LE43F:  JSR ShowWindow          ;($F42A)Show a window on the display.
+
 LE442:  JSR LE770
 LE445:  LDA #$04
 LE447:  STA $2A
@@ -4584,6 +4684,7 @@ LE453:  STA $2D
 LE455:  LDA #$FF
 LE457:  STA $30
 LE459:  JSR LF0BE
+
 LE45C:  LDA #$40
 LE45E:  STA $7300
 LE461:  LDA #$18
@@ -4613,12 +4714,14 @@ LE490:  TXA
 LE491:  LSR
 LE492:  CLC
 LE493:  RTS
+
 LE494:  CLC
 LE495:  ADC #$40
-LE497:  STA $30
-LE499:  JSR LE675
+LE497:  STA TextIndex
+LE499:  JSR ShowText            ;($E675)Show text in window.
 LE49C:  SEC
 LE49D:  RTS
+
 LE49E:  LDA #$96
 LE4A0:  LDX #$00
 LE4A2:  JMP LE4A9
@@ -4635,7 +4738,7 @@ LE4B4:  LDA #$08
 LE4B6:  STA $2E
 LE4B8:  LDA #$0C
 LE4BA:  STA $2D
-LE4BC:  JSR LF42A
+LE4BC:  JSR ShowWindow          ;($F42A)Show a window on the display.
 LE4BF:  JSR LE770
 LE4C2:  PLA
 LE4C3:  STA $0584
@@ -4681,7 +4784,7 @@ LE519:  LDA $03D2
 LE51C:  STA $2E
 LE51E:  LDA $03D3
 LE521:  STA $2D
-LE523:  JSR LF42A
+LE523:  JSR ShowWindow          ;($F42A)Show a window on the display.
 LE526:  LDA $03D4
 LE529:  STA $30
 LE52B:  LDA $03D0
@@ -4773,7 +4876,7 @@ LE5D1:  LDA $03D2
 LE5D4:  STA $2E
 LE5D6:  LDA #$12
 LE5D8:  STA $2D
-LE5DA:  JSR LF42A
+LE5DA:  JSR ShowWindow          ;($F42A)Show a window on the display.
 LE5DD:  LDA $03D4
 LE5E0:  CLC
 LE5E1:  ADC #$01
@@ -4867,14 +4970,21 @@ LE66D:  LDA HideUprSprites
 LE66F:  STA $C8
 LE671:  LDA #$80
 LE673:  STA $C7
+
+;----------------------------------------------------------------------------------------------------
+
+ShowText:
 LE675:  LDA CurPRGBank
 LE677:  PHA
-LE678:  LDA #$0B
+LE678:  LDA #BANK_HELPERS1
 LE67A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE67D:  JSR $AA00
 LE680:  PLA
 LE681:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE684:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LE685:  LDA CurPRGBank
 LE687:  PHA
 LE688:  LDA #$0B
@@ -4981,13 +5091,16 @@ LE735:  CLC
 LE736:  RTS
 LE737:  SEC
 LE738:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LE739:  LDX Ch1Dir
 LE73B:  LDA $EA17,X
 LE73E:  ASL
 LE73F:  TAX
 LE740:  LDA $E75F,X
 LE743:  CLC
-LE744:  ADC $7307
+LE744:  ADC SpriteBuffer+7
 LE747:  STA $19
 LE749:  LDA $E760,X
 LE74C:  CLC
@@ -5302,7 +5415,7 @@ LE9C1:  RTS
 
 LE9C2:  LDA #MUS_NONE+INIT
 LE9C4:  STA InitNewMusic
-LE9C6:  LDA #NPC_DISABLE
+LE9C6:  LDA #DISABLE
 LE9C8:  STA DisNPCMovement
 LE9CA:  LDX #$14
 LE9CC:  LDY #$2C
@@ -5336,8 +5449,10 @@ LEA04:  STA DisNPCMovement
 LEA06:  RTS
 
 LEA07:  .byte $10, $18, $14, $1C, $08, $02, $04, $01, $70, $70, $78, $70, $70, $78, $78, $78
-LEA17:  .byte $00, $02, $03, $01, $00, $01, $01, $01, $01, $10, $30, $00, $00, $00, $00, $30
-LEA27:  .byte $10, $30, $10, $00, $00, $00, $00, $10, $30
+
+LEA17:  .byte $00, $02, $03, $01, $00, $01, $01, $01, $01
+
+LEA20:  .byte $10, $30, $00, $00, $00, $00, $30, $10, $30, $10, $00, $00, $00, $00, $10, $30
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6729,8 +6844,11 @@ LF426:  INX
 LF427:  BNE LF420
 LF429:  RTS
 
-LF42A:  LDA ScrollDirAmt
-LF42C:  BNE LF42A
+;----------------------------------------------------------------------------------------------------
+
+ShowWindow:
+LF42A:* LDA ScrollDirAmt
+LF42C:  BNE -
 
 LF42E:  JSR BlockAlign          ;($FD1C)Update block aligned position of character 1.
 LF431:  LDA TimeStopTimer
@@ -6738,13 +6856,16 @@ LF433:  ORA #$80
 LF435:  STA TimeStopTimer
 LF437:  LDA CurPRGBank
 LF439:  PHA
-LF43A:  LDA #$0B
-LF43C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LF43F:  JSR $8000
 
-LF442:  PLA
+LF43A:  LDA #BANK_HELPERS1
+LF43C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
+LF43F:  JSR _DrawWindow         ;($8000)Draw window on scree and all its content.
+
+LF442:  PLA                     ;Reload previous bank.
 LF443:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LF446:  RTS
+LF446:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 LF447:  LDA #$F0
 LF449:  LDY #$00
@@ -7257,8 +7378,8 @@ LF809:  STA $B1
 LF80B:  JSR LF981
 LF80E:  JSR LF8F7
 LF811:  LDA #$33
-LF813:  STA $30
-LF815:  JSR LE675
+LF813:  STA TextIndex
+LF815:  JSR ShowText            ;($E675)Show text in window.
 LF818:  JSR LF4D1
 LF81B:  JMP LF86C
 LF81E:  CMP #$0D
@@ -7602,7 +7723,7 @@ LFAEB:  LDA #$0C
 LFAED:  STA $2E
 LFAEF:  LDA #$12
 LFAF1:  STA $2D
-LFAF3:  JSR LF42A
+LFAF3:  JSR ShowWindow          ;($F42A)Show a window on the display.
 LFAF6:  LDA CurPRGBank
 LFAF8:  PHA
 LFAF9:  LDA #$0D
