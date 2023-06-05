@@ -12,6 +12,7 @@
 .alias  UpdateMusic             $8100
 .alias  UpdateSpriteRAM         $9900
 .alias  InitSFX                 $A000
+.alias  DoStatusScreen          $A000
 .alias  UpdateSFX               $A100
 .alias  GetInput                $A500
 .alias  TextConvert             $B000
@@ -1384,7 +1385,7 @@ LCA4A:  LDA #$1E
 LCA4C:  STA CurPPUConfig1
 LCA4E:  LDA #$F2
 LCA50:  JSR LD227
-LCA53:  LDA $E3
+LCA53:  LDA DelayConst
 LCA55:  ASL
 LCA56:  JSR LE6D0
 LCA59:  LDA #$D4
@@ -2252,7 +2253,7 @@ LD16D:  JMP LCAD0
 LD170:  JMP LCD67
 LD173:  STA $30
 LD175:  JSR LD2BA
-LD178:  LDA $E3
+LD178:  LDA DelayConst
 LD17A:  JSR LE6D0
 LD17D:  JMP LCAD0
 LD180:  LDA #SFX_PLYR_MISS+INIT
@@ -2347,7 +2348,7 @@ LD224:  RTS
 LD225:  LDA $2A
 LD227:  STA $30
 LD229:  JSR LD2BA
-LD22C:  LDA $E3
+LD22C:  LDA DelayConst
 LD22E:  JSR LE6D0
 LD231:  RTS
 LD232:  LDA FightTurnIndex
@@ -4362,7 +4363,7 @@ LE207:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select namet
 
 LE20A:  LDA #BANK_CREATE
 LE20C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LE20F:  JSR $A000
+LE20F:  JSR DoStatusScreen      ;($A000)Show status window.
 
 LE212:  LDA #$00
 LE214:  STA CurPPUConfig1
@@ -5026,11 +5027,16 @@ LE6CD:  TAX
 LE6CE:  PLA
 LE6CF:  RTS
 
-LE6D0:  CLC
-LE6D1:  ADC Increment0
-LE6D3:  CMP Increment0
-LE6D5:  BNE LE6D3
-LE6D7:  RTS
+;----------------------------------------------------------------------------------------------------
+
+WaitSomeFrames:
+LE6D0:  CLC                     ;
+LE6D1:  ADC Increment0          ;The game will wait a certain number of frames.
+LE6D3:* CMP Increment0          ;The number of frames is the value in A.
+LE6D5:  BNE -                   ;
+LE6D7:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 LE6D8:  LDA #$00
 LE6DA:  STA IgnoreInput

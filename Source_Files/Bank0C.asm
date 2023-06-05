@@ -19,10 +19,10 @@
 ;----------------------------------------------------------------------------------------------------
 
 DoCreateMenus:
-L8000:  LDA #$AE
-L8002:  STA PPUPyLdPtrUB
-L8004:  LDA #$C1
-L8006:  STA PPUPyLdPtrLB
+L8000:  LDA #>CreatePalette     ;
+L8002:  STA PPUPyLdPtrUB        ;Load palette data used while creating save games and characters.
+L8004:  LDA #<CreatePalette     ;
+L8006:  STA PPUPyLdPtrLB        ;
 
 L8008:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
 
@@ -40,14 +40,14 @@ L8017:  JSR PrepLoadWnd         ;($8030)Prepare to show the load saved game menu
 L801A:  LDA #ANIM_DISABLE       ;Disable NPC animations.
 L801C:  STA DisNPCMovement      ;
 
-L801E:  LDA #$00
-L8020:  STA CurPPUConfig1
-L8022:  STA TimeStopTimer
+L801E:  LDA #$00                ;
+L8020:  STA CurPPUConfig1       ;Turn off screen and disable time stop.
+L8022:  STA TimeStopTimer       ;
 
-L8024:  LDA #$AE
-L8026:  STA PPUPyLdPtrUB
-L8028:  LDA #$E1
-L802A:  STA PPUPyLdPtrLB
+L8024:  LDA #>JourneyOnPal      ;
+L8026:  STA PPUPyLdPtrUB        ;Load the main game palette data.
+L8028:  LDA #<JourneyOnPal      ;
+L802A:  STA PPUPyLdPtrLB        ;
 
 L802C:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
 L802F:  RTS                     ;
@@ -75,48 +75,63 @@ L8041:  CMP #$03                ;Was the register new game option selected?
 L8043:  BNE PrepCreateCont      ;If not branch to load a game.
 
 L8045:  JSR NameSaveGame        ;($8679)Load screen where player enters save game name.
-L8048:  JSR LBE53
-L804B:  LDA #$01
-L804D:  STA NewGmCreated
+L8048:  JSR InitSGSlot          ;($BE53)Initialize save game slot.
+
+L804B:  LDA #$01                ;Indicate a new save game has been created.
+L804D:  STA NewGmCreated        ;
+
 L804F:  JMP PrepLoadLoop        ;($8034)Loop to begin showing the load save game window.
 
 PrepCreateCont:
-L8052:  JSR L88BF
-L8055:  CMP #$00
-L8057:  BNE L80C5
-L8059:  JSR L896B
-L805C:  CMP #$01
-L805E:  BEQ L8072
-L8060:  CMP #$02
-L8062:  BEQ L8087
-L8064:  CMP #$03
-L8066:  BEQ L807F
-L8068:  CMP #$04
-L806A:  BEQ PrepCreateCont
+L8052:  JSR CreateContinue      ;($88BF)Show the create/continue window.
 
+L8055:  CMP #$00                ;Was CREATE selected?
+L8057:  BNE JourneyOnward       ;If not, branch.
+
+CreateLoop:
+L8059:  JSR DoCreate            ;($896B)Load and handle the create window.
+
+L805C:  CMP #$01                ;Was CREATE selected?
+L805E:  BEQ PrepCreateChr       ;If so, branch to do character creation.
+
+L8060:  CMP #$02                ;Was DISCARD selected?
+L8062:  BEQ PrepDiscard         ;If so, branch to do character discard.
+
+L8064:  CMP #$03                ;Was FORM PARTY selected?
+L8066:  BEQ PrepFormParty       ;If so, branch to do form party.
+
+L8068:  CMP #$04                ;Was PREVIOUS MENU selected?
+L806A:  BEQ PrepCreateCont      ;If so, branch back to create/continue menu.
+
+PrepExamine:
 L806C:  JSR L8A7C
-L806F:  JMP L8059
+L806F:  JMP CreateLoop          ;($8059)Loop back to the create window.
 
-L8072:  JSR L89D5
+PrepCreateChr:
+L8072:  JSR CreateChr           ;($89D5)Run character creation functions.
+
 L8075:  CPX #$00
 L8077:  BEQ L808D
 L8079:  CPX #$01
 L807B:  BEQ L8096
-L807D:  BNE L8059
+L807D:  BNE CreateLoop          ;($8059)Loop back to the create window.
 
+PrepFormParty:
 L807F:  JSR L8AB0
-L8082:  BCS L8059
+L8082:  BCS CreateLoop          ;($8059)Loop back to the create window.
 L8084:  JMP L80B3
 
+PrepDiscard:
 L8087:  JSR L9470
-L808A:  JMP L8059
+L808A:  JMP CreateLoop          ;($8059)Loop back to the create window.
 
 L808D:  JSR L8D4B
 L8090:  JSR L90FA
-L8093:  JMP L8072
+L8093:  JMP PrepCreateChr       ;($8072)Prepare to show create character window.
 
 L8096:  JSR L91C2
-L8099:  BCS L8072
+L8099:  BCS PrepCreateChr
+
 L809B:  LDX #$00
 L809D:  TXA
 L809E:  PHA
@@ -132,118 +147,160 @@ L80AD:  TAX
 L80AE:  INX
 L80AF:  CPX #$04
 L80B1:  BNE L809D
+
 L80B3:  LDA NewGmCreated
-L80B5:  BEQ L80C5
-L80B7:  LDA #$01
-L80B9:  STA TimeStopTimer
-L80BB:  JSR L8127
-L80BE:  LDA #$00
-L80C0:  STA TimeStopTimer
-L80C2:  JMP L8103
+L80B5:  BEQ JourneyOnward
 
-L80C5:  LDY #$24
-L80C7:  LDA (SGDatPtr),Y
-L80C9:  CMP #$0C
-L80CB:  BEQ L8103
+L80B7:  LDA #$01                ;Activate the time stop timer.
+L80B9:  STA TimeStopTimer       ;
+L80BB:  JSR DoKingSequence      ;($8127)Show sequence where Lord British talks to the characters.
+
+L80BE:  LDA #$00                ;Disable the time stop timer.
+L80C0:  STA TimeStopTimer       ;
+
+L80C2:  JMP StartOutside        ;($8103)Start game on the overworld map.
+
+JourneyOnward:
+L80C5:  LDY #SG_MAP_PROPS       ;
+L80C7:  LDA (SGDatPtr),Y        ;Is the player on the overworld map?
+L80C9:  CMP #$0C                ;If so, branch to start the characters outside.
+L80CB:  BEQ StartOutside        ;
+
 L80CD:  JSR InitPPU             ;($990C)Initialize the PPU.
-L80D0:  LDA #$06
-L80D2:  STA $2A
-L80D4:  LDA #$12
-L80D6:  STA $29
-L80D8:  LDA #$10
-L80DA:  STA $2E
-L80DC:  LDA #$08
-L80DE:  STA $2D
-L80E0:  JSR DrawWndBrdr         ;($97A9)Draw window border.
-L80E3:  LDA #$27
-L80E5:  STA TextIndex
-L80E7:  LDA #$08
-L80E9:  STA $2A
-L80EB:  LDA #$14
-L80ED:  STA $29
-L80EF:  LDA #$0C
-L80F1:  STA $2E
-L80F3:  LDA #$03
-L80F5:  STA $2D
-L80F7:  JSR ShowTextString      ;($995C)Show a text string on the screen.
-L80FA:  LDA #$64
-L80FC:  CLC
-L80FD:  ADC Increment0
-L80FF:  CMP Increment0
-L8101:  BNE L80FF
-L8103:  JSR LoadSGData          ;($BA41)Load save game data into game RAM.
-L8106:  LDA #$00
-L8108:  STA $91
-L810A:  LDA #$72
-L810C:  STA $92
-L810E:  LDA #$40
-L8110:  STA $93
-L8112:  LDA #$72
-L8114:  STA $94
-L8116:  LDA #$80
-L8118:  STA $95
-L811A:  LDA #$72
-L811C:  STA $96
-L811E:  LDA #$C0
-L8120:  STA $97
-L8122:  LDA #$72
-L8124:  STA $98
-L8126:  RTS
 
+L80D0:  LDA #$06                ;
+L80D2:  STA WndXPos             ;Window will be located at tile coords X,Y=6,18.
+L80D4:  LDA #$12                ;
+L80D6:  STA WndYPos             ;
+
+L80D8:  LDA #$10                ;
+L80DA:  STA WndWidth            ;Window will be 16 tiles wide and 8 tiles tall.
+L80DC:  LDA #$08                ;
+L80DE:  STA WndHeight           ;
+
+L80E0:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
+L80E3:  LDA #$27                ;WELCOME! text.
+L80E5:  STA TextIndex           ;
+
+L80E7:  LDA #$08                ;
+L80E9:  STA TXTXPos             ;Text will be at tile coords X,Y=8,20.
+L80EB:  LDA #$14                ;
+L80ED:  STA TXTYPos             ;
+
+L80EF:  LDA #$0C                ;
+L80F1:  STA TXTClrCols          ;Clear 12 columns and 3 rows for the text string.
+L80F3:  LDA #$03                ;
+L80F5:  STA TXTClrRows          ;
+
+L80F7:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
+L80FA:  LDA #$64                ;
+L80FC:  CLC                     ;
+L80FD:  ADC Increment0          ;Wait 100 frames before continuing.
+L80FF:* CMP Increment0          ;
+L8101:  BNE -                   ;
+
+StartOutside:
+L8103:  JSR LoadSGData          ;($BA41)Load save game data into game RAM.
+
+L8106:  LDA #<Ch1Data           ;
+L8108:  STA Pos1ChrPtrLB        ;Set a pointer to character 1's data base address.
+L810A:  LDA #>Ch1Data           ;
+L810C:  STA Pos1ChrPtrUB        ;
+
+L810E:  LDA #<Ch2Data           ;
+L8110:  STA Pos2ChrPtrLB        ;Set a pointer to character 2's data base address.
+L8112:  LDA #>Ch2Data           ;
+L8114:  STA Pos2ChrPtrUB        ;
+
+L8116:  LDA #<Ch3Data           ;
+L8118:  STA Pos3ChrPtrLB        ;Set a pointer to character 3's data base address.
+L811A:  LDA #>Ch3Data           ;
+L811C:  STA Pos3ChrPtrUB        ;
+
+L811E:  LDA #<Ch4Data           ;
+L8120:  STA Pos4ChrPtrLB        ;
+L8122:  LDA #>Ch4Data           ;Set a pointer to character 4's data base address.
+L8124:  STA Pos4ChrPtrUB        ;
+L8126:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+DoKingSequence:
 L8127:  JSR InitPPU             ;($990C)Initialize the PPU.
-L812A:  LDA #$FF
-L812C:  STA TimeStopTimer
-L812E:  LDA #CLS_PALADIN
-L8130:  STA Ch1Class
-L8132:  STA Ch2Class
-L8134:  STA Ch3Class
-L8136:  STA Ch4Class
-L8138:  LDA #$00
-L813A:  STA CurPPUConfig1
-L813C:  LDA #$AF
-L813E:  STA $2A
-L8140:  LDA #$01
-L8142:  STA $29
-L8144:  LDA #$1A
-L8146:  STA $2C
-L8148:  LDA #$40
-L814A:  STA $2B
-L814C:  LDA #$05
-L814E:  STA $2E
-L8150:  LDA #$40
-L8152:  STA $2D
+
+L812A:  LDA #$FF                ;Turn on the time stop timer.
+L812C:  STA TimeStopTimer       ;
+
+L812E:  LDA #CLS_PALADIN        ;
+L8130:  STA Ch1Class            ;
+L8132:  STA Ch2Class            ;Load a default class of paladin for all 4 characters.
+L8134:  STA Ch3Class            ;
+L8136:  STA Ch4Class            ;
+
+L8138:  LDA #$00                ;Turn off the screen.
+L813A:  STA CurPPUConfig1       ;
+
+;Load tile patterns.
+L813C:  LDA #>GFXStartNew       ;
+L813E:  STA PPUSrcPtrUB         ;Set a pointer to the tile pattern data on this bank.
+L8140:  LDA #<GFXStartNew       ;
+L8142:  STA PPUSrcPtrLB         ;
+
+L8144:  LDA #$1A                ;
+L8146:  STA PPUDstPtrUB         ;Prepare to copy GFX data into pattern table 1
+L8148:  LDA #$40                ;starting at tile index $A4.
+L814A:  STA PPUDstPtrLB         ;
+
+L814C:  LDA #$05                ;
+L814E:  STA PPUByteCntUB        ;Prepare to transfer 1344 bytes into the PPU(84 tiles).
+L8150:  LDA #$40                ;
+L8152:  STA PPUByteCntLB        ;
+
 L8154:  JSR LoadPPU1            ;($C006)Load values into PPU.
+
 L8157:  LDA #$9B
 L8159:  STA $2A
 L815B:  LDA #$1B
 L815D:  STA $29
+
 L815F:  LDA #$20
 L8161:  STA $2C
 L8163:  LDA #$00
 L8165:  STA $2B
+
 L8167:  LDA #$04
 L8169:  STA $2E
 L816B:  LDA #$00
 L816D:  STA $2D
+
 L816F:  JSR LoadPPU1            ;($C006)Load values into PPU.
+
 L8172:  LDA #$9E
 L8174:  STA $2A
 L8176:  LDA #$EB
 L8178:  STA $29
+
 L817A:  LDA #$23
 L817C:  STA $2C
 L817E:  LDA #$C0
 L8180:  STA $2B
+
 L8182:  LDA #$00
 L8184:  STA $2E
 L8186:  LDA #$40
 L8188:  STA $2D
+
 L818A:  JSR LoadPPU1            ;($C006)Load values into PPU.
+
 L818D:  LDA #$83
 L818F:  STA $2A
 L8191:  LDA #$5F
 L8193:  STA $29
+
 L8195:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
+
 L8198:  LDA #$00
 L819A:  STA $2B
 L819C:  LDA #$72
@@ -340,22 +397,28 @@ L8238:  STA $2E
 L823A:  LDA #$06
 L823C:  STA $2D
 L823E:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 L8241:  LDA #$20
 L8243:  PHA
+
 L8244:  LDA #$D4
 L8246:  STA HideUprSprites
+
 L8248:  LDA #$06
 L824A:  STA $2A
 L824C:  LDA #$18
 L824E:  STA $29
+
 L8250:  LDA #$14
 L8252:  STA $2E
 L8254:  LDA #$02
 L8256:  STA $2D
+
 L8258:  PLA
 L8259:  PHA
 L825A:  STA TextIndex
 L825C:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L825F:  CLC
 L8260:  LDA $00
 L8262:  ADC #$B4
@@ -1038,118 +1101,139 @@ L8690:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L8693:  JSR EnterName           ;($871D)Show screen for entring name info.
 
-L8696:  LDY #$00
-L8698:  LDA #SG_VALID1
-L869A:  STA (SGDatPtr),Y
+L8696:  LDY #SG_VALID1_IDX      ;
+L8698:  LDA #SG_VALID1          ;Add first valid save game byte to save game file.
+L869A:  STA (SGDatPtr),Y        ;
 
-L869C:  INY
-L869D:  LDA #SG_VALID2
-L869F:  STA (SGDatPtr),Y
+L869C:  INY                     ;
+L869D:  LDA #SG_VALID2          ;Add second valid save game byte to save game file.
+L869F:  STA (SGDatPtr),Y        ;
 
-L86A1:  LDY #$02
-L86A3:  LDA $057E,Y
-L86A6:  CMP #$FF
-L86A8:  BEQ L86B4
-L86AA:  STA (SGDatPtr),Y
-L86AC:  INY
-L86AD:  CPY #$07
-L86AF:  BNE L86A3
-L86B1:  JMP L86BD
+L86A1:  LDY #SG_NAME            ;Set index for third byte of save game data.
 
-L86B4:  LDA #$00
-L86B6:  STA (SGDatPtr),Y
-L86B8:  INY
-L86B9:  CPY #$07
-L86BB:  BNE L86B4
-L86BD:  LDY #$07
-L86BF:  LDA #$00
-L86C1:  STA (SGDatPtr),Y
-L86C3:  INY
-L86C4:  BNE L86BF
-L86C6:  LDY #$10
-L86C8:  LDA #$FF
-L86CA:  STA (SGDatPtr),Y
-L86CC:  INY
-L86CD:  STA (SGDatPtr),Y
-L86CF:  INY
-L86D0:  STA (SGDatPtr),Y
-L86D2:  INY
-L86D3:  STA (SGDatPtr),Y
-L86D5:  LDY #$30
-L86D7:  LDA #$FF
-L86D9:  STA (SGDatPtr),Y
-L86DB:  INY
-L86DC:  STA (SGDatPtr),Y
-L86DE:  LDY #$22
-L86E0:  LDA #$2A
-L86E2:  STA (SGDatPtr),Y
-L86E4:  LDA #$16
-L86E6:  INY
-L86E7:  STA (SGDatPtr),Y
-L86E9:  LDY #$24
-L86EB:  LDA #$0C
-L86ED:  STA (SGDatPtr),Y
-L86EF:  INY
-L86F0:  LDA #$00
-L86F2:  STA (SGDatPtr),Y
-L86F4:  LDA SGDatPtrLB
-L86F6:  STA $29
-L86F8:  STA $99
-L86FA:  LDA SGDatPtrUB
-L86FC:  STA $2A
-L86FE:  INC $2A
-L8700:  LDA $2A
-L8702:  STA $9A
-L8704:  LDY #$00
-L8706:  LDX #$14
-L8708:  LDA #$FF
-L870A:  STA ($29),Y
-L870C:  CLC
-L870D:  LDA $29
-L870F:  ADC #$40
-L8711:  STA $29
-L8713:  LDA $2A
-L8715:  ADC #$00
-L8717:  STA $2A
-L8719:  DEX
-L871A:  BNE L8708
-L871C:  RTS
+SaveSGName:
+L86A3:  LDA TextBuffer-2,Y      ;Has the end of the name string been reached?
+L86A6:  CMP #SG_NONE            ;
+L86A8:  BEQ SaveEmptyChars      ;If so, branch.
+
+L86AA:  STA (SGDatPtr),Y        ;Save another name character in the save game file.
+L86AC:  INY                     ;
+L86AD:  CPY #$07                ;Has all 5 characters for the save game name been saved?
+L86AF:  BNE SaveSGName          ;If not, branch to save another character.
+
+L86B1:  JMP SGSetBlankData      ;($86BD)Set empty bytes in saved game slot.
+
+SaveEmptyChars:
+L86B4:  LDA #$00                ;Prepare to store empty characters.
+L86B6:  STA (SGDatPtr),Y        ;
+L86B8:  INY                     ;Loop until all 5 characters are saved.
+L86B9:  CPY #$07                ;
+L86BB:  BNE SaveEmptyChars      ;
+
+SGSetBlankData:
+L86BD:  LDY #$07                ;Move to next open index in the save game memory.
+
+L86BF:* LDA #$00                ;
+L86C1:  STA (SGDatPtr),Y        ;Zero out the next 249 bytes.
+L86C3:  INY                     ;
+L86C4:  BNE -                   ;
+
+L86C6:  LDY #SG_CHR1_INDEX      ;
+L86C8:  LDA #SG_NONE            ;
+L86CA:  STA (SGDatPtr),Y        ;
+L86CC:  INY                     ;Bytes 16-19 in the save game file are the indexes 
+L86CD:  STA (SGDatPtr),Y        ;into the character pool for the 4 characters currently
+L86CF:  INY                     ;selected in the active party. Setting these values to
+L86D0:  STA (SGDatPtr),Y        ;$FF indicates no characters are currently selected.
+L86D2:  INY                     ;
+L86D3:  STA (SGDatPtr),Y        ;
+
+L86D5:  LDY #SG_BOAT_X          ;
+L86D7:  LDA #SG_NONE            ;These slots save the boat X,Y position. Setting them to
+L86D9:  STA (SGDatPtr),Y        ;$FF indicates there is no boat.
+L86DB:  INY                     ;
+L86DC:  STA (SGDatPtr),Y        ;
+
+L86DE:  LDY #SG_PARTY_X         ;
+L86E0:  LDA #$2A                ;Set the initial X position of the party on the world map.
+L86E2:  STA (SGDatPtr),Y        ;
+
+L86E4:  LDA #$16                ;
+L86E6:  INY                     ;Set the initial Y position of the party on the world map.
+L86E7:  STA (SGDatPtr),Y        ;
+
+L86E9:  LDY #SG_MAP_PROPS       ;
+L86EB:  LDA #$0C                ;Set map properties of the current map(Overworld map).
+L86ED:  STA (SGDatPtr),Y        ;
+
+L86EF:  INY                     ;
+L86F0:  LDA #MAP_OVERWORLD      ;Party starts on the overworld map.
+L86F2:  STA (SGDatPtr),Y        ;
+
+L86F4:  LDA SGDatPtrLB          ;
+L86F6:  STA GenPtr29LB          ;Get a pointer to the base address of the current save game.
+L86F8:  STA SGCharPtrLB         ;
+
+L86FA:  LDA SGDatPtrUB          ;Move ahead 256 bytes in the save game. This is the start
+L86FC:  STA GenPtr29UB          ;of the character data for the save game.
+L86FE:  INC GenPtr29UB          ;
+
+L8700:  LDA GenPtr29UB          ;Make a copy of character data pointer.
+L8702:  STA SGCharPtrUB         ;
+
+L8704:  LDY #$00                ;Prepare to designate all 20 character slots as empty.
+L8706:  LDX #$14                ;
+
+L8708:* LDA #$FF                ;Set first byte of current character data to $FF
+L870A:  STA (GenPtr29),Y        ;to indicate a blank character slot.
+
+L870C:  CLC                     ;
+L870D:  LDA GenPtr29LB          ;
+L870F:  ADC #$40                ;
+L8711:  STA GenPtr29LB          ;Jump ahead 64 bytes to the next character data slot.
+L8713:  LDA GenPtr29UB          ;
+L8715:  ADC #$00                ;
+L8717:  STA GenPtr29UB          ;
+
+L8719:  DEX                     ;Have all 20 character slots been emptied out?
+L871A:  BNE -                   ;
+L871C:  RTS                     ;If not, branch to clear another slot.
 
 ;----------------------------------------------------------------------------------------------------
 
 EnterName:
-L871D:  LDA #$08
-L871F:  STA TXTXPos
-L8721:  LDA #$0C
-L8723:  STA TXTYPos
+L871D:  LDA #$08                ;
+L871F:  STA TXTXPos             ;Text will be located at tile coords X,Y=8,12.
+L8721:  LDA #$0C                ;
+L8723:  STA TXTYPos             ;
 
-L8725:  LDA #$14
-L8727:  STA TXTClrCols
-L8729:  LDA #$06
-L872B:  STA TXTClrRows
+L8725:  LDA #$14                ;
+L8727:  STA TXTClrCols          ;Clear 20 columns and 6 rows for the text string.
+L8729:  LDA #$06                ;
+L872B:  STA TXTClrRows          ;
 
 L872D:  LDA #$03                ;Letters and numbers for name entries.
 L872F:  STA TextIndex           ;
 L8731:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8734:  LDA #$08
-L8736:  STA TXTXPos
-L8738:  LDA #$0A
-L873A:  STA TXTYPos
+L8734:  LDA #$08                ;
+L8736:  STA TXTXPos             ;Text will be located at tile coords X,Y=8,10.
+L8738:  LDA #$0A                ;
+L873A:  STA TXTYPos             ;
 
-L873C:  LDA #$05
-L873E:  STA TXTClrCols
-L8740:  LDA #$01
-L8742:  STA TXTClrRows
+L873C:  LDA #$05                ;
+L873E:  STA TXTClrCols          ;Clear 5 columns and 1 row for the text string.
+L8740:  LDA #$01                ;
+L8742:  STA TXTClrRows          ;
 
 L8744:  LDA #$17                ;----- 5 dashes for the 5 name characters.
 L8746:  STA TextIndex           ;
 L8748:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L874B:  LDX #$00
-L874D:  LDY #$00
-L874F:  LDA #$00
-L8751:  STA NameLength
+L874B:  LDX #$00                ;
+L874D:  LDY #$00                ;Zero everything out for the next segment of code.
+L874F:  LDA #$00                ;
+L8751:  STA NameLength          ;
 
 UpdateSelectorLoop:
 L8753:  JSR SetSelectorXY       ;($8872)Set XY position of the selector sprite.
@@ -1158,7 +1242,7 @@ L8756:  JSR GetInputPress       ;($98EE)Get input button press and account for r
 L8759:  LDA Pad1Input           ;
 
 L875B:  CMP #BTN_RIGHT          ;Was the right button pressed?
-L875D:  BNE ChkBtnLt1           ;If not, branch if other buttons have been pressed.
+L875D:  BNE ChkBtnLt1           ;If not, branch to check if other buttons pressed.
 
 L875F:  CPX #$27                ;Are we at the last entry in the character table?
 L8761:  BNE +                   ;If not, branch to increment to next index.
@@ -1169,99 +1253,111 @@ L8766:* INX                     ;Increment to the next character index.
 L8767:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
 ChkBtnLt1:
-L876A:  CMP #BTN_LEFT
-L876C:  BNE ChkBtnUp1
+L876A:  CMP #BTN_LEFT           ;Was the left button pressed?
+L876C:  BNE ChkBtnUp1           ;If not, branch to check if other buttons pressed.
 
-L876E:  CPX #$00
-L8770:  BNE +
+L876E:  CPX #$00                ;Has the minimum index been reached?
+L8770:  BNE +                   ;If not, branch to decrement the index.
+
 L8772:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
-L8775:* DEX
+L8775:* DEX                     ;Decrement to previous character.
 L8776:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
 ChkBtnUp1:
-L8779:  CMP #BTN_UP
-L877B:  BNE ChkBtnDn1
+L8779:  CMP #BTN_UP             ;Was the up button pressed?
+L877B:  BNE ChkBtnDn1           ;If not, branch to check if other buttons pressed.
 
-L877D:  LDA NextIndexUpTbl,X
-L8780:  TAX
+L877D:  LDA NextIndexUpTbl,X    ;Load the next index to jump to from the table below.
+L8780:  TAX                     ;
 L8781:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
 ChkBtnDn1:
-L8784:  CMP #BTN_DOWN
-L8786:  BNE ChkBtnA1
+L8784:  CMP #BTN_DOWN           ;Was the down button pressed?
+L8786:  BNE ChkBtnA1            ;If not, branch to check if other buttons pressed.
 
-L8788:  LDA NextIndexDnTbl,X
-L878B:  TAX
+L8788:  LDA NextIndexDnTbl,X    ;Load the next index to jump to from the table below.
+L878B:  TAX                     ;
 L878C:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
 ChkBtnA1:
-L878F:  CMP #BTN_A
-L8791:  BEQ +
+L878F:  CMP #BTN_A              ;Was the A button pressed?
+L8791:  BEQ +                   ;If so, branch to process button press.
 
 L8793:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
-L8796:* STX NameCharIndex
-L8798:  STY NameSelRow
-L879A:  CPX #$26
-L879C:  BCC L87B6
-L879E:  BEQ L87A1
-L87A0:  RTS
+L8796:* STX NameCharIndex       ;Store the index to the selected character.
+L8798:  STY NameSelRow          ;
 
-L87A1:  LDA NameLength
-L87A3:  BNE +
+L879A:  CPX #$26                ;Check if END or a character was selected.
+L879C:  BCC AddLetter           ;Branch if character selected.
+
+L879E:  BEQ BackSpace            ;Branch if back space selected.
+
+L87A0:  RTS                      ;END was selected. Return.
+
+BackSpace:
+L87A1:  LDA NameLength          ;Are there any characters in the name yet?
+L87A3:  BNE +                   ;If so, branch to delete the last character.
+
 L87A5:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
-L87A8:* DEC NameLength
-L87AA:  LDY NameLength
-L87AC:  LDA #$FF
-L87AE:  STA TextBuffer,Y
-L87B1:  DEC NameLength
-L87B3:  JMP L87CC
+L87A8:* DEC NameLength          ;Decrement name length by 1.
 
-L87B6:  LDA NameLength
-L87B8:  CMP #$05
-L87BA:  BNE +
+L87AA:  LDY NameLength          ;
+L87AC:  LDA #TXT_END            ;Update the end of string marker for the new name length.
+L87AE:  STA TextBuffer,Y        ;
+
+L87B1:  DEC NameLength          ;Decrement again. This will be undone later.
+L87B3:  JMP UpdateName          ;($87CC)Update current name on the screen.
+
+AddLetter:
+L87B6:  LDA NameLength          ;Has the max characters for the name been reached(5)?
+L87B8:  CMP #$05                ;
+L87BA:  BNE +                   ;If not, branch to add character to name.
 
 L87BC:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
-L87BF:* LDA NameCharsTbl,X
-L87C2:  LDY NameLength
-L87C4:  STA TextBuffer,Y
-L87C7:  LDA #$FF
-L87C9:  STA TextBuffer+1,Y
+L87BF:* LDA NameCharsTbl,X      ;
+L87C2:  LDY NameLength          ;Get selected character and add it to the text buffer.
+L87C4:  STA TextBuffer,Y        ;
 
-L87CC:  LDA #$08
-L87CE:  STA TXTXPos
-L87D0:  LDA #$09
-L87D2:  STA TXTYPos
-L87D4:  LDA #$0A
-L87D6:  STA TXTClrCols
-L87D8:  LDA #$01
-L87DA:  STA TXTClrRows
+L87C7:  LDA #TXT_END            ;Update the end of string marker for the new name length.
+L87C9:  STA TextBuffer+1,Y      ;
 
-L87DC:  LDA #TXT_DBL_SPACE
-L87DE:  STA TextIndex
+UpdateName:
+L87CC:  LDA #$08                ;
+L87CE:  STA TXTXPos             ;Text will be located at tile coords X,Y=8,9.
+L87D0:  LDA #$09                ;
+L87D2:  STA TXTYPos             ;
 
-L87E0:  LDA NameCharIndex
-L87E2:  PHA
-L87E3:  LDA NameSelRow
-L87E5:  PHA
-L87E6:  LDA NameLength
-L87E8:  PHA
+L87D4:  LDA #$0A                ;
+L87D6:  STA TXTClrCols          ;Clear 10 columns and 1 row for the text string.
+L87D8:  LDA #$01                ;
+L87DA:  STA TXTClrRows          ;
+
+L87DC:  LDA #TXT_DBL_SPACE      ;Indicate text buffer already has the data in it.
+L87DE:  STA TextIndex           ;
+
+L87E0:  LDA NameCharIndex       ;
+L87E2:  PHA                     ;
+L87E3:  LDA NameSelRow          ;Save name generation variables on the stack.
+L87E5:  PHA                     ;
+L87E6:  LDA NameLength          ;
+L87E8:  PHA                     ;
 
 L87E9:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L87EC:  PLA
-L87ED:  STA NameLength
-L87EF:  PLA
-L87F0:  STA NameSelRow
-L87F2:  TAY
-L87F3:  PLA
-L87F4:  STA NameCharIndex
-L87F6:  TAX
+L87EC:  PLA                     ;
+L87ED:  STA NameLength          ;
+L87EF:  PLA                     ;
+L87F0:  STA NameSelRow          ;Restore name generation variables from the stack.
+L87F2:  TAY                     ;
+L87F3:  PLA                     ;
+L87F4:  STA NameCharIndex       ;
+L87F6:  TAX                     ;
 
-L87F7:  INC NameLength
+L87F7:  INC NameLength          ;Increment to next open spot in name string.
 L87F9:  JMP UpdateSelectorLoop  ;($8753)Update selector sprite position.
 
 ;----------------------------------------------------------------------------------------------------
@@ -1351,211 +1447,267 @@ L88BD:  .byte                               $46,      $48
 
 ;----------------------------------------------------------------------------------------------------
 
-L88BF:  JSR L88C8
-L88C2:  PHA
-L88C3:  JSR L8962
-L88C6:  PLA
-L88C7:  RTS
+CreateContinue:
+L88BF:  JSR DoCreateCont        ;(88C8)Display and handle create/continue window.
+
+L88C2:  PHA                     ;Save A on the stack.
+
+L88C3:  JSR SetDelayConst       ;($8962)Set a delay constant of 30 frames.
+
+L88C6:  PLA                     ;Restore A from the stack and return.
+L88C7:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+DoCreateCont:
 L88C8:  JSR InitPPU             ;($990C)Initialize the PPU.
 L88CB:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
 
-L88CE:  LDA #$08
-L88D0:  STA WndXPos
-L88D2:  LDA #$0E
-L88D4:  STA WndYPos
+L88CE:  LDA #$08                ;
+L88D0:  STA WndXPos             ;Window will be located at tile coords X,Y=8,14
+L88D2:  LDA #$0E                ;
+L88D4:  STA WndYPos             ;
 
-L88D6:  LDA #$10
-L88D8:  STA WndWidth
-L88DA:  LDA #$06
-L88DC:  STA WndHeight
+L88D6:  LDA #$10                ;
+L88D8:  STA WndWidth            ;Window will be 16 tiles wide and 6 tiles tall.
+L88DA:  LDA #$06                ;
+L88DC:  STA WndHeight           ;
 
 L88DE:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
-L88E1:  LDA #$0A
-L88E3:  STA TXTXPos
-L88E5:  LDA #$10
-L88E7:  STA TXTYPos
+L88E1:  LDA #$0A                ;
+L88E3:  STA TXTXPos             ;Text will be located at tile coords X,Y=10,16.
+L88E5:  LDA #$10                ;
+L88E7:  STA TXTYPos             ;
 
-L88E9:  LDA #$0D
-L88EB:  STA TXTClrCols
-L88ED:  LDA #$02
-L88EF:  STA TXTClrRows
+L88E9:  LDA #$0D                ;
+L88EB:  STA TXTClrCols          ;Clear 13 columns and 2 rows for the text string.
+L88ED:  LDA #$02                ;
+L88EF:  STA TXTClrRows          ;
 
 L88F1:  LDA #$04                ;CREATE CONTINUE text.
 L88F3:  STA TextIndex           ;
 L88F5:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L88F8:  LDA #$80
-L88FA:  STA SpriteBuffer
-L88FD:  LDA #$48
-L88FF:  STA SpriteBuffer+3
-L8902:  LDY #$01
-L8904:  LDX #$00
+L88F8:  LDA #$80                ;
+L88FA:  STA SpriteBuffer        ;Set selector sprite to pixel coordinates X,Y=72,128
+L88FD:  LDA #$48                ;
+L88FF:  STA SpriteBuffer+3      ;
+
+L8902:  LDY #$01                ;Prepare to get the next button press and handle it.
+L8904:  LDX #$00                ;
 
 CreateContInptLoop:
 L8906:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8909:  LDA Pad1Input           ;
 
-L890B:  CMP #BTN_UP
-L890D:  BEQ CreateContUpBtn
+L890B:  CMP #BTN_UP             ;Was the up button pressed?
+L890D:  BEQ CreateContUpBtn     ;If so, branch to handle button press.
 
-L890F:  CMP #BTN_DOWN
-L8911:  BEQ CreateContSGDnBtn
+L890F:  CMP #BTN_DOWN           ;Was the down button pressed?
+L8911:  BEQ CreateContSGDnBtn   ;If so, branch to handle button press.
 
-L8913:  CMP #BTN_A
-L8915:  BNE CreateContInptLoop
+L8913:  CMP #BTN_A              ;Was the A button pressed?
+L8915:  BNE CreateContInptLoop  ;If not, branch to get the next input.
 
 CreateContABtn:
-L8917:  TXA
-L8918:  BNE L891B
-L891A:  RTS
+L8917:  TXA                     ;Was CONTINUE selected?
+L8918:  BNE +                   ;If so, branch.
 
-L891B:  PHA
-L891C:  STY $18
-L891E:  LDX #$05
-L8920:  LDY #$10
-L8922:  LDA (SGDatPtr),Y
-L8924:  CMP #$FF
-L8926:  BEQ L892E
-L8928:  INY
-L8929:  DEX
-L892A:  BNE L8922
-L892C:  PLA
-L892D:  RTS
-L892E:  LDY $18
-L8930:  PLA
-L8931:  LDX #$00
-L8933:  JMP L8943
+L891A:  RTS                     ;Exit indicating CREATE was selected.
+
+L891B:* PHA                     ;Store current values of A and Y
+L891C:  STY GenByte18           ;
+
+L891E:  LDX #$05                ;Prepare to check if a valid party has been formed.
+L8920:  LDY #$10                ;
+
+L8922:* LDA (SGDatPtr),Y        ;
+L8924:  CMP #SG_NONE            ;
+L8926:  BEQ PartyNotValid       ;Make sure all 4 character slots have been chosen.
+L8928:  INY                     ;If not, do not allow the player to journey onward.
+L8929:  DEX                     ;If so, return to start the game engine.
+L892A:  BNE -                   ;
+
+L892C:  PLA                     ;Restore A from stack(should be 1).
+L892D:  RTS                     ;Return indicating CONTINUE was selected.
+
+PartyNotValid:
+L892E:  LDY GenByte18           ;Restore the values of Y and A.
+L8930:  PLA                     ;
+
+L8931:  LDX #$00                ;Force the selector sprite back to CREATE.
+L8933:  JMP UpdateSelectorPos   ;($8943)Update Y position of selector sprite.
 
 CreateContUpBtn:
-L8936:  CPX #$00
-L8938:  BEQ L8906
-L893A:  DEX
-L893B:  JMP L8943
+L8936:  CPX #$00                ;Is the selector sprite already at CREATE?
+L8938:  BEQ CreateContInptLoop  ;If so, branch to ignore the input.
+
+L893A:  DEX                     ;Move the selector sprite down to CONTINUE.
+L893B:  JMP UpdateSelectorPos   ;($8943)Update Y position of selector sprite.
 
 CreateContSGDnBtn:
-L893E:  CPX #$01
-L8940:  BEQ L8906
-L8942:  INX
-L8943:  LDA $8967,X
-L8946:  STA SpriteBufferBase
-L8949:  LDA $8969,Y
-L894C:  STA $73C7
-L894F:  JMP L8906
+L893E:  CPX #$01                ;Is the selector already on CONTINUE?
+L8940:  BEQ CreateContInptLoop  ;If so, branch to ignore input.
 
-L8952:  CPY #$00
-L8954:  BEQ L8906
-L8956:  DEY
-L8957:  JMP L8943
-L895A:  CPY #$01
-L895C:  BEQ L8906
-L895E:  INY
-L895F:  JMP L8943
+L8942:  INX                     ;Move selector sprite to COMTINUE.
 
-;----------------------------------------------------------------------------------------------------
+UpdateSelectorPos:
+L8943:  LDA SelectYPosTbl,X     ;
+L8946:  STA SpriteBuffer        ;Update the Y position of the selector sprite.
+L8949:  LDA HiddenXPosTbl,Y     ;
+L894C:  STA SpriteBuffer+$C7    ;Update the X position of a sprite hidden off screen.
+L894F:  JMP CreateContInptLoop  ;
 
-L8962:  LDA #$1E
-L8964:  STA $E3
-L8966:  RTS
+;It does not appear the code below this point can be reached.
+L8952:  CPY #$00                ;Is Y=0(Should never be true)?
+L8954:  BEQ CreateContInptLoop  ;If so, branch to get next input.
 
-;----------------------------------------------------------------------------------------------------
+L8956:  DEY                     ;Set Y=0.
+L8957:  JMP UpdateSelectorPos   ;($8943)Update Y position of selector sprite.
 
-L8967:  .byte $80, $90, $78, $98
+L895A:  CPY #$01                ;Is Y=1(Should always be true)?
+L895C:  BEQ CreateContInptLoop  ;If so, branch to update selector sprite position.
+
+L895E:  INY                     ;Set Y=1.
+L895F:  JMP UpdateSelectorPos   ;($8943)Update Y position of selector sprite.
 
 ;----------------------------------------------------------------------------------------------------
 
+SetDelayConst:
+L8962:  LDA #$1E                ;Set a frame delay constant of 30 frames.
+L8964:  STA DelayConst          ;Used throughout the game for various delays.
+L8966:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table sets the Y position of the selector sprite for the create/continue menu.
+
+SelectYPosTbl:
+L8967:  .byte $80, $90
+
+;The following table moves the X position of a sprite thats hidden off screen. No effect.
+
+HiddenXPosTbl:
+L8969:  .byte $78, $98
+
+;----------------------------------------------------------------------------------------------------
+
+DoCreate:
 L896B:  JSR InitPPU             ;($990C)Initialize the PPU.
 L896E:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
 
-L8971:  LDA #$06
-L8973:  STA WndXPos
-L8975:  LDA #$0C
-L8977:  STA WndYPos
+L8971:  LDA #$06                ;
+L8973:  STA WndXPos             ;Window will be located at tile coords X,Y=6,12
+L8975:  LDA #$0C                ;
+L8977:  STA WndYPos             ;
 
-L8979:  LDA #$14
-L897B:  STA WndWidth
-L897D:  LDA #$0C
-L897F:  STA WndHeight
+L8979:  LDA #$14                ;
+L897B:  STA WndWidth            ;Window will be 20 tiles wide and 12 tiles tall.
+L897D:  LDA #$0C                ;
+L897F:  STA WndHeight           ;
 
 L8981:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
-L8984:  LDA #$0A
-L8986:  STA TXTXPos
-L8988:  LDA #$0E
-L898A:  STA TXTYPos
+L8984:  LDA #$0A                ;
+L8986:  STA TXTXPos             ;Text will be located at tile coords X,Y=10,14.
+L8988:  LDA #$0E                ;
+L898A:  STA TXTYPos             ;
 
-L898C:  LDA #$0D
-L898E:  STA TXTClrCols
-L8990:  LDA #$05
-L8992:  STA TXTClrRows
+L898C:  LDA #$0D                ;
+L898E:  STA TXTClrCols          ;Clear 13 columns and 5 rows for the text string.
+L8990:  LDA #$05                ;
+L8992:  STA TXTClrRows          ;
 
 L8994:  LDA #$05                ;EXAMINE CREATE DISCARD FORM PARTY PREVIOUS MENU.
 L8996:  STA TextIndex           ;
 L8998:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L899B:  LDA #$70
-L899D:  STA SpriteBufferBase
-L89A0:  LDA #$40
-L89A2:  STA $7303
-L89A5:  LDX #$00
+L899B:  LDA #$70                ;
+L899D:  STA SpriteBuffer        ;Set selector sprite to pixel coords X,Y=64,112.
+L89A0:  LDA #$40                ;
+L89A2:  STA SpriteBuffer+3      ;
 
+L89A5:  LDX #$00                ;Set selector to default position EXAMINE.
+
+CreateInputLoop:
 L89A7:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L89AA:  LDA Pad1Input
+L89AA:  LDA Pad1Input           ;
 
-L89AC:  CMP #BTN_UP
-L89AE:  BEQ L89BA
+L89AC:  CMP #BTN_UP             ;Was the up button pressed?
+L89AE:  BEQ CreateBtnUp         ;If so, branch to handle input
 
-L89B0:  CMP #BTN_DOWN
-L89B2:  BEQ L89C2
+L89B0:  CMP #BTN_DOWN           ;Was the down button pressed?
+L89B2:  BEQ CreateBtnDn         ;If so, branch to handle input.
 
-L89B4:  CMP #BTN_A
-L89B6:  BNE L89A7
+L89B4:  CMP #BTN_A              ;Was the A button pressed?
+L89B6:  BNE CreateInputLoop     ;If not, branch to ignore all other inputs.
 
-L89B8:  TXA
-L89B9:  RTS
+L89B8:  TXA                     ;Indicate what selection was made and return.
+L89B9:  RTS                     ;
 
-L89BA:  CPX #$00
-L89BC:  BEQ L89A7
-L89BE:  DEX
-L89BF:  JMP L89C7
-L89C2:  CPX #$04
-L89C4:  BEQ L89A7
-L89C6:  INX
-L89C7:  LDA $89D0,X
-L89CA:  STA SpriteBufferBase
-L89CD:  JMP L89A7
+CreateBtnUp:
+L89BA:  CPX #$00                ;Is the selector already at the top of the menu?
+L89BC:  BEQ CreateInputLoop     ;If so, branch to ignore the input.
 
+L89BE:  DEX                     ;Move the selector up 1 menu item.
+L89BF:  JMP CreateUpdateY       ;
+
+CreateBtnDn:
+L89C2:  CPX #$04                ;Is the selector already at the bottom of the menu?
+L89C4:  BEQ CreateInputLoop     ;If so, branch to ignore the input.
+
+L89C6:  INX                     ;Move the selector down 1 menu item.
+
+CreateUpdateY:
+L89C7:  LDA CreateYPosTbl,X     ;Update the Y position of the selector sprite.
+L89CA:  STA SpriteBufferBase    ;
+L89CD:  JMP CreateInputLoop     ;($89A7)Jump to get the next input.
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table is used to set the Y position of the selector sprite on the create menu.
+
+CreateYPosTbl:
 L89D0:  .byte $70, $80, $90, $A0, $B0
 
-L89D5:  JSR $990C
+;----------------------------------------------------------------------------------------------------
+
+CreateChr:
+L89D5:  JSR InitPPU             ;($990C)Initialize the PPU.
 L89D8:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
+
 L89DB:  LDA #$04
 L89DD:  STA $2A
 L89DF:  LDA #$0E
 L89E1:  STA $29
+
 L89E3:  LDA #$18
 L89E5:  STA $2E
 L89E7:  LDA #$08
 L89E9:  STA $2D
+
 L89EB:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 L89EE:  LDA #$08
 L89F0:  STA $2A
 L89F2:  LDA #$10
 L89F4:  STA $29
+
 L89F6:  LDA #$13
 L89F8:  STA $2E
 L89FA:  LDA #$03
 L89FC:  STA $2D
+
 L89FE:  LDA #$06
 L8A00:  STA TextIndex
 L8A02:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8A05:  LDA #$80
-L8A07:  STA SpriteBufferBase
+L8A07:  STA SpriteBuffer
 L8A0A:  LDA #$30
-L8A0C:  STA $7303
+L8A0C:  STA SpriteBuffer+3
+
 L8A0F:  LDX #$00
 
 L8A11:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
@@ -1618,6 +1770,8 @@ L8A73:  STA SpriteBufferBase
 L8A76:  JMP L8A11
 
 L8A79:  .byte $80, $90, $A0
+
+;----------------------------------------------------------------------------------------------------
 
 L8A7C:  JSR InitPPU             ;($990C)Initialize the PPU.
 L8A7F:  LDA #$02
@@ -2443,7 +2597,7 @@ L9116:  LDA #$96
 L9118:  STA $29
 L911A:  LDA #$DC
 L911C:  STA $2D
-L911E:  JSR L96CD
+L911E:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 L9121:  LDA #$40
 L9123:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
 L9126:  LDA #$23
@@ -2487,6 +2641,7 @@ L9174:  STA ($99),Y
 L9176:  INY
 L9177:  CPY #$40
 L9179:  BNE L9172
+
 L917B:  LDY #$33
 L917D:  LDA #$01
 L917F:  STA ($99),Y
@@ -2509,10 +2664,12 @@ L919F:  LDY #$34
 L91A1:  STA ($99),Y
 L91A3:  LDY #$35
 L91A5:  STA ($99),Y
+
 L91A7:  LDY #$00
 L91A9:  LDA TextBuffer,Y
 L91AC:  CMP #$FF
 L91AE:  BEQ L91B8
+
 L91B0:  STA ($99),Y
 L91B2:  INY
 L91B3:  CPY #$05
@@ -2589,14 +2746,14 @@ L923D:  LDA #$C4
 L923F:  STA $29
 L9241:  LDA #$B8
 L9243:  STA $2D
-L9245:  JSR L96CD
+L9245:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 L9248:  LDA #$20
 L924A:  STA $2A
 L924C:  LDA #$D2
 L924E:  STA $29
 L9250:  LDA #$DC
 L9252:  STA $2D
-L9254:  JSR L96CD
+L9254:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
 L9257:  LDA #$40                ;Prepare to load 64 bytes into PPU buffer.
 L9259:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
@@ -3119,11 +3276,16 @@ L96B0:  .byte $78, $98
 l96B2:  .byte $96, $8F, $96, $96, $8F, $96, $8F, $8F, $96, $96, $96, $91, $8E, $8D
 L96C0:  .byte $8B, $8F, $8F, $8C, $A0, $9D, $99, $8B, $95, $92, $8D, $8A, $9B
 
-L96CD:  LDA #$06
-L96CF:  STA $2E
+;----------------------------------------------------------------------------------------------------
 
+LoadLargeChar:
+L96CD:  LDA #$06
+L96CF:  STA GenByte2E
+
+LoadLargeCharLoop:
 L96D1:  LDA #$06                ;Prepare to load 6 payload bytes into PPU buffer.
 L96D3:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
+
 L96D6:  LDA $2A
 L96D8:  STA PPUBufBase,X
 L96DB:  INX
@@ -3131,12 +3293,14 @@ L96DC:  LDA $29
 L96DE:  STA PPUBufBase,X
 L96E1:  INX
 L96E2:  LDY #$06
-L96E4:  LDA $2D
+
+L96E4:* LDA $2D
 L96E6:  STA PPUBufBase,X
 L96E9:  INC $2D
 L96EB:  INX
 L96EC:  DEY
-L96ED:  BNE L96E4
+L96ED:  BNE -
+
 L96EF:  CLC
 L96F0:  LDA $29
 L96F2:  ADC #$20
@@ -3144,9 +3308,13 @@ L96F4:  STA $29
 L96F6:  LDA $2A
 L96F8:  ADC #$00
 L96FA:  STA $2A
-L96FC:  DEC $2E
-L96FE:  BNE L96D1
-L9700:  RTS
+
+L96FC:  DEC GenByte2E           ;Does another row of the large character image need to be loaded?
+L96FE:  BNE LoadLargeCharLoop   ;If so, branch to do another row.
+L9700:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
 L9701:  TAX
 L9702:  LDY #$00
 L9704:  LDA $9752,Y
@@ -3895,15 +4063,22 @@ L9FBD:  BMI L9FC1
 L9FBF:  LDX #$FF
 L9FC1:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 ;Unused code from Bank B.
 L9FC2:  .byte $8A, $48, $A5, $4D, $48, $A9, $04, $85, $4D, $A2, $04, $BD, $00, $73, $4A, $4A
 L9FD2:  .byte $4A, $4A, $18, $65, $49, $38, $E9, $07, $D9, $03, $04, $D0, $15, $BD, $03, $73
 L9FE2:  .byte $4A, $4A, $4A, $4A, $18, $65, $4A, $38, $E9, $07, $D9, $02, $04, $D0, $03, $4C
 L9FF2:  .byte $26, $A0, $8A, $18, $69, $10, $AA, $C6, $4D, $D0, $D0, $A2, $00, $BD
 
-LA000:  JSR $990C
-LA003:  LDA #$00
-LA005:  STA CurPPUConfig1
+;----------------------------------------------------------------------------------------------------
+
+DoStatusScreen:
+LA000:  JSR InitPPU             ;($990C)Initialize the PPU.
+
+LA003:  LDA #$00                ;Turn off the screen.
+LA005:  STA CurPPUConfig1       ;
+
 LA007:  LDY #$06
 LA009:  LDA (Pos1ChrPtr),Y
 LA00B:  STA $30
@@ -3913,35 +4088,45 @@ LA011:  LDA (Pos3ChrPtr),Y
 LA013:  STA $2D
 LA015:  LDA (Pos4ChrPtr),Y
 LA017:  STA $2C
+
 LA019:  JSR $C009
+
 LA01C:  LDA #$20
 LA01E:  STA $2A
 LA020:  LDA #$82
 LA022:  STA $29
 LA024:  LDA #$44
 LA026:  STA $2D
-LA028:  JSR L96CD
+
+LA028:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
+
 LA02B:  LDA #$20
 LA02D:  STA $2A
 LA02F:  LDA #$88
 LA031:  STA $29
 LA033:  LDA #$68
 LA035:  STA $2D
-LA037:  JSR L96CD
+
+LA037:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
+
 LA03A:  LDA #$20
 LA03C:  STA $2A
 LA03E:  LDA #$92
 LA040:  STA $29
 LA042:  LDA #$B8
 LA044:  STA $2D
-LA046:  JSR L96CD
+
+LA046:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
+
 LA049:  LDA #$20
 LA04B:  STA $2A
 LA04D:  LDA #$98
 LA04F:  STA $29
 LA051:  LDA #$DC
 LA053:  STA $2D
-LA055:  JSR L96CD
+
+LA055:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
+
 LA058:  LDY #$00
 LA05A:  LDA #$00
 LA05C:  STA $0500,Y
@@ -4078,11 +4263,13 @@ LA177:  JSR $C01E
 LA17A:  LDY #$06
 LA17C:  LDA ($99),Y
 LA17E:  STA $2C
+
 LA180:  LDA #$FF
 LA182:  STA $30
 LA184:  STA $2E
 LA186:  STA $2D
 LA188:  JSR $C009
+
 LA18B:  JSR LA28C
 LA18E:  LDA #$11
 LA190:  STA $2A
@@ -4204,7 +4391,7 @@ LA290:  LDA #$C4
 LA292:  STA $29
 LA294:  LDA #$DC
 LA296:  STA $2D
-LA298:  JSR L96CD
+LA298:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
 LA29B:  LDA #$40                ;Prepare to load 64 bytes into PPU buffer.
 LA29D:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
@@ -4520,6 +4707,7 @@ LA514:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
+StatsTxt:
 ;              _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n
 LA515:  .byte $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD
 ;              _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n
@@ -4533,6 +4721,7 @@ LA555:  .byte $91, $99, $00, $FD, $8E, $A1, $99, $00, $FD, $90, $98, $95, $8D, $
 
 ;----------------------------------------------------------------------------------------------------
 
+RaceTxt:
 ;              H    U    M    A    N    \n   E    L    F    \n   D    W    A    R    F    \n
 LA564:  .byte $91, $9E, $96, $8A, $97, $FD, $8E, $95, $8F, $FD, $8D, $A0, $8A, $9B, $8F, $FD
 ;              B    O    B    I    T    \n   F    U    Z    Z    Y    \n  END
@@ -4540,6 +4729,7 @@ LA565:  .byte $8B, $98, $8B, $92, $9D, $FD, $8F, $9E, $A3, $A3, $A2, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+ClassTxt:
 ;              F    T    R    \n   C    L    R    C    \n   W    Z    R    D    \n   T    H
 LA572:  .byte $8F, $9D, $9B, $FD, $8C, $95, $9B, $8C, $FD, $A0, $A3, $9B, $8D, $FD, $9D, $91
 ;              I    E    F    \n   P    L    D    N    \n   B    R    B    R    N    \n   L
@@ -4551,6 +4741,7 @@ LA595:  .byte $8A, $95, $8C, $96, $9D, $FD, $9B, $97, $90, $9B, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+InventoryTxt:
 ;              T    O    R    C    H    _    _    \n   K    E    Y    _    _    _    _    \n
 LA5A0:  .byte $9D, $98, $9B, $8C, $91, $00, $00, $FD, $94, $8E, $A2, $00, $00, $00, $00, $FD
 ;              G    E    M    _    _    _    _    \n   S    A    N    D    S    _    _    \n
@@ -4564,6 +4755,7 @@ LA5D5:  .byte $9B, $97, $FD, $8C, $98, $96, $99, $8A, $9C, $9C, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+MarksTxt:
 ;              F    O    R    C    E    \n   F    I    R    E    \n   S    N    A    K    E
 LA5E1:  .byte $8F, $98, $9B, $8C, $8E, $FD, $8F, $92, $9B, $8E, $FD, $9C, $97, $8A, $94, $8E
 ;              \n   K    I    N    G    \n  END
@@ -4571,6 +4763,7 @@ LA5F1:  .byte $FD, $94, $92, $97, $90, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+CardsTxt:
 ;              D    E    A    T    H    \n   S    O    L    \n   L    O    V    E    \n   M
 LA61F:  .byte $8D, $8E, $8A, $9D, $91, $FD, $9C, $98, $95, $FD, $95, $98, $9F, $8E, $FD, $96
 ;              O    O    N    S    \n  END
@@ -4715,105 +4908,165 @@ LA8AB:  .byte $FF
 ;----------------------------------------------------------------------------------------------------
 
 TB0E0B:
+;              R    E    S    T    _    _    S    T    R    _    _    D    E    X    _    _
 LA8AC:  .byte $9B, $8E, $9C, $9D, $00, $00, $9C, $9D, $9B, $00, $00, $8D, $8E, $A1, $00, $00
+;              I    N    T    _    _    W    I    S   END
 LA8BC:  .byte $92, $97, $9D, $00, $00, $A0, $92, $9C, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E0C:
+;              _    _    _    _    _    _    _    _    _    O    K    _    C    A    N    C
 LA8C5:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $98, $94, $00, $8C, $8A, $97, $8C
+;              E    L   END
 LA8D5:  .byte $8E, $95, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E0D:
+;              P    R    O    F    E    S    S    I    O    N    \n   F    T    R    _    _
 LA8D8:  .byte $99, $9B, $98, $8F, $8E, $9C, $9C, $92, $98, $97, $FD, $8F, $9D, $9B, $00, $00
+;              _    _    L    A    R    K    \n   C    L    R    C    _    _    _    I    L
 LA8E8:  .byte $00, $00, $95, $8A, $9B, $94, $FD, $8C, $95, $9B, $8C, $00, $00, $00, $92, $95
+;              S    N    T    \n   W    Z    R    D    _    _    _    D    R    U    I    D
 LA8F8:  .byte $9C, $97, $9D, $FD, $A0, $A3, $9B, $8D, $00, $00, $00, $8D, $9B, $9E, $92, $8D
+;              \n   T    H    I    E    F    _    _    A    L    C    M    T    \n   P    L
 LA908:  .byte $FD, $9D, $91, $92, $8E, $8F, $00, $00, $8A, $95, $8C, $96, $9D, $FD, $99, $95
+;              D    N    _    _    _    R    N    G    R    \n   B    R    B    R    N   END
 LA918:  .byte $8D, $97, $00, $00, $00, $9B, $97, $90, $9B, $FD, $8B, $9B, $8B, $9B, $97, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E0E:
+;              C    H    A    R    A    C    T    E    R    _    N    A    M    E   END
 LA928:  .byte $8C, $91, $8A, $9B, $8A, $8C, $9D, $8E, $9B, $00, $97, $8A, $96, $8E, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E0F:
+;              S    E    L    E    C    T    _    C    H    A    R    A    C    T    E    R
 LA937:  .byte $9C, $8E, $95, $8E, $8C, $9D, $00, $8C, $91, $8A, $9B, $8A, $8C, $9D, $8E, $9B
+;              S   END
 LA947:  .byte $9C, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E10:
+;              F    T    R    _    _    _    P    R    O    F    E    S    _    _    R    N
 LA949:  .byte $8F, $9D, $9B, $00, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $00, $9B, $97
+;              G    R    \n   D    W    A    R    F    _    _    R    A    C    E    _    _
 LA959:  .byte $90, $9B, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+;              H    U    M    A    N    \n   _    _    _    _    A    T    T    R    I    B
 LA969:  .byte $91, $9E, $96, $8A, $97, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+;              U    T    E    S    \n   _    _    2    5    _    _    _    S    T    R    _
 LA979:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $3A, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+;              _    _    _    2    5    \n   _    _    1    5    _    _    _    D    E    X
 LA989:  .byte $00, $00, $00, $3A, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+;              _    _    _    _    1    5    \n   _    _    0    5    _    _    _    I    N
 LA999:  .byte $00, $00, $00, $00, $39, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+;              T    _    _    _    _    0    5    \n   _    _    0    5    _    _    _    W
 LA9A9:  .byte $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+;              I    S    _    _    _    _    0    5   END
 LA9B9:  .byte $92, $9C, $00, $00, $00, $00, $38, $3D, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E11:
+;              C    L    R    C    _    _    P    R    O    F    E    S    _    D    R    U
 LA9C2:  .byte $8C, $95, $9B, $8C, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8D, $9B, $9E
+;              I    D    \n   D    W    A    R    F    _    _    R    A    C    E    _    _
 LA9D2:  .byte $92, $8D, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+;              B    O    B    I    T    \n   _    _    _    _    A    T    T    R    I    B
 LA9E2:  .byte $8B, $98, $8B, $92, $9D, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+;              U    T    E    S    \n   _    _    0    5    _    _    _    S    T    R    _
 LA9F2:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $38, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+;              _    _    _    0    5    \n   _    _    1    5    _    _    _    D    E    X
 LAA02:  .byte $00, $00, $00, $38, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+;              _    _    _    _    0    5    \n   _    _    0    5    _    _    _    I    N
 LAA12:  .byte $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+;              T    _    _    _    _    2    0    \n   _    _    2    5    _    _    _    W
 LAA22:  .byte $9D, $00, $00, $00, $00, $3A, $38, $FD, $00, $00, $3A, $3D, $00, $00, $00, $A0
+;              I    S    _    _    _    _    2    0   END
 LAA32:  .byte $92, $9C, $00, $00, $00, $00, $3A, $38, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E12:
+;              T    H    I    E    F    _    P    R    O    F    E    S    _    I    L    S
 LAA3B:  .byte $9D, $91, $92, $8E, $8F, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $92, $95, $9C
+;              N    T    \n   D    W    A    R    F    _    _    R    A    C    E    _    _
 LAA4B:  .byte $97, $9D, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+;              F    U    Z    Z    Y    \n   _    _    _    _    A    T    T    R    I    B
 LAA5B:  .byte $8F, $9E, $A3, $A3, $A2, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+;              U    T    E    S    \n   _    _    1    5    _    _    _    S    T    R    _
 LAA6B:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $39, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+;              _    _    _    0    5    \n   _    _    1    5    _    _    _    D    E    X
 LAA7B:  .byte $00, $00, $00, $38, $3D, $FD, $00, $00, $3A, $3D, $00, $00, $00, $8D, $8E, $A1
+;              _    _    _    _    2    5    \n   _    _    0    5    _    _    _    I    N
 LAA8B:  .byte $00, $00, $00, $00, $3A, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+;              T    _    _    _    _    0    5    \n   _    _    0    5    _    _    _    W
 LAA9B:  .byte $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+;              I    S    _    _    _    _    1    5   END
 LAAAB:  .byte $92, $9C, $00, $00, $00, $00, $39, $3D, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E13:
+;              W    Z    R    D    _    _    P    R    O    F    E    S    _    A    L    S
 LAAB4:  .byte $A0, $A3, $9B, $8D, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8A, $95, $8C
+;              N    T    \n   F    U    Z    Z    Y    _    _    R    A    C    E    _    _
 LAAC4:  .byte $96, $9D, $FD, $8F, $9E, $A3, $A3, $A2, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+;              _    _    E    L    F    \n   _    _    _    _    A    T    T    R    I    B
 LAAD4:  .byte $00, $00, $8E, $95, $8F, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+;              U    T    E    S    \n   _    _    0    5    _    _    _    S    T    R    _
 LAAE4:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $38, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+;              _    _    _    0    5    \n   _    _    1    5    _    _    _    D    E    X
 LAAF4:  .byte $00, $00, $00, $38, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+;              _    _    _    _    2    5    \n   _    _    2    5    _    _    _    I    N
 LAB04:  .byte $00, $00, $00, $00, $3A, $38, $FD, $00, $00, $3A, $3D, $00, $00, $00, $92, $97
+;              T    _    _    _    _    2    0    \n   _    _    0    5    _    _    _    W
 LAB14:  .byte $9D, $00, $00, $00, $00, $3A, $38, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+;              I    S    _    _    _    _    0    5   END
 LAB24:  .byte $92, $9C, $00, $00, $00, $00, $38, $3D, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E14:
+;              W    Z    R    D    _    _    P    R    O    F    E    S    _    _    L    A
 LAB2D:  .byte $99, $95, $8D, $97, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $00, $95, $8A
+;              R    K    \n   B    O    B    I    T    _    _    R    A    C    E    _    _
 LAB3D:  .byte $9B, $94, $FD, $8B, $98, $8B, $92, $9D, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+;              _    _    E    L    F    \n   _    _    _    _    A    T    T    R    I    B
 LAB4D:  .byte $00, $00, $8E, $95, $8F, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+;              U    T    E    S    \n   _    _    2    5    _    _    _    S    T    R    _
 LAB5D:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $3A, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+;              _    _    _    2    5    \n   _    _    1    5    _    _    _    D    E    X
 LAB6D:  .byte $00, $00, $00, $3A, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+;              _    _    _    _    1    5    \n   _    _    0    5    _    _    _    I    N
 LAB7D:  .byte $00, $00, $00, $00, $39, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+;              T    _    _    _    _    0    5    \n   _    _    0    5    _    _    _    W
 LAB8D:  .byte $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+;              I    S    _    _    _    _    0    5   END
 LAB9D:  .byte $92, $9C, $00, $00, $00, $00, $38, $3D, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E15:
+;              F    T    R    _    _    _    P    R    O    F    E    S    _    B    R    B
 LABA6:  .byte $8F, $9D, $9B, $00, $00, $00, $99, $9B, $98, $8F, $8E, $9C, $00, $8B, $9B, $8B
+;              R    N    \n   D    W    A    R    F    _    _    R    A    C    E    _    _
 LABB6:  .byte $9B, $97, $FD, $8D, $A0, $8A, $9B, $8F, $00, $00, $9B, $8A, $8C, $8E, $00, $00
+;              D    W    A    R    F    \n   _    _    _    _    A    T    T    R    I    B
 LABC6:  .byte $8D, $A0, $8A, $9B, $8F, $FD, $00, $00, $00, $00, $8A, $9D, $9D, $9B, $92, $8B
+;              U    T    E    S    \n   _    _    2    5    _    _    _    S    T    R    _
 LABD6:  .byte $9E, $9D, $8E, $9C, $FD, $00, $00, $3A, $3D, $00, $00, $00, $9C, $9D, $9B, $00
+;              _    _    _    2    5    \n   _    _    1    5    _    _    _    D    E    X
 LABE6:  .byte $00, $00, $00, $3A, $3D, $FD, $00, $00, $39, $3D, $00, $00, $00, $8D, $8E, $A1
+;              _    _    _    _    1    5    \n   _    _    0    5    _    _    _    I    N
 LABF6:  .byte $00, $00, $00, $00, $39, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $92, $97
+;              T    _    _    _    _    0    5    \n   _   _     0    5    _    _    _    W
 LAC06:  .byte $9D, $00, $00, $00, $00, $38, $3D, $FD, $00, $00, $38, $3D, $00, $00, $00, $A0
+;              I    S    _    _    _    _    0    5   END
 LAC16:  .byte $92, $9C, $00, $00, $00, $00, $38, $3D, $FF
 
 ;----------------------------------------------------------------------------------------------------
@@ -4843,87 +5096,129 @@ LAC27:  .byte $FF
 ;----------------------------------------------------------------------------------------------------
 
 TB0E1A:
+;              F    O    R    M    _    A    _    P    A    R    T    Y    \n   0    1    _
 LAC28:  .byte $8F, $98, $9B, $96, $00, $8A, $00, $99, $8A, $9B, $9D, $A2, $FD, $38, $39, $00
+;              _    _    _    _    _    _    _    _    _    _    _    1    1    \n   0    2
 LAC38:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $39, $FD, $38, $3A
+;              _    _    _    _    _    _    _    _    _    _    _    _    1    2    \n   0
 LAC48:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3A, $FD, $38
+;              3    _    _    _    _    _    _    _    _    _    _    _    _    1    3    \n
 LAC58:  .byte $3B, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3B, $FD
+;              0    4    _    _    _    _    _    _    _    _    _    _    _    _    1    4
 LAC68:  .byte $38, $3C, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3C
+;              \n   0    5    _    _    _    _    _    _    _    _    _    _    _    _    1
 LAC78:  .byte $FD, $38, $3D, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39
+;              5    \n   0    6    _    _    _    _    _    _    _    _    _    _    _    _
 LAC88:  .byte $3D, $FD, $38, $3E, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+;              1    6    \n   0    7    _    _    _    _    _    _    _    _    _    _    _
 LAC98:  .byte $39, $3E, $FD, $38, $3F, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+;              _    1    7    \n   0    8    _    _    _    _    _    _    _    _    _    _
 LACA8:  .byte $00, $39, $3F, $FD, $38, $40, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+;              _    _    1    8    \n   0    9    _    _    _    _    _    _    _    _    _
 LACB8:  .byte $00, $00, $39, $40, $FD, $38, $41, $00, $00, $00, $00, $00, $00, $00, $00, $00
+;              _    _    _    1    9    \n   1    0    _    _    _    _    _    _    _    _
 LACC8:  .byte $00, $00, $00, $39, $41, $FD, $39, $38, $00, $00, $00, $00, $00, $00, $00, $00
+;              _    _    _    _    2    0   END
 LACD8:  .byte $00, $00, $00, $00, $3A, $38, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E1B:
+;              D    I    S    C    A    R    D    S    _    T    H    E    _    C    H    A
 LACDF:  .byte $8D, $92, $9C, $8C, $8A, $9B, $8D, $9C, $00, $9D, $91, $8E, $00, $8C, $91, $8A
+;              R    A    C    T    E    R    \n   0    1    _    _    _    _    _    _    _
 LACEF:  .byte $9B, $8A, $8C, $9D, $8E, $9B, $FD, $38, $39, $00, $00, $00, $00, $00, $00, $00
+;              _    _    _    _    _    1    1    \n   0    2    _    _    _    _    _    _
 LACFF:  .byte $00, $00, $00, $00, $00, $39, $39, $FD, $38, $3A, $00, $00, $00, $00, $00, $00
+;              _    _    _    _    _    _    1    2    \n   0    3    _    _    _    _    _
 LAD0F:  .byte $00, $00, $00, $00, $00, $00, $39, $3A, $FD, $38, $3B, $00, $00, $00, $00, $00
+;              _    _    _    _    _    _    _    1    3    \n   0    4    _    _    _    _
 LAD1F:  .byte $00, $00, $00, $00, $00, $00, $00, $39, $3B, $FD, $38, $3C, $00, $00, $00, $00
+;              _    _    _    _    _    _    _    _    1    4    \n   0    5    _    _    _
 LAD2F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $39, $3C, $FD, $38, $3D, $00, $00, $00
+;              _    _    _    _    _    _    _    _    _    1    5    \n   0    6    _    _
 LAD3F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3D, $FD, $38, $3E, $00, $00
+;              _    _    _    _    _    _    _    _    _    _    1    6    \n   0    7    _
 LAD4F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3E, $FD, $38, $3F, $00
+;              _    _    _    _    _    _    _    _    _    _    _    1    7    \n   0    8
 LAD5F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $3F, $FD, $38, $40
+;              _    _    _    _    _    _    _    _    _    _    _    _    1    8    \n   0
 LAD6F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $40, $FD, $38
+;              9    _    _    _    _    _    _    _    _    _    _    _    _    1    9    \n
 LAD7F:  .byte $41, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $39, $41, $FD
+;              1    0    _    _    _    _    _    _    _    _    _    _    _    _    2    0
 LAD8F:  .byte $39, $38, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $3A, $38
+;             END
 LAD9F:  .byte $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E1C:
+;              _    W    E    A    P    O    N    \n   A    A    N    D   END
 LADA0:  .byte $00, $A0, $8E, $8A, $99, $98, $97, $FD, $91, $8A, $97, $8D, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E1D:
+;              A    R    M    O    R    \n   S    K    I    N   END
 LADAD:  .byte $8A, $9B, $96, $98, $9B, $FD, $9C, $94, $92, $97, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E1E:
+;              O    K    \n   C    A    N    C    E    L   END
 LADB8:  .byte $98, $94, $FD, $8C, $8A, $97, $8C, $8E, $95, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E1F:
+;              E    R    A    S    E    \n   Y    E    S    _    N    0   END
 LADC2:  .byte $8E, $9B, $8A, $9C, $8E, $FD, $A2, $8E, $9C, $00, $97, $98, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E20:
+;              W    E    L    C    O    M    E    ,    _    Y    E    \n   F    O    U    R
 LADCF:  .byte $A0, $8E, $95, $8C, $98, $96, $8E, $42, $00, $A2, $8E, $FD, $8F, $98, $9E, $9B
+;              _    B    R    A    V    E    _    S    O    U    L    S    .   END
 LADDF:  .byte $00, $8B, $9B, $8A, $9F, $8E, $00, $9C, $98, $9E, $95, $9C, $43, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E21:
+;              E    X    O    D    U    S    ,    D    R    E    A    D    F    U    L    \n
 LADED:  .byte $8E, $A1, $98, $8D, $9E, $9C, $42, $8D, $9B, $8E, $8A, $8D, $8F, $9E, $95, $FD
+;              D    E    V    I    L    ,    _    I    S    _    A    B    O    U    T    _
 LADFD:  .byte $8D, $8E, $9F, $92, $95, $42, $00, $92, $9C, $00, $8A, $8B, $98, $9E, $9D, $00
+;              T    O   END
 LAE0D:  .byte $9D, $98, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E22:
+;              W    A    K    E    _    U    P    _    N    O    W    _    I    N    _    T
 LAE10:  .byte $A0, $8A, $94, $8E, $00, $9E, $99, $00, $97, $98, $A0, $00, $92, $97, $00, $9D
+;              H    I    S    \n   R    E    G    I    o    N    .   END
 LAE20:  .byte $91, $92, $9C, $FD, $9B, $8E, $90, $92, $98, $97, $43, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E23:
+;              I    F    _    S    O    ,    _    O    U    R    _    W    O    R    L    D
 LAE2C:  .byte $92, $8F, $00, $9C, $98, $42, $00, $98, $9E, $9B, $00, $A0, $98, $9B, $95, $8D
+;              \n   W    I    L    L    _    B    E    _    C    O    V    E    R    E    D
 LAE3C:  .byte $FD, $A0, $92, $95, $95, $00, $8B, $8E, $00, $8C, $98, $9F, $8E, $9B, $8E, $8D
+;              _    B    Y   END
 LAE4C:  .byte $00, $8B, $A2, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 TB0E24:
+;              D    A    R    K    N    E    S    S    .    B    R    A    V    E    _    O
 LAE50:  .byte $8D, $8A, $9B, $94, $97, $8E, $9C, $9C, $43, $8B, $9B, $8A, $9F, $8E, $00, $98
+;              N    E    S    ,    \n   S    E    A    L    _    E    X    O    D    U    S
 LAE60:  .byte $97, $8E, $9C, $42, $FD, $9C, $8E, $8A, $95, $00, $8E, $A1, $98, $8D, $9E, $9C
+;              _    A    N    D    _    S    A    V    E   END
 LAE70:  .byte $00, $8A, $97, $8D, $00, $9C, $8A, $9F, $8E, $FF
 
 ;----------------------------------------------------------------------------------------------------
@@ -4956,15 +5251,22 @@ LAEB2:  .byte $8D, $92, $9C, $8C, $8A, $9B, $8D, $FD, $A2, $8E, $9C, $00, $97, $
 
 ;----------------------------------------------------------------------------------------------------
 
+;The first row of each set of palette data is background palette data.
+;The second row of each set of palette data is sprite palette data.
+
+CreatePalette:
 LAEC1:  .byte $0F, $30, $0F, $0F, $0F, $30, $11, $0C, $0F, $16, $37, $19, $0F, $0A, $19, $29
 LAED1:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $12, $36, $0F, $30, $15, $36
 
+JourneyOnPal:
 LAEE1:  .byte $0F, $0F, $0F, $0F, $0F, $30, $11, $0C, $0F, $16, $37, $19, $0F, $0A, $19, $29
 LAEF1:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $0F, $2D, $0F, $30, $15, $36
 
 ;----------------------------------------------------------------------------------------------------
 
-;Start of GFX.
+;Graphics used when a new party talks to Lord British.
+
+GFXStartNew:
 LAF01:  .byte $04, $83, $81, $82, $83, $89, $88, $88, $01, $00, $06, $07, $07, $17, $17, $37
 LAF11:  .byte $90, $60, $C0, $A0, $E0, $FF, $63, $41, $40, $80, $30, $F0, $F0, $80, $9C, $BE
 LAF21:  .byte $00, $22, $2A, $22, $2A, $E3, $08, $5D, $00, $1C, $14, $1C, $14, $1C, $F7, $A2
@@ -5616,6 +5918,8 @@ LBA07:  RTS
 LBA08:  .byte $03, $00, $00, $00, $01, $03, $00, $03, $00, $00, $00, $03, $03, $03, $01, $03
 LBA18:  .byte $00, $00, $03, $00, $00, $02, $02, $02, $02, $02, $02, $02, $02, $03, $00
 
+;----------------------------------------------------------------------------------------------------
+
 LBA27:  TXA
 LBA28:  PHA
 LBA29:  LDA #$00
@@ -5637,63 +5941,62 @@ LBA40:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 LoadSGData:
-LBA41:  LDY #$30
-LBA43:  LDA (SGDatPtr),Y
-LBA45:  STA BoatXPos
+LBA41:  LDY #SG_BOAT_X          ;
+LBA43:  LDA (SGDatPtr),Y        ;Save the boat X coord to the saved game.
+LBA45:  STA BoatXPos            ;
 
-LBA48:  INY
-LBA49:  LDA (SGDatPtr),Y
-LBA4B:  STA BoatYPos
+LBA48:  INY                     ;
+LBA49:  LDA (SGDatPtr),Y        ;Save the boat Y coord to the saved game.
+LBA4B:  STA BoatYPos            ;
 
-LBA4E:  LDY #$20
-LBA50:  LDA (SGDatPtr),Y
-LBA52:  STA OnHorse
+LBA4E:  LDY #SG_HORSE           ;
+LBA50:  LDA (SGDatPtr),Y        ;Save the horse status to the saved game.
+LBA52:  STA OnHorse             ;
 
-LBA54:  LDY #$21
-LBA56:  LDA (SGDatPtr),Y
-LBA58:  STA BribePray
+LBA54:  LDY #SG_BRIB_PRAY       ;
+LBA56:  LDA (SGDatPtr),Y        ;Save the bribe/pray commands to the saved game.
+LBA58:  STA BribePray           ;
 
-LBA5A:  LDY #$22
-LBA5C:  LDA (SGDatPtr),Y
-LBA5E:  STA MapXPos
+LBA5A:  LDY #SG_PARTY_X         ;
+LBA5C:  LDA (SGDatPtr),Y        ;Save the party's X coord to the saved game.
+LBA5E:  STA MapXPos             ;
 
-LBA60:  INY
-LBA61:  LDA (SGDatPtr),Y
-LBA63:  STA MapYPos
+LBA60:  INY                     ;
+LBA61:  LDA (SGDatPtr),Y        ;Save the party's Y coord to the saved game.
+LBA63:  STA MapYPos             ;
 
-LBA65:  LDY #$24
-LBA67:  LDA (SGDatPtr),Y
-LBA69:  STA MapProperties
+LBA65:  LDY #SG_MAP_PROPS       ;
+LBA67:  LDA (SGDatPtr),Y        ;Save the current map's properties to the saved game.
+LBA69:  STA MapProperties       ;
 
-LBA6B:  INY
-LBA6C:  LDA (SGDatPtr),Y
-LBA6E:  STA ThisMap
+LBA6B:  INY                     ;
+LBA6C:  LDA (SGDatPtr),Y        ;Save the current map to the saved game.
+LBA6E:  STA ThisMap             ;
 
-LBA70:  LDY #$10
-LBA72:  LDA (SGDatPtr),Y
-LBA74:  STA Ch1Index
+;Save Character data.
+LBA70:  LDY #SG_CHR1_INDEX      ;
+LBA72:  LDA (SGDatPtr),Y        ;
+LBA74:  STA Ch1Index            ;
+LBA77:  INY                     ;
+LBA78:  LDA (SGDatPtr),Y        ;
+LBA7A:  STA Ch2Index            ;Get the index of each of the 4 characters from the character pool.
+LBA7D:  INY                     ;
+LBA7E:  LDA (SGDatPtr),Y        ;
+LBA80:  STA Ch3Index            ;
+LBA83:  INY                     ;
+LBA84:  LDA (SGDatPtr),Y        ;
+LBA86:  STA Ch4Index            ;
 
-LBA77:  INY
-LBA78:  LDA (SGDatPtr),Y
-LBA7A:  STA Ch2Index
+LBA89:  LDA #>Ch1Data           ;
+LBA8B:  STA GenPtr29UB          ;Set the pointer to the 1st character's data.
+LBA8D:  LDA #<Ch1Data           ;
+LBA8F:  STA GenPtr29LB          ;
 
-LBA7D:  INY
-LBA7E:  LDA (SGDatPtr),Y
-LBA80:  STA Ch3Index
+LBA91:  LDA #$10                ;Set an index to the 1st character's index in the character pool.
+LBA93:  STA GenByte30           ;
 
-LBA83:  INY
-LBA84:  LDA (SGDatPtr),Y
-LBA86:  STA Ch4Index
-
-LBA89:  LDA #>Ch1Data
-LBA8B:  STA $2A
-LBA8D:  LDA #<Ch1Data
-LBA8F:  STA $29
-
-LBA91:  LDA #$10
-LBA93:  STA $30
-
-LBA95:  LDY $30
+LoadCharDatLoop:
+LBA95:  LDY GenByte30
 LBA97:  LDA (SGDatPtr),Y
 LBA99:  STA $B5
 
@@ -5715,19 +6018,20 @@ LBAAF:  INC $2C
 LBAB1:  LDY #$00
 
 LBAB3:* LDA ($2B),Y
-LBAB5:  STA ($29),Y
+LBAB5:  STA (GenPtr29),Y
 LBAB7:  INY
 LBAB8:  CPY #$40
 LBABA:  BNE -
 
-LBABC:  CLC
-LBABD:  LDA $29
-LBABF:  ADC #$40
-LBAC1:  STA $29
-LBAC3:  INC $30
-LBAC5:  LDA $30
-LBAC7:  CMP #$14
-LBAC9:  BNE LBA95
+LBABC:  CLC                     ;
+LBABD:  LDA GenPtr29LB          ;Move pointer to the next character's data.
+LBABF:  ADC #$40                ;
+LBAC1:  STA GenPtr29LB          ;
+
+LBAC3:  INC GenByte30           ;
+LBAC5:  LDA GenByte30           ;Has the data for all 4 characters been loaded?
+LBAC7:  CMP #$14                ;If not, branch to get the next character's data.
+LBAC9:  BNE LoadCharDatLoop     ;
 
 ;Load map data.
 LBACB:  LDA ThisMap             ;
@@ -6147,38 +6451,50 @@ LBE4E:  CMP $00
 LBE50:  BNE LBE4E
 LBE52:  RTS
 
-LBE53:  LDY #$30
-LBE55:  LDA #$FF
-LBE57:  STA (SGDatPtr),Y
-LBE59:  INY
-LBE5A:  STA (SGDatPtr),Y
-LBE5C:  LDY #$20
-LBE5E:  LDA #$00
-LBE60:  STA (SGDatPtr),Y
-LBE62:  LDY #$21
-LBE64:  STA (SGDatPtr),Y
-LBE66:  LDY #$22
-LBE68:  LDA #$2D
-LBE6A:  STA (SGDatPtr),Y
-LBE6C:  INY
-LBE6D:  LDA #$13
-LBE6F:  STA (SGDatPtr),Y
-LBE71:  LDY #$24
-LBE73:  LDA #$0C
-LBE75:  STA (SGDatPtr),Y
-LBE77:  INY
-LBE78:  LDA #$00
-LBE7A:  STA (SGDatPtr),Y
-LBE7C:  LDY #$10
-LBE7E:  LDA #$FF
-LBE80:  STA (SGDatPtr),Y
-LBE82:  INY
-LBE83:  STA (SGDatPtr),Y
-LBE85:  INY
-LBE86:  STA (SGDatPtr),Y
-LBE88:  INY
-LBE89:  STA (SGDatPtr),Y
-LBE8B:  RTS
+;----------------------------------------------------------------------------------------------------
+
+InitSGSlot:
+LBE53:  LDY #SG_BOAT_X          ;
+LBE55:  LDA #SG_NONE            ;
+LBE57:  STA (SGDatPtr),Y        ;Make sure save game has no boats.
+LBE59:  INY                     ;
+LBE5A:  STA (SGDatPtr),Y        ;
+
+LBE5C:  LDY #SG_HORSE           ;
+LBE5E:  LDA #$00                ;Make sure save game has no horses.
+LBE60:  STA (SGDatPtr),Y        ;
+
+LBE62:  LDY #SG_BRIB_PRAY       ;Make sure save game has no bribe and pray commands.
+LBE64:  STA (SGDatPtr),Y        ;
+
+LBE66:  LDY #SG_PARTY_X         ;
+LBE68:  LDA #$2D                ;
+LBE6A:  STA (SGDatPtr),Y        ;Set party starting map position X,Y=$2D,$13.
+LBE6C:  INY                     ;
+LBE6D:  LDA #$13                ;
+LBE6F:  STA (SGDatPtr),Y        ;
+
+LBE71:  LDY #SG_MAP_PROPS       ;
+LBE73:  LDA #$0C                ;Set map properties(show moon phases).
+LBE75:  STA (SGDatPtr),Y        ;
+
+LBE77:  INY                     ;
+LBE78:  LDA #MAP_OVERWORLD      ;Set current map as overworld map.
+LBE7A:  STA (SGDatPtr),Y        ;
+
+LBE7C:  LDY #SG_CHR1_INDEX      ;
+LBE7E:  LDA #SG_NONE            ;
+LBE80:  STA (SGDatPtr),Y        ;
+LBE82:  INY                     ;
+LBE83:  STA (SGDatPtr),Y        ;Make sure save game has no characters selected from character pool.
+LBE85:  INY                     ;
+LBE86:  STA (SGDatPtr),Y        ;
+LBE88:  INY                     ;
+LBE89:  STA (SGDatPtr),Y        ;
+LBE8B:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
 LBE8C:  STA PPUBufBase,X
 LBE8F:  INX
 LBE90:  LDA #$E0

@@ -1,5 +1,7 @@
 ;-------------------------------------[General Purpose Variables]------------------------------------
 
+.alias GenByte18        $18     ;General use byte.
+
 .alias GenByte26        $26     ;General use byte.
 .alias GenByte27        $27     ;General use byte.
 
@@ -24,6 +26,8 @@
 .alias GenPtr2DUB       $2E     ;General use pointer, upper byte.
 
 .alias GenByte2F        $2F     ;General use byte.
+
+.alias GenByte30        $30     ;General use byte.
 
 .alias GenByte4E        $4E     ;General use byte.
 
@@ -164,6 +168,9 @@
 .alias CrntChrPtr       $99     ;And $9A. Pointer to current character data to change.
 .alias CrntChrPtrLB     $99     ;And $9A. Pointer to current character data to change, lower byte.
 .alias CrntChrPtrUB     $9A     ;And $9A. Pointer to current character data to change, upper byte.
+.alias SGCharPtr        $99     ;Pointer to character data in current save game.
+.alias SGCharPtrLB      $99     ;Pointer to character data in current save game, lower byte.
+.alias SGCharPtrUB      $9A     ;Pointer to character data in current save game, upper byte.
 
 .alias DisSpriteAnim    $9E     ;Non-zero value disables sprite animations.
 .alias DisNPCMovement   $9F     ;Non-zero value stops NPCs from moving and disables water animation.
@@ -219,6 +226,8 @@
 .alias OnHorse          $DE     ;LSB set=Has horses, MSB set=Riding horses.
 
 .alias ExodusDead       $E0     ;$01=Exodus dead, $02=Game won, $FF=Time expired, everyone dies.
+
+.alias DelayConst       $E3     ;Loaded with $1E when loading saved game. Used as a delay constant.
 
 .alias EnemyNum         $E5     ;Enemy number. Also $FF=enemy remains after fight.
                                 ;Numbers are the same as those found on Bank 3.
@@ -309,13 +318,6 @@
 .alias SG3Valid2        $6C01   ;Should always be $42 if save game 3 is valid.
 .alias SG3Name          $6C02   ;Through $C006. Save game 3 name.
 
-.alias SpriteBufferBase $7300   ;Base address of sprite buffer.
-.alias SpriteBuffer     $7300   ;Through $73FF. Sprite data buffered here before RAM.
-.alias BlocksBuffer     $7400   ;Through $74FF. Blocks to be put on the screen.
-
-.alias MapRAM           $7800   ;Through $7FFF. The current map is loaded into this area. 64 X 64.
-                                ;Each byte is 2 tiles. There is no compression.
-
 ;---------- Player 1 Data ----------
 ;This data repeats for the additional 3 other characters every 64 bytes.
 
@@ -390,6 +392,13 @@
 .alias Ch2Data          $7240   ;Base address of character 2's data.
 .alias Ch3Data          $7280   ;Base address of character 3's data.
 .alias Ch4Data          $72C0   ;Base address of character 4's data.
+
+.alias SpriteBufferBase $7300   ;Base address of sprite buffer.
+.alias SpriteBuffer     $7300   ;Through $73FF. Sprite data buffered here before RAM.
+.alias BlocksBuffer     $7400   ;Through $74FF. Blocks to be put on the screen.
+
+.alias MapRAM           $7800   ;Through $7FFF. The current map is loaded into this area. 64 X 64.
+                                ;Each byte is 2 tiles. There is no compression.
 
 ;--------------------------------------[Sound Engine Variables]--------------------------------------
 
@@ -775,6 +784,25 @@
 .alias MAP_SH_STR       $17     ;Shrine of Strength.
 .alias MAP_SH_DEX       $18     ;Shrine of Dexterity.
 
+.alias SG_VALID1_IDX    $00     ;Valid save game byte 1 index.
+.alias SG_VALID2_IDX    $01     ;Valid save game byte 2 index.
+.alias SG_NAME          $02     ;Save game name index.
+.alias SG_CHR1_INDEX    $10     ;Index to character 1 in the character pool.
+.alias SG_CHR2_INDEX    $11     ;Index to character 2 in the character pool.
+.alias SG_CHR3_INDEX    $12     ;Index to character 3 in the character pool.
+.alias SG_CHR4_INDEX    $13     ;Index to character 4 in the character pool.
+.alias SG_HORSE         $20     ;Save game horse status index.
+.alias SG_BRIB_PRAY     $21     ;Save game bribe/pray commands index.
+.alias SG_PARTY_X       $22     ;Save game party X map position index.
+.alias SG_PARTY_Y       $23     ;Save game party Y map position index.
+.alias SG_MAP_PROPS     $24     ;Save game current map properties index.
+.alias SG_MAP_NUM       $25     ;Save game current map number index.
+.alias SG_BOAT_X        $30     ;Save game boat X position index.
+.alias SG_BOAT_Y        $31     ;Save game boat Y position index.
+.alias SG_VALID1        $41     ;First byte indicating a save game is valid.
+.alias SG_VALID2        $42     ;Second byte indicating a save game is valid.
+.alias SG_NONE          $FF     ;Indicates no selection for current save game byte.
+
 .alias CHN_CONTROL      $F0     ;Any value >= than this is a music control byte.
 .alias CHN_VOLUME       $FB     ;Control byte to set channel base volume.
 .alias CHN_ASR          $FC     ;Control byte to set ASR (attack, sustain, release) profile.
@@ -822,9 +850,6 @@
 .alias GME_EX_DEAD      $01     ;Exodus killed. Shake screen and drop debris.
 .alias GME_WON          $02     ;Player made it out of Exodus castle alive.
 .alias GME_LOST         $FF     ;Player did not make it out of the castle in time.
-
-.alias SG_VALID1        $41     ;First byte indicating a save game is valid.
-.alias SG_VALID2        $42     ;Second byte indicating a save game is valid.
 
 .alias CLS_FIGHTER      $00     ;Fighter class.
 .alias CLS_CLERIC       $01     ;Cleric
