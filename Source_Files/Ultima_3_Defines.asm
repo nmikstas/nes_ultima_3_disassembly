@@ -108,6 +108,11 @@
 .alias WndHeight        $2D     ;Height of window to draw.
 .alias WndWidth         $2E     ;Width of window to draw.
 
+.alias Ch4StClass       $2C     ;Character 4 class used in status screen.
+.alias Ch3StClass       $2D     ;Character 3 class used in status screen.
+.alias Ch2StClass       $2E     ;Character 2 class used in status screen.
+.alias Ch1StClass       $30     ;Character 1 class used in status screen.
+
 .alias TextIndex        $30     ;Index to text message. $FE, $FF=Buffer already filled.
 
 .alias MapDatPtr        $41     ;Map data pointer.
@@ -289,6 +294,7 @@
 .alias NPCXPos          $0402   ;Through $047E. NPC X position on current map.
 .alias NPCYPOS          $0403   ;Through $044F. NPC Y position on current map.
 
+.alias AttribBuffer     $0500   ;Through $053F. Buffer for attribute table data.
 .alias PaletteBuffer    $0540   ;Through $055F. Buffer for palette data.
 
 .alias TextBufferBase   $0580   ;The base address of the text buffer.
@@ -674,7 +680,7 @@
 .alias BANK_ENEMIES     $04     ;MMC1 bank $04. Enemy tile patterns.
 .alias BANK_TEXT        $05     ;MMC1 bank $05. Game text.
 .alias BANK_GEM         $06     ;MMC1 bank $06. Overwolrg gem maps/Shrines map.
-.alias BANK07           $07     ;MMC1 bank $07.
+.alias BANK_CHARS       $07     ;MMC1 bank $07. Character class tile patterns
 .alias BANK_MUSIC       $08     ;MMC1 bank $08. Music routines
 .alias BANK_SFX         $09     ;MMC1 bank $09. Music/SFX routines.
 .alias BANK0A           $0A     ;MMC1 bank $0A.

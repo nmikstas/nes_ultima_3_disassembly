@@ -9,6 +9,7 @@
 .alias  Reset1                  $C000
 .alias  DisplayText1            $C003
 .alias  LoadPPU1                $C006
+.alias  LdLgCharTiles1          $C009
 .alias  MapDatTbl               $FEA0
 .alias  SubMapTbl               $FF70
 .alias  RESET                   $FFA0
@@ -295,9 +296,9 @@ L8188:  STA $2D
 L818A:  JSR LoadPPU1            ;($C006)Load values into PPU.
 
 L818D:  LDA #$83
-L818F:  STA $2A
+L818F:  STA PPUPyLdPtrUB
 L8191:  LDA #$5F
-L8193:  STA $29
+L8193:  STA PPUPyLdPtrLB
 
 L8195:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
 
@@ -2583,6 +2584,7 @@ L90F0:  .byte $40, $50, $60, $70, $80, $90, $50, $78, $A0, $C8
 L90FA:  JSR InitPPU             ;($990C)Initialize the PPU.
 L90FD:  LDA #$00
 L90FF:  STA CurPPUConfig1
+
 L9101:  LDY #$06
 L9103:  LDA ($99),Y
 L9105:  STA $2C
@@ -2590,7 +2592,7 @@ L9107:  LDA #$FF
 L9109:  STA $30
 L910B:  STA $2E
 L910D:  STA $2D
-L910F:  JSR $C009
+L910F:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character class portraits.
 L9112:  LDA #$20
 L9114:  STA $2A
 L9116:  LDA #$96
@@ -2620,7 +2622,7 @@ L9147:  LDA #$04
 L9149:  STA $2B
 L914B:  LDY #$06
 L914D:  LDA ($99),Y
-L914F:  JSR L9701
+L914F:  JSR LoadLgChrPalettes   ;($9701)Load palette data for individual character portraits.
 L9152:  LDA #$1E
 L9154:  STA CurPPUConfig1
 L9156:  LDA #$06
@@ -2739,7 +2741,7 @@ L922E:  STA $2C
 L9230:  LDA #$FF
 L9232:  STA $30
 L9234:  STA $2E
-L9236:  JSR $C009
+L9236:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character class portraits.
 L9239:  LDA #$20
 L923B:  STA $2A
 L923D:  LDA #$C4
@@ -2776,7 +2778,7 @@ L927B:  STA $2C
 L927D:  LDA #$04
 L927F:  STA $2B
 L9281:  LDA $31
-L9283:  JSR L9701
+L9283:  JSR LoadLgChrPalettes   ;($9701)Load palette data for individual character portraits.
 L9286:  LDA #$05
 L9288:  STA $2C
 L928A:  LDA #$08
@@ -3279,35 +3281,38 @@ L96C0:  .byte $8B, $8F, $8F, $8C, $A0, $9D, $99, $8B, $95, $92, $8D, $8A, $9B
 ;----------------------------------------------------------------------------------------------------
 
 LoadLargeChar:
-L96CD:  LDA #$06
-L96CF:  STA GenByte2E
+L96CD:  LDA #$06                ;Prepare to load 6 rows of data into the PPU buffer.
+L96CF:  STA GenByte2E           ;
 
 LoadLargeCharLoop:
 L96D1:  LDA #$06                ;Prepare to load 6 payload bytes into PPU buffer.
 L96D3:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
 
-L96D6:  LDA $2A
-L96D8:  STA PPUBufBase,X
-L96DB:  INX
-L96DC:  LDA $29
-L96DE:  STA PPUBufBase,X
-L96E1:  INX
-L96E2:  LDY #$06
+L96D6:  LDA GenPtr29UB          ;
+L96D8:  STA PPUBufBase,X        ;
+L96DB:  INX                     ;Load the PPU destination address into the buffer.
+L96DC:  LDA GenPtr29LB          ;
+L96DE:  STA PPUBufBase,X        ;
 
-L96E4:* LDA $2D
-L96E6:  STA PPUBufBase,X
-L96E9:  INC $2D
-L96EB:  INX
-L96EC:  DEY
-L96ED:  BNE -
+L96E1:  INX                     ;Prepare to load 6 tile indexes into the PPU buffer.
+L96E2:  LDY #$06                ;
 
-L96EF:  CLC
-L96F0:  LDA $29
-L96F2:  ADC #$20
-L96F4:  STA $29
-L96F6:  LDA $2A
-L96F8:  ADC #$00
-L96FA:  STA $2A
+L96E4:* LDA GenByte2D           ;Get current tile index and load it into the PPU buffer.
+L96E6:  STA PPUBufBase,X        ;
+
+L96E9:  INC GenByte2D           ;Increment to the next tile as they are in order.
+L96EB:  INX                     ;
+
+L96EC:  DEY                     ;Have all 6 tile indexes been loaded into the PPU buffer?
+L96ED:  BNE -                   ;If not, branch to load another one.
+
+L96EF:  CLC                     ;
+L96F0:  LDA GenPtr29LB          ;
+L96F2:  ADC #$20                ;
+L96F4:  STA GenPtr29LB          ;Advance to the next row on the screen.
+L96F6:  LDA GenPtr29UB          ;
+L96F8:  ADC #$00                ;
+L96FA:  STA GenPtr29UB          ;
 
 L96FC:  DEC GenByte2E           ;Does another row of the large character image need to be loaded?
 L96FE:  BNE LoadLargeCharLoop   ;If so, branch to do another row.
@@ -3315,39 +3320,61 @@ L9700:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+LoadLgChrPalettes:
 L9701:  TAX
 L9702:  LDY #$00
-L9704:  LDA $9752,Y
-L9707:  STA $0500,Y
-L970A:  INY
-L970B:  CPY #$20
-L970D:  BNE L9704
-L970F:  LDA $9736,X
+
+L9704:* LDA LgChrPalDat,Y       ;
+L9707:  STA AttribBuffer,Y      ;
+L970A:  INY                     ;Copy character palette data into the buffer.
+L970B:  CPY #$20                ;
+L970D:  BNE -                   ;
+
+L970F:  LDA LgChrAtribTbl,X
 L9712:  ASL
 L9713:  ASL
 L9714:  CLC
-L9715:  ADC #$42
+L9715:  ADC #<SnglChrPalData
 L9717:  STA $29
 L9719:  LDA #$00
-L971B:  ADC #$97
+L971B:  ADC #>SnglChrPalData
 L971D:  STA $2A
 L971F:  LDY #$00
-L9721:  LDA ($29),Y
+
+L9721:* LDA ($29),Y
 L9723:  STA ($2B),Y
 L9725:  INY
 L9726:  CPY #$04
-L9728:  BNE L9721
-L972A:  LDA #$05
-L972C:  STA $2A
-L972E:  LDA #$00
-L9730:  STA $29
-L9732:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
-L9735:  RTS
+L9728:  BNE -
 
-L9736:  .byte $00, $03, $00, $01, $03, $01, $01, $03, $00, $00, $01, $00, $0F, $30, $11, $36
-L9746:  .byte $0F, $06, $15, $26, $0F, $30, $12, $36, $0F, $30, $15, $36, $0F, $30, $11, $36
-L9756:  .byte $0F, $06, $15, $26, $0F, $30, $11, $36, $0F, $30, $15, $36, $0F, $30, $11, $36
-L9766:  .byte $0F, $06, $15, $26, $0F, $30, $12, $36, $0F, $30, $15, $36
+L972A:  LDA #>AttribBuffer     ;
+L972C:  STA PPUPyLdPtrUB       ;Prepare to transfer the contents of the
+L972E:  LDA #<AttribBuffer     ;attribute table buffer into the PPU buffer.
+L9730:  STA PPUPyLdPtrLB       ;
+
+L9732:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
+L9735:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table contains the attribute bits to apply to large character portraits.
+;There are 11 values in the table the index into the table is the character class value.
+
+LgChrAtribTbl:
+L9736:  .byte $00, $03, $00, $01, $03, $01, $01, $03, $00, $00, $01
+L9741:  .byte $00
+
+;The below data is used to replace the palette data for the second group of data
+;when displaying a single character portrait. Only 4 bits are accessed.
+
+SnglChrPalData:
+L9742:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $12, $36, $0F, $30, $15, $36
+
+;Palette data loaded when showing large character class portraits.
+
+LgChrPalDat:
+L9752:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $11, $36, $0F, $30, $15, $36
+L9762:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $12, $36, $0F, $30, $15, $36
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -3355,32 +3382,34 @@ LoadPPUPalData:
 L9772:  LDA #$20                ;Prepare to load 32 payload bytes into PPU buffer.
 L9774:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
 
-L9777:  LDA #PPU_PAL_UB
-L9779:  STA PPUBufBase,X
-L977C:  INX
-L977D:  LDA #PPU_PAL_LB
-L977F:  STA PPUBufBase,X
-L9782:  LDY #$00
-L9784:  LDA ($29),Y
-L9786:  INX
-L9787:  STA PPUBufBase,X
-L978A:  INY
-L978B:  CPY #$20
-L978D:  BNE L9784
+L9777:  LDA #PPU_PAL_UB         ;
+L9779:  STA PPUBufBase,X        ;
+L977C:  INX                     ;Store base address of palettes in the buffer.
+L977D:  LDA #PPU_PAL_LB         ;
+L977F:  STA PPUBufBase,X        ;
 
-L978F:  LDA #$01
+L9782:  LDY #$00                ;
+L9784:* LDA (PPUPyLdPtr),Y      ;
+L9786:  INX                     ;
+L9787:  STA PPUBufBase,X        ;Copy 32 bytes of palette data into PPU buffer.
+L978A:  INY                     ;
+L978B:  CPY #$20                ;
+L978D:  BNE -                   ;
+
+L978F:  LDA #$01                ;Prepare to load 1 payload byte into PPU buffer.
 L9791:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
 
-L9794:  LDA #$00
-L9796:  STA PPUBufBase,X
-L9799:  INX
-L979A:  LDA #$00
-L979C:  STA PPUBufBase,X
-L979F:  INX
-L97A0:  LDA #$00
-L97A2:  STA PPUBufBase,X
+L9794:  LDA #$00                ;
+L9796:  STA PPUBufBase,X        ;
+L9799:  INX                     ;Set PPU destination address to $0000.
+L979A:  LDA #$00                ;
+L979C:  STA PPUBufBase,X        ;
+
+L979F:  INX                     ;
+L97A0:  LDA #$00                ;Store an empty byte in the buffer.
+L97A2:  STA PPUBufBase,X        ;
 L97A5:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
-L97A8:  RTS
+L97A8:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4079,143 +4108,177 @@ LA000:  JSR InitPPU             ;($990C)Initialize the PPU.
 LA003:  LDA #$00                ;Turn off the screen.
 LA005:  STA CurPPUConfig1       ;
 
-LA007:  LDY #$06
-LA009:  LDA (Pos1ChrPtr),Y
-LA00B:  STA $30
-LA00D:  LDA (Pos2ChrPtr),Y
-LA00F:  STA $2E
-LA011:  LDA (Pos3ChrPtr),Y
-LA013:  STA $2D
-LA015:  LDA (Pos4ChrPtr),Y
-LA017:  STA $2C
+LA007:  LDY #$06                ;
+LA009:  LDA (Pos1ChrPtr),Y      ;
+LA00B:  STA Ch1StClass          ;
+LA00D:  LDA (Pos2ChrPtr),Y      ;
+LA00F:  STA Ch2StClass          ;Get the classes for all 4 characters.
+LA011:  LDA (Pos3ChrPtr),Y      ;
+LA013:  STA Ch3StClass          ;
+LA015:  LDA (Pos4ChrPtr),Y      ;
+LA017:  STA Ch4StClass          ;
 
-LA019:  JSR $C009
+LA019:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character class portraits.
 
-LA01C:  LDA #$20
-LA01E:  STA $2A
-LA020:  LDA #$82
-LA022:  STA $29
-LA024:  LDA #$44
-LA026:  STA $2D
+;Load character 1 large class portrait.
+LA01C:  LDA #$20                ;
+LA01E:  STA GenPtr29UB          ;Image loaded onto NT 0 starting at X,Y=2,4.
+LA020:  LDA #$82                ;
+LA022:  STA GenPtr29LB          ;
+
+LA024:  LDA #$44                ;Image starts with tile pattern $44.
+LA026:  STA GenByte2D           ;
 
 LA028:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
-LA02B:  LDA #$20
-LA02D:  STA $2A
-LA02F:  LDA #$88
-LA031:  STA $29
-LA033:  LDA #$68
-LA035:  STA $2D
+;Load character 2 large class portrait.
+LA02B:  LDA #$20                ;
+LA02D:  STA GenPtr29UB          ;Image loaded onto NT 0 starting at X,Y=9,4
+LA02F:  LDA #$88                ;
+LA031:  STA GenPtr29LB          ;
+
+LA033:  LDA #$68                ;Image starts with tile pattern $68.
+LA035:  STA GenByte2D           ;
 
 LA037:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
-LA03A:  LDA #$20
-LA03C:  STA $2A
-LA03E:  LDA #$92
-LA040:  STA $29
-LA042:  LDA #$B8
-LA044:  STA $2D
+;Load character 3 large class portrait.
+LA03A:  LDA #$20                ;
+LA03C:  STA GenPtr29UB          ;Image loaded onto NT 0 starting at X,Y=18,4
+LA03E:  LDA #$92                ;
+LA040:  STA GenPtr29LB          ;
+
+LA042:  LDA #$B8                ;Image starts with tile pattern $B8.
+LA044:  STA GenByte2D           ;
 
 LA046:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
-LA049:  LDA #$20
-LA04B:  STA $2A
-LA04D:  LDA #$98
-LA04F:  STA $29
-LA051:  LDA #$DC
-LA053:  STA $2D
+;Load character 4 large class portrait.
+LA049:  LDA #$20                ;
+LA04B:  STA GenPtr29UB          ;Image loaded onto NT 0 starting at X,Y=24,4
+LA04D:  LDA #$98                ;
+LA04F:  STA GenPtr29LB          ;
+
+LA051:  LDA #$DC                ;Image starts with tile pattern $DC.
+LA053:  STA GenByte2D           ;
 
 LA055:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
-LA058:  LDY #$00
-LA05A:  LDA #$00
-LA05C:  STA $0500,Y
-LA05F:  INY
-LA060:  CPY #$40
-LA062:  BNE LA05C
-LA064:  LDY #$06
-LA066:  LDA ($91),Y
-LA068:  TAX
-LA069:  LDA $9736,X
-LA06C:  ASL
-LA06D:  ASL
-LA06E:  TAX
-LA06F:  LDA $A2CD,X
-LA072:  STA $0508
-LA075:  LDA $A2CE,X
-LA078:  STA $0509
-LA07B:  LDA $A2CF,X
-LA07E:  STA $0510
-LA081:  LDA $A2D0,X
-LA084:  STA $0511
+LA058:  LDY #$00                ;
+LA05A:  LDA #$00                ;
+LA05C:* STA AttribBuffer,Y      ;Clear out all 64 bytes of attribute table buffer.
+LA05F:  INY                     ;
+LA060:  CPY #$40                ;
+LA062:  BNE -                   ;
+
+;Load character 1 attribute table values.
+LA064:  LDY #$06                ;Get class of character 1.
+LA066:  LDA (Pos1ChrPtr),Y      ;
+
+LA068:  TAX                     ;Get palette index for character portrait.
+LA069:  LDA LgChrAtribTbl,X     ;
+
+LA06C:  ASL                     ;
+LA06D:  ASL                     ;*4. 4 bytes per attribute table data set.
+LA06E:  TAX                     ;
+
+LA06F:  LDA Chr13AttribTbl,X    ;
+LA072:  STA AttribBuffer+$08    ;
+LA075:  LDA Chr13AttribTbl+1,X  ;
+LA078:  STA AttribBuffer+$09    ;Load Character 1 attribute table data into buffer.
+LA07B:  LDA Chr13AttribTbl+2,X  ;
+LA07E:  STA AttribBuffer+$10    ;
+LA081:  LDA Chr13AttribTbl+3,X  ;
+LA084:  STA AttribBuffer+$11    ;
+
+;Load character 2 attribute table values.
 LA087:  LDY #$06
-LA089:  LDA ($93),Y
+LA089:  LDA (Pos2ChrPtr),Y
+
 LA08B:  TAX
-LA08C:  LDA $9736,X
+LA08C:  LDA LgChrAtribTbl,X
+
 LA08F:  ASL
 LA090:  ASL
 LA091:  TAX
-LA092:  LDA $A2DD,X
-LA095:  STA $050A
-LA098:  LDA $A2DE,X
-LA09B:  STA $050B
-LA09E:  LDA $A2DF,X
-LA0A1:  STA $0512
-LA0A4:  LDA $A2E0,X
-LA0A7:  STA $0513
+
+LA092:  LDA Chr14AttribTbl,X    ;
+LA095:  STA AttribBuffer+$0A    ;
+LA098:  LDA Chr14AttribTbl+1,X  ;
+LA09B:  STA AttribBuffer+$0B    ;Load Character 2 attribute table data into buffer.
+LA09E:  LDA Chr14AttribTbl+2,X  ;
+LA0A1:  STA AttribBuffer+$12    ;
+LA0A4:  LDA Chr14AttribTbl+3,X  ;
+LA0A7:  STA AttribBuffer+$13    ;
+
+;Load character 3 attribute table values.
 LA0AA:  LDY #$06
-LA0AC:  LDA ($95),Y
+LA0AC:  LDA (Pos3ChrPtr),Y
+
 LA0AE:  TAX
-LA0AF:  LDA $9736,X
+LA0AF:  LDA LgChrAtribTbl,X
+
 LA0B2:  ASL
 LA0B3:  ASL
 LA0B4:  TAX
-LA0B5:  LDA $A2CD,X
-LA0B8:  STA $050C
-LA0BB:  LDA $A2CE,X
-LA0BE:  STA $050D
-LA0C1:  LDA $A2CF,X
-LA0C4:  STA $0514
-LA0C7:  LDA $A2D0,X
-LA0CA:  STA $0515
+
+LA0B5:  LDA Chr13AttribTbl,X    ;
+LA0B8:  STA AttribBuffer+$0C    ;
+LA0BB:  LDA Chr13AttribTbl+1,X  ;
+LA0BE:  STA AttribBuffer+$0D    ;Load Character 3 attribute table data into buffer.
+LA0C1:  LDA Chr13AttribTbl+2,X  ;
+LA0C4:  STA AttribBuffer+$14    ;
+LA0C7:  LDA Chr13AttribTbl+3,X  ;
+LA0CA:  STA AttribBuffer+$15    ;
+
+;Load character 4 attribute table values.
 LA0CD:  LDY #$06
-LA0CF:  LDA ($97),Y
+LA0CF:  LDA (Pos4ChrPtr),Y
+
 LA0D1:  TAX
-LA0D2:  LDA $9736,X
+LA0D2:  LDA LgChrAtribTbl,X
+
 LA0D5:  ASL
 LA0D6:  ASL
 LA0D7:  TAX
-LA0D8:  LDA $A2DD,X
-LA0DB:  STA $050E
-LA0DE:  LDA $A2DE,X
-LA0E1:  STA $050F
-LA0E4:  LDA $A2DF,X
-LA0E7:  STA $0516
-LA0EA:  LDA $A2E0,X
-LA0ED:  STA $0517
 
+LA0D8:  LDA Chr14AttribTbl,X    ;
+LA0DB:  STA AttribBuffer+$0E    ;
+LA0DE:  LDA Chr14AttribTbl+1,X  ;
+LA0E1:  STA AttribBuffer+$0F    ;Load Character 4 attribute table data into buffer.
+LA0E4:  LDA Chr14AttribTbl+2,X  ;
+LA0E7:  STA AttribBuffer+$16    ;
+LA0EA:  LDA Chr14AttribTbl+3,X  ;
+LA0ED:  STA AttribBuffer+$17    ;
+
+;Load attribute data into PPU buffer.
 LA0F0:  LDA #$40                ;Prepare to load 64 bytes into PPU buffer.
 LA0F2:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
 
-LA0F5:  LDA #$23
+LA0F5:  LDA #PPU_AT0_UB
 LA0F7:  STA PPUBufBase,X
 LA0FA:  INX
-LA0FB:  LDA #$C0
+LA0FB:  LDA #PPU_AT0_LB
 LA0FD:  STA PPUBufBase,X
 LA100:  INX
+
 LA101:  LDY #$00
-LA103:  LDA $0500,Y
+
+LA103:* LDA AttribBuffer,Y
 LA106:  STA PPUBufBase,X
 LA109:  INX
 LA10A:  INY
 LA10B:  CPY #$40
-LA10D:  BNE LA103
+LA10D:  BNE -
+
 LA10F:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
+
 LA112:  LDA #$97
-LA114:  STA $2A
+LA114:  STA PPUPyLdPtrUB
 LA116:  LDA #$52
-LA118:  STA $29
+LA118:  STA PPUPyLdPtrLB
 LA11A:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
+
 LA11D:  JSR LA2ED
 LA120:  LDA #$1E
 LA122:  STA CurPPUConfig1
@@ -4249,6 +4312,7 @@ LA15C:  JMP LA12D
 LA15F:  CMP #$40
 LA161:  BNE LA164
 LA163:  RTS
+
 LA164:  CMP #$80
 LA166:  BNE LA135
 LA168:  LDA $30
@@ -4268,7 +4332,7 @@ LA180:  LDA #$FF
 LA182:  STA $30
 LA184:  STA $2E
 LA186:  STA $2D
-LA188:  JSR $C009
+LA188:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character class portraits.
 
 LA18B:  JSR LA28C
 LA18E:  LDA #$11
@@ -4279,24 +4343,30 @@ LA196:  LDA #$0A
 LA198:  STA $2E
 LA19A:  LDA #$02
 LA19C:  STA $2D
+
 LA19E:  LDA #$1C
 LA1A0:  STA TextIndex
 LA1A2:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LA1A5:  JSR LA3D3
+
 LA1A8:  LDY #$3D
 LA1AA:  LDA ($99),Y
 LA1AC:  BEQ LA1C5
-LA1AE:  LDA #$04
-LA1B0:  STA $2A
-LA1B2:  LDA #$1A
-LA1B4:  STA $29
-LA1B6:  LDA #$0A
-LA1B8:  STA $2E
-LA1BA:  LDA #$01
-LA1BC:  STA $2D
-LA1BE:  LDA #$26
-LA1C0:  STA TextIndex
+
+LA1AE:  LDA #$04                ;
+LA1B0:  STA TXTXPos             ;Text will be located at tile coords X,Y=4,26.
+LA1B2:  LDA #$1A                ;
+LA1B4:  STA TXTYPos             ;
+
+LA1B6:  LDA #$0A                ;
+LA1B8:  STA TXTClrCols          ;Clear 10 columns and 1 row for the text string.
+LA1BA:  LDA #$01                ;
+LA1BC:  STA TXTClrRows          ;
+
+LA1BE:  LDA #$26                ;FLOWER text.
+LA1C0:  STA TextIndex           ;
 LA1C2:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 LA1C5:  LDA #$F0
 LA1C7:  STA SpriteBuffer
 LA1CA:  JSR LB5F8
@@ -4344,7 +4414,9 @@ LA223:  BCC LA207
 LA225:  LDA $30
 LA227:  LDY #$35
 LA229:  STA ($99),Y
-LA22B:  JMP LA000
+LA22B:  JMP DoStatusScreen      ;($A000)Show status screen on the display.
+
+;----------------------------------------------------------------------------------------------------
 
 LA22E:  .byte $20, $50, $A0, $D0, $30, $40, $50, $60, $70, $80, $90, $A0, $B0
 
@@ -4410,17 +4482,82 @@ LA2B5:  INY
 LA2B6:  CPY #$40
 LA2B8:  BNE LA2AE
 LA2BA:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
+
 LA2BD:  LDA #$05
 LA2BF:  STA $2C
 LA2C1:  LDA #$04
 LA2C3:  STA $2B
 LA2C5:  LDY #$06
 LA2C7:  LDA ($99),Y
-LA2C9:  JSR L9701
+LA2C9:  JSR LoadLgChrPalettes   ;($9701)Load palette data for individual character portraits.
 LA2CC:  RTS
 
-LA2CD:  .byte $00, $00, $00, $00, $44, $55, $04, $05, $88, $AA, $08, $0A, $CC, $FF, $0C, $0F
-LA2DD:  .byte $00, $00, $00, $00, $55, $11, $05, $01, $AA, $22, $0A, $02, $FF, $33, $0F, $03
+;----------------------------------------------------------------------------------------------------
+
+;The attribute table data below if for the large portraits of the various character classes.
+;The data in the Chr13AttribTbl is right justifies as characters 1 and 3 are right justified
+;in their alignment on the name table with respect to the attribute table control bits.
+;The Chr24AttribTblvhas the same type of data but it is left justified.
+
+Chr13AttribTbl:
+LA2CD:  .byte $00, $00, $00, $00
+;0 0 | 0 0
+;0 0 | 0 0   Used by:
+;---------   Fighter, Wizard, Druid and Alchemist.
+;0 0 | 0 0
+;0 0 | 0 0
+
+LA2D1:  .byte $44, $55, $04, $05
+;0 1 | 1 1
+;0 1 | 1 1   Used by:
+;---------   Thief, Barbarian, Lark and Ranger.
+;0 1 | 1 1
+;0 0 | 0 0
+
+LA2D5:  .byte $88, $AA, $08, $0A
+;0 2 | 2 2
+;0 2 | 2 2   Used by:
+;---------   None.
+;0 2 | 2 2
+;0 0 | 0 0
+
+LA2D9:  .byte $CC, $FF, $0C, $0F
+;0 3 | 3 3
+;0 3 | 3 3   Used by:
+;---------   Cleric, Palladin, Illusionist.
+;0 3 | 3 3
+;0 0 | 0 0
+
+Chr14AttribTbl:
+LA2DD:  .byte $00, $00, $00, $00
+;0 0 | 0 0
+;0 0 | 0 0   Used by:
+;---------   Fighter, Wizard, Druid and Alchemist.
+;0 0 | 0 0
+;0 0 | 0 0
+
+LA2E1:  .byte $55, $11, $05, $01
+;1 1 | 1 0
+;1 1 | 1 0   Used by:
+;---------   Thief, Barbarian, Lark and Ranger.
+;1 1 | 1 0
+;0 0 | 0 0
+
+LA2E5:  .byte $AA, $22, $0A, $02
+;2 2 | 2 0
+;2 2 | 2 0   Used by:
+;---------   None.
+;2 2 | 2 0
+;0 0 | 0 0
+
+LA2E9:  .byte $FF, $33, $0F, $03
+;3 3 | 3 0
+;3 3 | 3 0   Used by:
+;---------   Cleric, Palladin, Illusionist.
+;3 3 | 3 0
+;0 0 | 0 0
+
+;----------------------------------------------------------------------------------------------------
 
 LA2ED:  LDX #$00
 LA2EF:  LDA $A53B,X
@@ -4537,6 +4674,8 @@ LA3CE:  RTS
 
 LA3CF:  .byte $02, $08, $12, $18
 
+;----------------------------------------------------------------------------------------------------
+
 LA3D3:  JSR LA407
 LA3D6:  LDX #$00
 LA3D8:  JSR LA43D
@@ -4549,6 +4688,9 @@ LA3E5:  LDX #$0F
 LA3E7:  LDA #$00
 LA3E9:  JSR LA470
 LA3EC:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LA3ED:  JSR LA407
 LA3F0:  LDX #$03
 LA3F2:  JSR LA43D
@@ -4561,6 +4703,9 @@ LA3FF:  LDX #$07
 LA401:  LDA #$10
 LA403:  JSR LA470
 LA406:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LA407:  LDX #$00
 LA409:  LDA $A435,X
 LA40C:  STA $2B
@@ -4585,12 +4730,10 @@ LA430:  CPX #$08
 LA432:  BNE LA409
 LA434:  RTS
 
-LA435:  .byte $64
+LA435:  .byte $64, $A5, $05, $18, $81, $A5, $06, $19
 
-LA436:  LDA $05
-LA438:  CLC
-LA439:  STA ($A5,X)
-LA43B:  ASL $19
+;----------------------------------------------------------------------------------------------------
+
 LA43D:  LDA $A46A,X
 LA440:  STA $2B
 LA442:  INX
@@ -4633,6 +4776,9 @@ LA48A:  LDY $25
 LA48C:  DEX
 LA48D:  BNE LA476
 LA48F:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LA490:  STX $28
 LA492:  STY $27
 LA494:  PHA
@@ -4650,6 +4796,7 @@ LA4A5:  ADC #$07
 LA4A7:  TAX
 LA4A8:  LDA $A4E7,X
 LA4AB:  STA $29
+
 LA4AD:  LDA $30
 LA4AF:  PHA
 LA4B0:  LDA $2E
@@ -4664,9 +4811,11 @@ LA4BC:  LDA $26
 LA4BE:  PHA
 LA4BF:  LDA $25
 LA4C1:  PHA
+
 LA4C2:  LDA #$FF
 LA4C4:  STA TextIndex
 LA4C6:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 LA4C9:  PLA
 LA4CA:  STA $25
 LA4CC:  PLA
@@ -4681,6 +4830,7 @@ LA4D8:  PLA
 LA4D9:  STA $2E
 LA4DB:  PLA
 LA4DC:  STA $30
+
 LA4DE:  LDX $28
 LA4E0:  LDY $27
 LA4E2:  RTS
@@ -6495,21 +6645,9 @@ LBE8B:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-LBE8C:  STA PPUBufBase,X
-LBE8F:  INX
-LBE90:  LDA #$E0
-LBE92:  STA PPUBufBase,X
-LBE95:  INX
-LBE96:  LDY #$00
-LBE98:  LDA $0560,Y
-LBE9B:  STA PPUBufBase,X
-LBE9E:  INX
-LBE9F:  INY
-LBEA0:  CPY #$20
-LBEA2:  BNE LBE98
-.byte $20, $CA, $B6
-;LBEA4:  JSR LB6CA
-LBEA7:  RTS
+;Unused code from Bank B.
+LBE8C:  .byte $9D, $00, $03, $E8, $A9, $E0, $9D, $00, $03, $E8, $A0, $00, $B9, $60, $05, $9D
+LBE9C:  .byte $00, $03, $E8, $C8, $C0, $20, $D0, $F4, $20, $CA, $B6, $60
 
 ;----------------------------------------------------------------------------------------------------
 

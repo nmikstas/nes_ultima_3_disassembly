@@ -10,6 +10,7 @@
 .alias  DoCreateMenus           $8000
 .alias  _DrawWindow             $8000
 .alias  UpdateMusic             $8100
+.alias  LgCharBase              $9600
 .alias  UpdateSpriteRAM         $9900
 .alias  InitSFX                 $A000
 .alias  DoStatusScreen          $A000
@@ -29,7 +30,9 @@ LC003:  JMP DisplayText2        ;($F0BE)Display text on the screen.
 LoadPPU1:
 LC006:  JMP LoadPPU2            ;($EFE3)Load values into PPU.
 
-LC009:  JMP LFB16
+LdLgCharTiles1:
+LC009:  JMP LdLgCharTiles2      ;($FB16)Load large character tiles.
+
 LC00C:  JMP LE42F
 LC00F:  JMP ShowText            ;($E675)Show text in window.
 LC012:  JMP LE4FF
@@ -1240,13 +1243,13 @@ LC921:  PLA
 LC922:  STA $29
 LC924:  LDA #$00
 LC926:  PHA
-LC927:  JSR LEFE3
+LC927:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LC92A:  CLC
 LC92B:  LDA $2C
 LC92D:  PHA
 LC92E:  ADC #$02
 LC930:  STA $2C
-LC932:  JSR LEFE3
+LC932:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LC935:  PLA
 LC936:  STA $2C
 LC938:  LDA $C9
@@ -3106,7 +3109,7 @@ LD89A:  LDA #$10
 LD89C:  STA $2E
 LD89E:  LDA #$00
 LD8A0:  STA $2D
-LD8A2:  JSR LEFE3
+LD8A2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LD8A5:  LDX #$00
 LD8A7:  LDY #$40
 LD8A9:  JSR LC705
@@ -3127,24 +3130,24 @@ LD8C7:  LDA #$01
 LD8C9:  STA $2E
 LD8CB:  LDA #$00
 LD8CD:  STA $2D
-LD8CF:  JSR LEFE3
+LD8CF:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LD8D2:  LDA #$00
 LD8D4:  STA $30
 LD8D6:  JSR LD92B
 LD8D9:  INC $2C
-LD8DB:  JSR LEFE3
+LD8DB:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LD8DE:  LDA #$80
 LD8E0:  STA $30
 LD8E2:  JSR LD92B
 LD8E5:  INC $2C
-LD8E7:  JSR LEFE3
+LD8E7:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LD8EA:  LDX #$00
 LD8EC:  LDA $0600
 LD8EF:  STA ScreenBlocks,X
 LD8F2:  INX
 LD8F3:  BNE LD8EC
 LD8F5:  INC $2C
-LD8F7:  JSR LEFE3
+LD8F7:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LD8FA:  LDA #$FF
 LD8FC:  STA $2A
 LD8FE:  LDA #$D0
@@ -4654,7 +4657,7 @@ LE411:  LDA #$02
 LE413:  STA $2E
 LE415:  LDA #$00
 LE417:  STA $2D
-LE419:  JSR LEFE3
+LE419:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LE41C:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
 LE41F:  LDA #BANK_GEM
 LE421:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -5916,7 +5919,7 @@ LED8E:  LDA #$10
 LED90:  STA $2E
 LED92:  LDA #$00
 LED94:  STA $2D
-LED96:  JSR LEFE3
+LED96:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LED99:  LDA ThisMap
 LED9B:  BNE LEDC6
 LED9D:  LDA #$B1
@@ -5931,12 +5934,12 @@ LEDAD:  LDA #$00
 LEDAF:  STA $2E
 LEDB1:  LDA #$40
 LEDB3:  STA $2D
-LEDB5:  JSR LEFE3
+LEDB5:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEDB8:  LDA #$40
 LEDBA:  STA $29
 LEDBC:  LDA #$1D
 LEDBE:  STA $2C
-LEDC0:  JSR LEFE3
+LEDC0:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEDC3:  JMP LEE1E
 LEDC6:  CMP #$0F
 LEDC8:  BNE LEDFB
@@ -5952,7 +5955,7 @@ LEDDA:  LDA #$00
 LEDDC:  STA $2E
 LEDDE:  LDA #$40
 LEDE0:  STA $2D
-LEDE2:  JSR LEFE3
+LEDE2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEDE5:  LDA #$B1
 LEDE7:  STA $2A
 LEDE9:  LDA #$80
@@ -5961,7 +5964,7 @@ LEDED:  LDA #$1D
 LEDEF:  STA $2C
 LEDF1:  LDA #$80
 LEDF3:  STA $2B
-LEDF5:  JSR LEFE3
+LEDF5:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEDF8:  JMP LEE1E
 
 LEDFB:  CMP #$06
@@ -5980,7 +5983,7 @@ LEE13:  LDA #$00
 LEE15:  STA $2E
 LEE17:  LDA #$40
 LEE19:  STA $2D
-LEE1B:  JSR LEFE3
+LEE1B:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEE1E:  PLA
 LEE1F:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEE22:  RTS
@@ -6005,7 +6008,7 @@ LEE43:  LDA #$10
 LEE45:  STA $2E
 LEE47:  LDA #$00
 LEE49:  STA $2D
-LEE4B:  JSR LEFE3
+LEE4B:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEE4E:  LDA MapProperties
 LEE50:  AND #$02
 LEE52:  BNE LEE6A
@@ -6046,7 +6049,7 @@ LEE95:  ADC #$80
 LEE97:  STA $2A
 LEE99:  LDA #$00
 LEE9B:  STA $29
-LEE9D:  JSR LEFE3
+LEE9D:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEEA0:  LDY #$06
 LEEA2:  LDA (CrntChrPtr),Y
 LEEA4:  TAX
@@ -6107,7 +6110,7 @@ LEF05:  LDA #$02
 LEF07:  STA $2E
 LEF09:  LDA #$00
 LEF0B:  STA $2D
-LEF0D:  JSR LEFE3
+LEF0D:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEF10:  JMP LEECF
 LEF13:  LDA CurPRGBank
 LEF15:  PHA
@@ -6135,7 +6138,7 @@ LEF41:  LDA #$00
 LEF43:  STA $29
 LEF45:  LDA #$04
 LEF47:  STA $30
-LEF49:  JSR LEFE3
+LEF49:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEF4C:  INC $2C
 LEF4E:  INC $2C
 LEF50:  DEC $30
@@ -6160,7 +6163,7 @@ LEF7A:  LDA #$08
 LEF7C:  STA $2E
 LEF7E:  LDA #$00
 LEF80:  STA $2D
-LEF82:  JSR LEFE3
+LEF82:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEF85:  LDA #$88
 LEF87:  STA $2A
 LEF89:  LDA #$09
@@ -6171,7 +6174,7 @@ LEF91:  LDA #$80
 LEF93:  STA $2D
 LEF95:  LDA #$07
 LEF97:  PHA
-LEF98:  JSR LEFE3
+LEF98:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEF9B:  CLC
 LEF9C:  LDA $2A
 LEF9E:  ADC #$02
@@ -6193,7 +6196,7 @@ LEFBA:  LDA #$80
 LEFBC:  STA $2A
 LEFBE:  LDA #$00
 LEFC0:  STA $29
-LEFC2:  JSR LEFE3
+LEFC2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEFC5:  RTS
 LEFC6:  LDA CurPRGBank
 LEFC8:  PHA
@@ -7436,7 +7439,7 @@ LF885:  LDA #$C0
 LF887:  STA PPUBufBase,X
 LF88A:  INX
 LF88B:  LDY #$00
-LF88D:  LDA $0500,Y
+LF88D:  LDA AttribBuffer,Y
 LF890:  STA PPUBufBase,X
 LF893:  INY
 LF894:  INX
@@ -7533,7 +7536,7 @@ LF95D:  LDA #$05
 LF95F:  STA $2E
 LF961:  LDA #$00
 LF963:  STA $2D
-LF965:  JSR LEFE3
+LF965:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LF968:  JSR LF981
 LF96B:  PLA
 LF96C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -7588,7 +7591,7 @@ LF9BF:  LDA #$00
 LF9C1:  STA $2D
 LF9C3:  LDA #$08
 LF9C5:  STA $30
-LF9C7:  JSR LEFE3
+LF9C7:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LF9CA:  INC $2C
 LF9CC:  DEC $30
 LF9CE:  BNE LF9C7
@@ -7609,12 +7612,12 @@ LF9EC:  LDA #$00
 LF9EE:  STA $2E
 LF9F0:  LDA #$40
 LF9F2:  STA $2D
-LF9F4:  JSR LEFE3
+LF9F4:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LF9F7:  LDA #$27
 LF9F9:  STA $2C
 LF9FB:  LDA #$C0
 LF9FD:  STA $2B
-LF9FF:  JSR LEFE3
+LF9FF:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LFA02:  LDA #$20
 LFA04:  STA $2C
 LFA06:  LDA #$64
@@ -7627,10 +7630,10 @@ LFA12:  LDA #$00
 LFA14:  STA $2E
 LFA16:  LDA #$0F
 LFA18:  STA $2D
-LFA1A:  JSR LEFE3
+LFA1A:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LFA1D:  LDA #$24
 LFA1F:  STA $2C
-LFA21:  JSR LEFE3
+LFA21:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LFA24:  JSR LF981
 LFA27:  LDA #$0A
 LFA29:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -7646,7 +7649,7 @@ LFA3C:  LDA #$05
 LFA3E:  STA $2E
 LFA40:  LDA #$C0
 LFA42:  STA $2D
-LFA44:  JSR LEFE3
+LFA44:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LFA47:  LDA #$B0
 LFA49:  STA $2A
 LFA4B:  LDA #$00
@@ -7658,7 +7661,7 @@ LFA55:  STA $2B
 LFA57:  STA $2E
 LFA59:  LDA #$B0
 LFA5B:  STA $2D
-LFA5D:  JSR LEFE3
+LFA5D:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LFA60:  LDA MapBank
 LFA62:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFA65:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
@@ -7747,110 +7750,156 @@ LFB11:  PLA
 LFB12:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFB15:  RTS
 
-LFB16:  LDA CurPRGBank
-LFB18:  PHA
-LFB19:  LDA #$07
-LFB1B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LFB1E:  LDA $30
-LFB20:  CMP #$FF
-LFB22:  BEQ LFB4E
-LFB24:  LDA $2E
-LFB26:  PHA
-LFB27:  LDA $2D
-LFB29:  PHA
-LFB2A:  LDA $2C
-LFB2C:  PHA
-LFB2D:  LDX $30
-LFB2F:  JSR LFBBF
-LFB32:  LDA #$14
-LFB34:  STA $2C
-LFB36:  LDA #$40
-LFB38:  STA $2B
-LFB3A:  LDA #$02
-LFB3C:  STA $2E
-LFB3E:  LDA #$40
-LFB40:  STA $2D
-LFB42:  JSR LEFE3
-LFB45:  PLA
-LFB46:  STA $2C
-LFB48:  PLA
-LFB49:  STA $2D
-LFB4B:  PLA
-LFB4C:  STA $2E
-LFB4E:  LDA $2E
-LFB50:  CMP #$FF
-LFB52:  BEQ LFB78
-LFB54:  LDA $2D
-LFB56:  PHA
-LFB57:  LDA $2C
-LFB59:  PHA
-LFB5A:  LDX $2E
-LFB5C:  JSR LFBBF
-LFB5F:  LDA #$16
-LFB61:  STA $2C
-LFB63:  LDA #$80
-LFB65:  STA $2B
-LFB67:  LDA #$02
-LFB69:  STA $2E
-LFB6B:  LDA #$40
-LFB6D:  STA $2D
-LFB6F:  JSR LEFE3
-LFB72:  PLA
-LFB73:  STA $2C
-LFB75:  PLA
-LFB76:  STA $2D
-LFB78:  LDA $2D
-LFB7A:  CMP #$FF
-LFB7C:  BEQ LFB9C
-LFB7E:  LDA $2C
-LFB80:  PHA
-LFB81:  LDX $2D
-LFB83:  JSR LFBBF
-LFB86:  LDA #$1B
-LFB88:  STA $2C
-LFB8A:  LDA #$80
-LFB8C:  STA $2B
-LFB8E:  LDA #$02
-LFB90:  STA $2E
-LFB92:  LDA #$40
-LFB94:  STA $2D
-LFB96:  JSR LEFE3
-LFB99:  PLA
-LFB9A:  STA $2C
-LFB9C:  LDA $2C
-LFB9E:  CMP #$FF
-LFBA0:  BEQ LFBBA
-LFBA2:  LDX $2C
-LFBA4:  JSR LFBBF
-LFBA7:  LDA #$1D
-LFBA9:  STA $2C
-LFBAB:  LDA #$C0
-LFBAD:  STA $2B
-LFBAF:  LDA #$02
-LFBB1:  STA $2E
-LFBB3:  LDA #$40
-LFBB5:  STA $2D
-LFBB7:  JSR LEFE3
-LFBBA:  PLA
-LFBBB:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LFBBE:  RTS
+;----------------------------------------------------------------------------------------------------
 
-LFBBF:  LDA #$96
-LFBC1:  STA $2A
-LFBC3:  LDA #$00
-LFBC5:  STA $29
-LFBC7:  CPX #$00
-LFBC9:  BEQ LFBDB
-LFBCB:  CLC
-LFBCC:  LDA $29
-LFBCE:  ADC #$40
-LFBD0:  STA $29
-LFBD2:  LDA $2A
-LFBD4:  ADC #$02
-LFBD6:  STA $2A
-LFBD8:  DEX
-LFBD9:  BNE LFBC7
-LFBDB:  RTS
+LdLgCharTiles2:
+LFB16:  LDA CurPRGBank          ;Save current lower PRG bank on the stack.
+LFB18:  PHA                     ;
+
+LFB19:  LDA #BANK_CHARS         ;Load the character class tile patterns bank.
+LFB1B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
+
+LFB1E:  LDA Ch1StClass          ;Does character 1 have a valid class?
+LFB20:  CMP #CLS_UNCHOSEN       ;If not, branch to check character 2.
+LFB22:  BEQ ChkCh2Class         ;
+
+LFB24:  LDA Ch2StClass          ;
+LFB26:  PHA                     ;
+LFB27:  LDA Ch3StClass          ;Save character classes on the stack.
+LFB29:  PHA                     ;
+LFB2A:  LDA Ch4StClass          ;
+LFB2C:  PHA                     ;
+
+LFB2D:  LDX Ch1StClass          ;Use character 1 class as an index.
+LFB2F:  JSR LdPPUSrcDat         ;($FBBF)Load pointers to PPU source data.
+
+LFB32:  LDA #$14                ;
+LFB34:  STA PPUDstPtrUB         ;Prepare to load pattern table tiles starting at tile $44.
+LFB36:  LDA #$40                ;
+LFB38:  STA PPUDstPtrLB         ;
+
+LFB3A:  LDA #$02                ;
+LFB3C:  STA PPUByteCntUB        ;Prepare to load 576 bytes into the PPU.
+LFB3E:  LDA #$40                ;
+LFB40:  STA PPUByteCntLB        ;
+
+LFB42:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+
+LFB45:  PLA                     ;
+LFB46:  STA Ch4StClass          ;
+LFB48:  PLA                     ;Restore character classes from the stack.
+LFB49:  STA Ch3StClass          ;
+LFB4B:  PLA                     ;
+LFB4C:  STA Ch2StClass          ;
+
+ChkCh2Class:
+LFB4E:  LDA Ch2StClass          ;Does character 2 have a valid class?
+LFB50:  CMP #CLS_UNCHOSEN       ;If not, branch to check character 3.
+LFB52:  BEQ ChkCh3Class         ;
+
+LFB54:  LDA Ch3StClass          ;
+LFB56:  PHA                     ;
+LFB57:  LDA Ch4StClass          ;Save character classes on the stack.
+LFB59:  PHA                     ;
+
+LFB5A:  LDX Ch2StClass          ;Use character 2 class as an index.
+LFB5C:  JSR LdPPUSrcDat         ;($FBBF)Load pointers to PPU source data.
+
+LFB5F:  LDA #$16                ;
+LFB61:  STA PPUDstPtrUB         ;Prepare to load pattern table tiles starting at tile $68.
+LFB63:  LDA #$80                ;
+LFB65:  STA PPUDstPtrLB         ;
+
+LFB67:  LDA #$02                ;
+LFB69:  STA PPUByteCntUB        ;Prepare to load 576 bytes into the PPU.
+LFB6B:  LDA #$40                ;
+LFB6D:  STA PPUByteCntLB        ;
+
+LFB6F:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+
+LFB72:  PLA                     ;
+LFB73:  STA Ch4StClass          ;Restore character classes from the stack.
+LFB75:  PLA                     ;
+LFB76:  STA Ch3StClass          ;
+
+ChkCh3Class:
+LFB78:  LDA Ch3StClass          ;Does character 3 have a valid class?
+LFB7A:  CMP #CLS_UNCHOSEN       ;If not, branch to check character 4.
+LFB7C:  BEQ ChkCh4Class         ;
+
+LFB7E:  LDA Ch4StClass          ;Save character class on the stack.
+LFB80:  PHA                     ;
+
+LFB81:  LDX Ch3StClass          ;Use character 3 class as an index.
+LFB83:  JSR LdPPUSrcDat         ;($FBBF)Load pointers to PPU source data.
+
+LFB86:  LDA #$1B                ;
+LFB88:  STA PPUDstPtrUB         ;Prepare to load pattern table tiles starting at tile $B8.
+LFB8A:  LDA #$80                ;
+LFB8C:  STA PPUDstPtrLB         ;
+
+LFB8E:  LDA #$02                ;
+LFB90:  STA PPUByteCntUB        ;Prepare to load 576 bytes into the PPU.
+LFB92:  LDA #$40                ;
+LFB94:  STA PPUByteCntLB        ;
+
+LFB96:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+
+LFB99:  PLA                     ;Restore character class from the stack.
+LFB9A:  STA Ch4StClass          ;
+
+ChkCh4Class:
+LFB9C:  LDA Ch4StClass          ;Does character 4 have a valid class?
+LFB9E:  CMP #CLS_UNCHOSEN       ;If not, branch to exit.
+LFBA0:  BEQ EndChrTilesLoad     ;
+
+LFBA2:  LDX Ch4StClass          ;Use character 4 class as an index.
+LFBA4:  JSR LdPPUSrcDat         ;($FBBF)Load pointers to PPU source data.
+
+LFBA7:  LDA #$1D                ;
+LFBA9:  STA PPUDstPtrUB         ;Prepare to load pattern table tiles starting at tile $DC.
+LFBAB:  LDA #$C0                ;
+LFBAD:  STA PPUDstPtrLB         ;
+
+LFBAF:  LDA #$02                ;
+LFBB1:  STA PPUByteCntUB        ;Prepare to load 576 bytes into the PPU.
+LFBB3:  LDA #$40                ;
+LFBB5:  STA PPUByteCntLB        ;
+
+LFBB7:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+
+EndChrTilesLoad:
+LFBBA:  PLA                     ;Restore original lower bank.
+LFBBB:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
+LFBBE:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+LdPPUSrcDat:
+LFBBF:  LDA #>LgCharBase        ;
+LFBC1:  STA PPUSrcPtrUB         ;Set the source pointer to the base
+LFBC3:  LDA #<LgCharBase        ;address of the large character tile data.
+LFBC5:  STA PPUSrcPtrLB         ;
+
+IncPtrLoop:
+LFBC7:  CPX #$00                ;Have we reached the correct index?
+LFBC9:  BEQ SetPtrComplete      ;If so, branch to exit.
+
+LFBCB:  CLC                     ;
+LFBCC:  LDA PPUSrcPtrLB         ;
+LFBCE:  ADC #$40                ;Move the pointer forward by 576.
+LFBD0:  STA PPUSrcPtrLB         ;There are 576 bytes per large portrait.
+LFBD2:  LDA PPUSrcPtrUB         ;
+LFBD4:  ADC #$02                ;
+LFBD6:  STA PPUSrcPtrUB         ;
+
+LFBD8:  DEX                     ;Have we reached the correct index?
+LFBD9:  BNE IncPtrLoop          ;If not, branch to increment again.
+
+SetPtrComplete:
+LFBDB:  RTS                     ;Data pointer is now correct. Return.
+
+;----------------------------------------------------------------------------------------------------
 
 ResetNameTableF1:
 LFBDC:  LDA #$00                ;
@@ -7866,6 +7915,8 @@ LFBEE:  LDA CurPPUConfig0       ;
 LFBF0:  AND #$FC                ;
 LFBF2:  STA CurPPUConfig0       ;
 LFBF4:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 LFBF5:  TXA
 LFBF6:  PHA
