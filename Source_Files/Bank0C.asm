@@ -10,6 +10,7 @@
 .alias  DisplayText1            $C003
 .alias  LoadPPU1                $C006
 .alias  LdLgCharTiles1          $C009
+.alias  LoadnAlphaNumMaps1      $C01E
 .alias  MapDatTbl               $FEA0
 .alias  SubMapTbl               $FF70
 .alias  RESET                   $FFA0
@@ -2516,53 +2517,53 @@ L905D:  SBC ($99),Y
 L905F:  INY
 L9060:  CPY #$0B
 L9062:  BNE L905C
-L9064:  STA $A0
+L9064:  STA BinInputLB
 L9066:  LDA #$00
-L9068:  STA $A1
-L906A:  JSR L9883
-L906D:  LDA $A4
+L9068:  STA BinInputUB
+L906A:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+L906D:  LDA BCDOutput2
 L906F:  STA TextBufferBase
-L9072:  LDA $A5
+L9072:  LDA BCDOutput3
 L9074:  STA $0581
 L9077:  LDY #$07
 L9079:  LDA ($99),Y
-L907B:  STA $A0
+L907B:  STA BinInputLB
 L907D:  LDA #$00
-L907F:  STA $A1
-L9081:  JSR L9883
-L9084:  LDA $A4
+L907F:  STA BinInputUB
+L9081:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+L9084:  LDA BCDOutput2
 L9086:  STA $0585
-L9089:  LDA $A5
+L9089:  LDA BCDOutput3
 L908B:  STA $0586
 L908E:  LDY #$08
 L9090:  LDA ($99),Y
-L9092:  STA $A0
+L9092:  STA BinInputLB
 L9094:  LDA #$00
-L9096:  STA $A1
-L9098:  JSR L9883
-L909B:  LDA $A4
+L9096:  STA BinInputUB
+L9098:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+L909B:  LDA BCDOutput2
 L909D:  STA $058A
-L90A0:  LDA $A5
+L90A0:  LDA BCDOutput3
 L90A2:  STA $058B
 L90A5:  LDY #$09
 L90A7:  LDA ($99),Y
-L90A9:  STA $A0
+L90A9:  STA BinInputLB
 L90AB:  LDA #$00
-L90AD:  STA $A1
-L90AF:  JSR L9883
-L90B2:  LDA $A4
+L90AD:  STA BinInputUB
+L90AF:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+L90B2:  LDA BCDOutput2
 L90B4:  STA $058F
-L90B7:  LDA $A5
+L90B7:  LDA BCDOutput3
 L90B9:  STA $0590
 L90BC:  LDY #$0A
 L90BE:  LDA ($99),Y
-L90C0:  STA $A0
+L90C0:  STA BinInputLB
 L90C2:  LDA #$00
-L90C4:  STA $A1
-L90C6:  JSR L9883
-L90C9:  LDA $A4
+L90C4:  STA BinInputUB
+L90C6:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+L90C9:  LDA BCDOutput2
 L90CB:  STA $0594
-L90CE:  LDA $A5
+L90CE:  LDA BCDOutput3
 L90D0:  STA $0595
 L90D3:  LDA #$FF
 L90D5:  STA $0596
@@ -2585,7 +2586,7 @@ L90FA:  JSR InitPPU             ;($990C)Initialize the PPU.
 L90FD:  LDA #$00
 L90FF:  STA CurPPUConfig1
 
-L9101:  LDY #$06
+L9101:  LDY #CHR_CLASS
 L9103:  LDA ($99),Y
 L9105:  STA $2C
 L9107:  LDA #$FF
@@ -3524,63 +3525,76 @@ L9882:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-L9883:  PHA
-L9884:  LDA #$38
-L9886:  STA $A2
-L9888:  STA $A3
-L988A:  STA $A4
-L988C:  STA $A5
-L988E:  SEC
-L988F:  LDA $A0
-L9891:  SBC #$E8
-L9893:  STA $A0
-L9895:  LDA $A1
-L9897:  SBC #$03
-L9899:  STA $A1
-L989B:  BCC L98A2
-L989D:  INC $A2
-L989F:  JMP L988E
-L98A2:  CLC
-L98A3:  LDA $A0
-L98A5:  ADC #$E8
-L98A7:  STA $A0
-L98A9:  LDA $A1
-L98AB:  ADC #$03
-L98AD:  STA $A1
-L98AF:  SEC
-L98B0:  LDA $A0
-L98B2:  SBC #$64
-L98B4:  STA $A0
-L98B6:  LDA $A1
-L98B8:  SBC #$00
-L98BA:  STA $A1
-L98BC:  BCC L98C3
-L98BE:  INC $A3
-L98C0:  JMP L98AF
-L98C3:  CLC
-L98C4:  LDA $A0
-L98C6:  ADC #$64
-L98C8:  STA $A0
-L98CA:  LDA $A1
-L98CC:  ADC #$00
-L98CE:  STA $A1
-L98D0:  SEC
-L98D1:  LDA $A0
-L98D3:  SBC #$0A
-L98D5:  STA $A0
-L98D7:  BCC L98DE
-L98D9:  INC $A4
-L98DB:  JMP L98D0
-L98DE:  CLC
-L98DF:  LDA $A0
-L98E1:  ADC #$0A
-L98E3:  STA $A0
-L98E5:  CLC
-L98E6:  LDA $A5
-L98E8:  ADC $A0
-L98EA:  STA $A5
-L98EC:  PLA
-L98ED:  RTS
+BinToBCD:
+L9883:  PHA                     ;Save A on the stack before beginning.
+
+L9884:  LDA #TP_ZERO            ;
+L9886:  STA BCDOutput0          ;
+L9888:  STA BCDOutput1          ;Set all the output digits to zero.
+L988A:  STA BCDOutput2          ;
+L988C:  STA BCDOutput3          ;
+
+L988E:* SEC                     ;
+L988F:  LDA BinInputLB          ;
+L9891:  SBC #$E8                ;
+L9893:  STA BinInputLB          ;Keep subtracting 1,000 until number goes negative.
+L9895:  LDA BinInputUB          ;
+L9897:  SBC #$03                ;
+L9899:  STA BinInputUB          ;
+L989B:  BCC +                   ;
+
+L989D:  INC BCDOutput0          ;Increment thousands digit for each subtrct loop.
+L989F:  JMP -                   ;
+
+L98A2:* CLC                     ;
+L98A3:  LDA BinInputLB          ;
+L98A5:  ADC #$E8                ;
+L98A7:  STA BinInputLB          ;Undo last 1,000 subtract to put number positive again.
+L98A9:  LDA BinInputUB          ;
+L98AB:  ADC #$03                ;
+L98AD:  STA BinInputUB          ;
+
+L98AF:* SEC                     ;
+L98B0:  LDA BinInputLB          ;
+L98B2:  SBC #$64                ;
+L98B4:  STA BinInputLB          ;Keep subtracting 100 until number goes negative.
+L98B6:  LDA BinInputUB          ;
+L98B8:  SBC #$00                ;
+L98BA:  STA BinInputUB          ;
+L98BC:  BCC +                   ;
+
+L98BE:  INC BCDOutput1          ;Increment hundreds digit for each subtrct loop.
+L98C0:  JMP -                   ;
+
+L98C3:* CLC                     ;
+L98C4:  LDA BinInputLB          ;
+L98C6:  ADC #$64                ;
+L98C8:  STA BinInputLB          ;Undo last 100 subtract to put number positive again.
+L98CA:  LDA BinInputUB          ;
+L98CC:  ADC #$00                ;
+L98CE:  STA BinInputUB          ;
+
+L98D0:* SEC                     ;
+L98D1:  LDA BinInputLB          ;
+L98D3:  SBC #$0A                ;Keep subtracting 100 until number goes negative.
+L98D5:  STA BinInputLB          ;
+L98D7:  BCC +                   ;
+
+L98D9:  INC BCDOutput2          ;Increment tens digit for each subtrct loop.
+L98DB:  JMP -                   ;
+
+L98DE:* CLC                     ;
+L98DF:  LDA BinInputLB          ;Undo last 10 subtract to put number positive again.
+L98E1:  ADC #$0A                ;
+L98E3:  STA BinInputLB          ;
+
+L98E5:  CLC                     ;
+L98E6:  LDA BCDOutput3          ;Add remainng value to the ones digit.
+L98E8:  ADC BinInputLB          ;
+L98EA:  STA BCDOutput3          ;
+
+L98EC:  PLA                     ;Restore A from the stack and return.
+L98ED:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4105,7 +4119,7 @@ L9FF2:  .byte $26, $A0, $8A, $18, $69, $10, $AA, $C6, $4D, $D0, $D0, $A2, $00, $
 DoStatusScreen:
 LA000:  JSR InitPPU             ;($990C)Initialize the PPU.
 
-LA003:  LDA #$00                ;Turn off the screen.
+LA003:  LDA #$00                ;Turn off the display.
 LA005:  STA CurPPUConfig1       ;
 
 LA007:  LDY #$06                ;
@@ -4172,7 +4186,7 @@ LA060:  CPY #$40                ;
 LA062:  BNE -                   ;
 
 ;Load character 1 attribute table values.
-LA064:  LDY #$06                ;Get class of character 1.
+LA064:  LDY #CHR_CLASS          ;Get class of character 1.
 LA066:  LDA (Pos1ChrPtr),Y      ;
 
 LA068:  TAX                     ;Get palette index for character portrait.
@@ -4192,15 +4206,15 @@ LA081:  LDA Chr13AttribTbl+3,X  ;
 LA084:  STA AttribBuffer+$11    ;
 
 ;Load character 2 attribute table values.
-LA087:  LDY #$06
-LA089:  LDA (Pos2ChrPtr),Y
+LA087:  LDY #CHR_CLASS          ;Get class of character 2.
+LA089:  LDA (Pos2ChrPtr),Y      ;
 
-LA08B:  TAX
-LA08C:  LDA LgChrAtribTbl,X
+LA08B:  TAX                     ;Get palette index for character portrait.
+LA08C:  LDA LgChrAtribTbl,X     ;
 
-LA08F:  ASL
-LA090:  ASL
-LA091:  TAX
+LA08F:  ASL                     ;
+LA090:  ASL                     ;*4. 4 bytes per attribute table data set.
+LA091:  TAX                     ;
 
 LA092:  LDA Chr14AttribTbl,X    ;
 LA095:  STA AttribBuffer+$0A    ;
@@ -4212,15 +4226,15 @@ LA0A4:  LDA Chr14AttribTbl+3,X  ;
 LA0A7:  STA AttribBuffer+$13    ;
 
 ;Load character 3 attribute table values.
-LA0AA:  LDY #$06
-LA0AC:  LDA (Pos3ChrPtr),Y
+LA0AA:  LDY #CHR_CLASS          ;Get class of character 3.
+LA0AC:  LDA (Pos3ChrPtr),Y      ;
 
-LA0AE:  TAX
-LA0AF:  LDA LgChrAtribTbl,X
+LA0AE:  TAX                     ;Get palette index for character portrait.
+LA0AF:  LDA LgChrAtribTbl,X     ;
 
-LA0B2:  ASL
-LA0B3:  ASL
-LA0B4:  TAX
+LA0B2:  ASL                     ;
+LA0B3:  ASL                     ;*4. 4 bytes per attribute table data set.
+LA0B4:  TAX                     ;
 
 LA0B5:  LDA Chr13AttribTbl,X    ;
 LA0B8:  STA AttribBuffer+$0C    ;
@@ -4232,15 +4246,15 @@ LA0C7:  LDA Chr13AttribTbl+3,X  ;
 LA0CA:  STA AttribBuffer+$15    ;
 
 ;Load character 4 attribute table values.
-LA0CD:  LDY #$06
-LA0CF:  LDA (Pos4ChrPtr),Y
+LA0CD:  LDY #CHR_CLASS          ;Get class of character 4.
+LA0CF:  LDA (Pos4ChrPtr),Y      ;
 
-LA0D1:  TAX
-LA0D2:  LDA LgChrAtribTbl,X
+LA0D1:  TAX                     ;Get palette index for character portrait.
+LA0D2:  LDA LgChrAtribTbl,X     ;
 
-LA0D5:  ASL
-LA0D6:  ASL
-LA0D7:  TAX
+LA0D5:  ASL                     ;
+LA0D6:  ASL                     ;*4. 4 bytes per attribute table data set.
+LA0D7:  TAX                     ;
 
 LA0D8:  LDA Chr14AttribTbl,X    ;
 LA0DB:  STA AttribBuffer+$0E    ;
@@ -4255,102 +4269,126 @@ LA0ED:  STA AttribBuffer+$17    ;
 LA0F0:  LDA #$40                ;Prepare to load 64 bytes into PPU buffer.
 LA0F2:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
 
-LA0F5:  LDA #PPU_AT0_UB
-LA0F7:  STA PPUBufBase,X
-LA0FA:  INX
-LA0FB:  LDA #PPU_AT0_LB
-LA0FD:  STA PPUBufBase,X
-LA100:  INX
+LA0F5:  LDA #PPU_AT0_UB         ;
+LA0F7:  STA PPUBufBase,X        ;
+LA0FA:  INX                     ;Set PPU pointer to the base address of attribute table 0.
+LA0FB:  LDA #PPU_AT0_LB         ;
+LA0FD:  STA PPUBufBase,X        ;
+LA100:  INX                     ;
 
-LA101:  LDY #$00
+LA101:  LDY #$00                ;Zero out the index.
 
-LA103:* LDA AttribBuffer,Y
-LA106:  STA PPUBufBase,X
-LA109:  INX
-LA10A:  INY
-LA10B:  CPY #$40
-LA10D:  BNE -
+LA103:* LDA AttribBuffer,Y      ;
+LA106:  STA PPUBufBase,X        ;
+LA109:  INX                     ;Transfer 64 bytes of attribute table data to the PPU buffer.
+LA10A:  INY                     ;
+LA10B:  CPY #$40                ;
+LA10D:  BNE -                   ;
 
 LA10F:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
 
-LA112:  LDA #$97
-LA114:  STA PPUPyLdPtrUB
-LA116:  LDA #$52
-LA118:  STA PPUPyLdPtrLB
+LA112:  LDA #>LgChrPalDat       ;
+LA114:  STA PPUPyLdPtrUB        ;Prepare to load the large character portrait palettes.
+LA116:  LDA #<LgChrPalDat       ;
+LA118:  STA PPUPyLdPtrLB        ;
+
 LA11A:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
+LA11D:  JSR ShowChrStats        ;($A2ED)Show the 4 character's stats below their portraits.
 
-LA11D:  JSR LA2ED
-LA120:  LDA #$1E
-LA122:  STA CurPPUConfig1
-LA124:  LDA #$18
-LA126:  STA SpriteBufferBase
-LA129:  LDA #$00
-LA12B:  STA $30
-LA12D:  LDX $30
-LA12F:  LDA $A22E,X
-LA132:  STA $7303
-LA135:  LDA $00
-LA137:  CMP $00
-LA139:  BEQ LA137
-LA13B:  LDA InputChange
-LA13D:  BEQ LA135
-LA13F:  LDA Pad1Input
-LA141:  CMP #$01
-LA143:  BNE LA150
-LA145:  INC $30
-LA147:  LDA $30
-LA149:  AND #$03
-LA14B:  STA $30
-LA14D:  JMP LA12D
-LA150:  CMP #$02
-LA152:  BNE LA15F
-LA154:  DEC $30
-LA156:  LDA $30
-LA158:  AND #$03
-LA15A:  STA $30
-LA15C:  JMP LA12D
-LA15F:  CMP #$40
-LA161:  BNE LA164
-LA163:  RTS
+LA120:  LDA #$1E                ;Turn on the display.
+LA122:  STA CurPPUConfig1       ;
 
-LA164:  CMP #$80
-LA166:  BNE LA135
-LA168:  LDA $30
+LA124:  LDA #$18                ;Set the Y pixel coord of the selector sprite Y=24.
+LA126:  STA SpriteBuffer        ;
+
+LA129:  LDA #$00                ;Set character 1 as the default selected character.
+LA12B:  STA ChrStatSelect       ;
+
+;Get user input.
+StatLoop:
+LA12D:  LDX ChrStatSelect       ;
+LA12F:  LDA ChrStatXPosTbl,X   ;Set the X pixel coord of the selector sprite.
+LA132:  STA SpriteBuffer+3      ;
+
+StatInputLoop:
+LA135:  LDA Increment0          ;
+LA137:* CMP Increment0          ;Wait 1 frame.
+LA139:  BEQ -                   ;
+
+LA13B:  LDA InputChange         ;Wait for button release.
+LA13D:  BEQ StatInputLoop       ;
+
+LA13F:  LDA Pad1Input           ;Was the right button pressed?
+LA141:  CMP #BTN_RIGHT          ;If not, branch to check other inputs.
+LA143:  BNE StatChkLeft         ;
+
+LA145:  INC ChrStatSelect       ;
+LA147:  LDA ChrStatSelect       ;Increment selected character. Loop around if greater than 3.
+LA149:  AND #$03                ;
+LA14B:  STA ChrStatSelect       ;
+LA14D:  JMP StatLoop            ;($A12D)Jump to update selected character.
+
+StatChkLeft:
+LA150:  CMP #BTN_LEFT           ;Was the left button pressed?
+LA152:  BNE StatChkB            ;If not, branch to check other inputs.
+
+LA154:  DEC ChrStatSelect       ;
+LA156:  LDA ChrStatSelect       ;Decrement selected character. Loop around if less than 0.
+LA158:  AND #$03                ;
+LA15A:  STA ChrStatSelect       ;
+LA15C:  JMP StatLoop            ;($A12D)Jump to update selected character.
+
+StatChkB:
+LA15F:  CMP #BTN_B              ;Was the B button pressed?
+LA161:  BNE StatChkA            ;If so, exit status screen.
+LA163:  RTS                     ;Else branch to check other inputs.
+
+StatChkA:
+LA164:  CMP #BTN_A              ;Was the A button pressed?
+LA166:  BNE StatInputLoop       ;If not, branch to get next input.
+
+LA168:  LDA ChrStatSelect
 LA16A:  ASL
 LA16B:  TAX
-LA16C:  LDA $91,X
-LA16E:  STA $99
-LA170:  LDA $92,X
-LA172:  STA $9A
-LA174:  JSR InitPPU             ;($990C)Initialize the PPU.
-LA177:  JSR $C01E
-LA17A:  LDY #$06
-LA17C:  LDA ($99),Y
-LA17E:  STA $2C
 
-LA180:  LDA #$FF
-LA182:  STA $30
-LA184:  STA $2E
-LA186:  STA $2D
+LA16C:  LDA ChrPtrBaseLB,X
+LA16E:  STA CrntChrPtrLB
+LA170:  LDA ChrPtrBaseUB,X
+LA172:  STA CrntChrPtrUB
+
+LA174:  JSR InitPPU             ;($990C)Initialize the PPU.
+LA177:  JSR LoadnAlphaNumMaps1  ;($C01E)Load character set and map tiles.
+
+LA17A:  LDY #CHR_CLASS
+LA17C:  LDA (CrntChrPtr),Y
+LA17E:  STA Ch4StClass
+
+LA180:  LDA #CLS_UNCHOSEN
+LA182:  STA Ch1StClass
+LA184:  STA Ch2StClass
+LA186:  STA Ch3StClass
 LA188:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character class portraits.
 
-LA18B:  JSR LA28C
-LA18E:  LDA #$11
-LA190:  STA $2A
-LA192:  LDA #$04
-LA194:  STA $29
-LA196:  LDA #$0A
-LA198:  STA $2E
-LA19A:  LDA #$02
-LA19C:  STA $2D
+LA18B:  JSR StatLoad1Chr        ;($A28C)Load a single character's portrait.
 
-LA19E:  LDA #$1C
-LA1A0:  STA TextIndex
+LA18E:  LDA #$11                ;
+LA190:  STA TXTXPos             ;Text will be located at tile coords X,Y=17,4.
+LA192:  LDA #$04                ;
+LA194:  STA TXTYPos             ;
+
+LA196:  LDA #$0A                ;
+LA198:  STA TXTClrCols          ;Clear 10 columns and 2 rows for the text string.
+LA19A:  LDA #$02                ;
+LA19C:  STA TXTClrRows          ;
+
+LA19E:  LDA #$1C                ;WEAPON text.
+LA1A0:  STA TextIndex           ;
 LA1A2:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 LA1A5:  JSR LA3D3
 
-LA1A8:  LDY #$3D
-LA1AA:  LDA ($99),Y
+LA1A8:  LDY #CHR_FLOWER
+LA1AA:  LDA (CrntChrPtr),Y
 LA1AC:  BEQ LA1C5
 
 LA1AE:  LDA #$04                ;
@@ -4370,32 +4408,39 @@ LA1C2:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 LA1C5:  LDA #$F0
 LA1C7:  STA SpriteBuffer
 LA1CA:  JSR LB5F8
+
 LA1CD:  STA $30
 LA1CF:  CMP #$0F
 LA1D1:  BEQ LA1E1
 LA1D3:  LDY #$06
-LA1D5:  LDA ($99),Y
+LA1D5:  LDA (CrntChrPtr),Y
 LA1D7:  TAX
 LA1D8:  LDA $A23B,X
 LA1DB:  CMP $30
 LA1DD:  BCS LA1E1
 LA1DF:  BCC LA1C5
+
 LA1E1:  LDY #$34
 LA1E3:  LDA $30
-LA1E5:  STA ($99),Y
+LA1E5:  STA (CrntChrPtr),Y
+
 LA1E7:  JSR InitPPU             ;($990C)Initialize the PPU.
-LA1EA:  JSR LA28C
-LA1ED:  LDA #$11
-LA1EF:  STA $2A
-LA1F1:  LDA #$04
-LA1F3:  STA $29
-LA1F5:  LDA #$0A
-LA1F7:  STA $2E
-LA1F9:  LDA #$02
-LA1FB:  STA $2D
-LA1FD:  LDA #$1D
-LA1FF:  STA TextIndex
+LA1EA:  JSR StatLoad1Chr        ;($A28C)Load a single character's portrait.
+
+LA1ED:  LDA #$11                ;
+LA1EF:  STA TXTXPos             ;Text will be located at tile coords X,Y=17,4.
+LA1F1:  LDA #$04                ;
+LA1F3:  STA TXTYPos             ;
+
+LA1F5:  LDA #$0A                ;
+LA1F7:  STA TXTClrCols          ;Clear 10 columns and 2 rows for the text string.
+LA1F9:  LDA #$02                ;
+LA1FB:  STA TXTClrRows          ;
+
+LA1FD:  LDA #$1D                ;ARMOR text.
+LA1FF:  STA TextIndex           ;
 LA201:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 LA204:  JSR LA3ED
 LA207:  LDA #$F0
 LA209:  STA SpriteBufferBase
@@ -4405,7 +4450,7 @@ LA211:  LDA $30
 LA213:  CMP #$07
 LA215:  BEQ LA225
 LA217:  LDY #$06
-LA219:  LDA ($99),Y
+LA219:  LDA (CrntChrPtr),Y
 LA21B:  TAX
 LA21C:  LDA $A246,X
 LA21F:  CMP $30
@@ -4413,12 +4458,18 @@ LA221:  BCS LA225
 LA223:  BCC LA207
 LA225:  LDA $30
 LA227:  LDY #$35
-LA229:  STA ($99),Y
+LA229:  STA (CrntChrPtr),Y
 LA22B:  JMP DoStatusScreen      ;($A000)Show status screen on the display.
 
 ;----------------------------------------------------------------------------------------------------
 
-LA22E:  .byte $20, $50, $A0, $D0, $30, $40, $50, $60, $70, $80, $90, $A0, $B0
+;The following table is the 4 X positions of the selector sprite on the main
+;character status screen.
+
+ChrStatXPosTbl:
+LA22E:  .byte $20, $50, $A0, $D0
+
+LA232:  .byte $30, $40, $50, $60, $70, $80, $90, $A0, $B0
 
 LA23B:  .byte $0F, $02, $01, $06, $0F, $0F, $0F, $02, $02, $01, $0A, $07, $03
 LA24B:  .byte $01, $02, $04, $02, $01, $02, $01, $01, $06, $A2, $00
@@ -4457,6 +4508,10 @@ LA285:  JMP LA27B
 LA288:  INX
 LA289:  STX $30
 LA28B:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+StatLoad1Chr:
 LA28C:  LDA #$20
 LA28E:  STA $2A
 LA290:  LDA #$C4
@@ -4487,8 +4542,9 @@ LA2BD:  LDA #$05
 LA2BF:  STA $2C
 LA2C1:  LDA #$04
 LA2C3:  STA $2B
-LA2C5:  LDY #$06
-LA2C7:  LDA ($99),Y
+
+LA2C5:  LDY #CHR_CLASS
+LA2C7:  LDA (CrntChrPtr),Y
 LA2C9:  JSR LoadLgChrPalettes   ;($9701)Load palette data for individual character portraits.
 LA2CC:  RTS
 
@@ -4559,119 +4615,170 @@ LA2E9:  .byte $FF, $33, $0F, $03
 
 ;----------------------------------------------------------------------------------------------------
 
-LA2ED:  LDX #$00
-LA2EF:  LDA $A53B,X
-LA2F2:  STA TextBuffer,X
-LA2F5:  INX
-LA2F6:  CPX #SG_VALID1
-LA2F8:  BCC LA2EF
-LA2FA:  LDA #$04
-LA2FC:  STA $2E
-LA2FE:  LDA #$08
-LA300:  STA $2D
-LA302:  LDA #$0E
-LA304:  STA $2A
-LA306:  LDA #$0B
-LA308:  STA $29
-LA30A:  LDA #$FF
-LA30C:  STA TextIndex
-LA30E:  JSR ShowTextString      ;($995C)Show a text string on the screen.
-LA311:  LDY #$00
-LA313:  LDA $A3CF,Y
-LA316:  STA $2A
-LA318:  TYA
-LA319:  ASL
-LA31A:  TAX
-LA31B:  LDA $91,X
-LA31D:  STA $99
-LA31F:  LDA $92,X
-LA321:  STA $9A
-LA323:  INY
-LA324:  LDA #$0B
-LA326:  STA $29
-LA328:  TYA
-LA329:  PHA
-LA32A:  JSR LA334
-LA32D:  PLA
-LA32E:  TAY
-LA32F:  CPY #$04
-LA331:  BCC LA313
-LA333:  RTS
-LA334:  LDX #$00
-LA336:  LDY #$07
-LA338:  JSR LA373
-LA33B:  LDY #$08
-LA33D:  JSR LA373
-LA340:  LDY #$09
-LA342:  JSR LA373
-LA345:  LDY #$0A
-LA347:  JSR LA373
-LA34A:  LDY #$38
-LA34C:  JSR LA373
-LA34F:  LDY #$36
-LA351:  JSR LA39A
-LA354:  LDY #$39
-LA356:  JSR LA39A
-LA359:  LDY #$30
-LA35B:  JSR LA39A
-LA35E:  LDA #$FF
-LA360:  STA TextBuffer,X
-LA363:  LDA #$06
-LA365:  STA $2E
-LA367:  LDA #$08
-LA369:  STA $2D
-LA36B:  LDA #$FF
-LA36D:  STA TextIndex
-LA36F:  JSR ShowTextString      ;($995C)Show a text string on the screen.
-LA372:  RTS
-LA373:  LDA ($99),Y
-LA375:  STA $A0
-LA377:  LDA #$00
-LA379:  STA $A1
-LA37B:  STX $2C
-LA37D:  JSR L9883
-LA380:  LDX $2C
-LA382:  LDY #$02
-LA384:  JSR LA3C5
-LA387:  LDA $A4
-LA389:  STA TextBuffer,X
-LA38C:  INX
-LA38D:  LDA $A5
-LA38F:  STA TextBuffer,X
-LA392:  INX
-LA393:  LDA #$FD
-LA395:  STA TextBuffer,X
-LA398:  INX
-LA399:  RTS
-LA39A:  LDA ($99),Y
-LA39C:  STA $A0
-LA39E:  INY
-LA39F:  LDA ($99),Y
-LA3A1:  STA $A1
-LA3A3:  STX $2C
-LA3A5:  JSR L9883
-LA3A8:  LDX $2C
-LA3AA:  LDA #$00
-LA3AC:  STA TextBuffer,X
-LA3AF:  INX
-LA3B0:  LDY #$02
-LA3B2:  LDA $00A0,Y
-LA3B5:  STA TextBuffer,X
-LA3B8:  INX
-LA3B9:  INY
-LA3BA:  CPY #$06
-LA3BC:  BCC LA3B2
-LA3BE:  LDA #$FD
-LA3C0:  STA TextBuffer,X
-LA3C3:  INX
-LA3C4:  RTS
-LA3C5:  LDA #$00
-LA3C7:  STA TextBuffer,X
-LA3CA:  INX
-LA3CB:  DEY
-LA3CC:  BNE LA3C7
-LA3CE:  RTS
+ShowChrStats:
+LA2ED:  LDX #$00                ;
+LA2EF:* LDA _StatsTxt,X         ;
+LA2F2:  STA TextBuffer,X        ;Load STR DEX INT WIS MMP MHP EXP GOLD into the text buffer.
+LA2F5:  INX                     ;This also loads a buch of unecessary stuff off screen.
+LA2F6:  CPX #$41                ;
+LA2F8:  BCC -                   ;
 
+LA2FA:  LDA #$04                ;
+LA2FC:  STA TXTClrCols          ;Clear 4 columns and 8 rows for the text string.
+LA2FE:  LDA #$08                ;
+LA300:  STA TXTClrRows          ;
+
+LA302:  LDA #$0E                ;
+LA304:  STA TXTXPos             ;Text will be located at tile coords X,Y=14,11.
+LA306:  LDA #$0B                ;
+LA308:  STA TXTYPos             ;
+
+LA30A:  LDA #TXT_DBL_SPACE      ;Indicate buffer is already filled, double spaced.
+LA30C:  STA TextIndex           ;
+LA30E:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
+LA311:  LDY #$00                ;Zero out the index.
+
+GetStatsLoop:
+LA313:  LDA StatsXPosTbl,Y      ;Set the column position of the numbers to display.
+LA316:  STA TXTXPos             ;
+
+LA318:  TYA                     ;
+LA319:  ASL                     ;*2. Pointer is 2 bytes.
+LA31A:  TAX                     ;
+
+LA31B:  LDA ChrPtrBaseLB,X      ;
+LA31D:  STA CrntChrPtrLB        ;Copy base address of character data to character pointer.
+LA31F:  LDA ChrPtrBaseUB,X      ;
+LA321:  STA CrntChrPtrUB        ;
+
+LA323:  INY                     ;Prepare to move to next character.
+
+LA324:  LDA #$0B                ;Set text tile Y coord to Y=11.
+LA326:  STA TXTYPos             ;
+
+LA328:  TYA                     ;Save next character on stack.
+LA329:  PHA                     ;
+
+LA32A:  JSR Show4ChrNums        ;($A334)Show the numerical stats of characters on status screen.
+
+LA32D:  PLA                     ;Restore next character from stack.
+LA32E:  TAY                     ;
+
+LA32F:  CPY #$04                ;Has the stats from all 4 characters been displayed?
+LA331:  BCC GetStatsLoop        ;If not, branch to get the stats of the next character.
+
+LA333:  RTS                     ;The stats of all 4 characters are displayed. Exit.
+
+;----------------------------------------------------------------------------------------------------
+
+Show4ChrNums:
+LA334:  LDX #$00                ;Start at top of the screen.
+
+LA336:  LDY #CHR_STR            ;Get 2 digit strength value.
+LA338:  JSR Txt2Digits          ;($A373)Convert byte to 2 base 10 digits.
+LA33B:  LDY #CHR_DEX            ;Get 2 digit dexterity value.
+LA33D:  JSR Txt2Digits          ;($A373)Convert byte to 2 base 10 digits.
+LA340:  LDY #CHR_INT            ;Get 2 digit intelligence value.
+LA342:  JSR Txt2Digits          ;($A373)Convert byte to 2 base 10 digits.
+LA345:  LDY #CHR_WIS            ;Get 2 digit wisdom value.
+LA347:  JSR Txt2Digits          ;($A373)Convert byte to 2 base 10 digits.
+LA34A:  LDY #CHR_MAX_MP         ;Get 2 digit max magic points value.
+LA34C:  JSR Txt2Digits          ;($A373)Convert byte to 2 base 10 digits.
+LA34F:  LDY #CHR_MAX_HP         ;Get 4 digit max hit points value.
+LA351:  JSR Txt4Digits          ;($A39A)Convert word to 4 base 10 digits.
+LA354:  LDY #CHR_EXP            ;Get 4 digit experience points value.
+LA356:  JSR Txt4Digits          ;($A39A)Convert word to 4 base 10 digits.
+LA359:  LDY #CHR_GOLD           ;Get 4 digit gold value.
+LA35B:  JSR Txt4Digits          ;($A39A)Convert word to 4 base 10 digits.
+
+LA35E:  LDA #TXT_END            ;Add end of string indicator on the end of the text string.
+LA360:  STA TextBuffer,X        ;
+
+LA363:  LDA #$06                ;
+LA365:  STA TXTClrCols          ;Clear 6 columns and 8 rows for the text string.
+LA367:  LDA #$08                ;
+LA369:  STA TXTClrRows          ;
+
+LA36B:  LDA #TXT_DBL_SPACE      ;Indicate buffer is already filled, double spaced.
+LA36D:  STA TextIndex           ;
+LA36F:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+LA372:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+Txt2Digits:
+LA373:  LDA (CrntChrPtr),Y      ;Get byte to convert.
+LA375:  STA BinInputLB          ;
+
+LA377:  LDA #$00                ;Set upper byte to zero as its not needed.
+LA379:  STA BinInputUB          ;
+
+LA37B:  STX GenByte2C           ;Temp storage for X.
+LA37D:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+LA380:  LDX GenByte2C           ;Restore X.
+
+LA382:  LDY #$02                ;Clear 2 leading bytes in the buffer before the number.
+LA384:  JSR ClrTxtBytes         ;($A3C5)Clear some bytes in the text buffer.
+
+LA387:  LDA BCDOutput2          ;
+LA389:  STA TextBuffer,X        ;
+LA38C:  INX                     ;Put the 2 digit result in the text buffer.
+LA38D:  LDA BCDOutput3          ;
+LA38F:  STA TextBuffer,X        ;
+LA392:  INX                     ;
+
+LA393:  LDA #TXT_NEWLINE        ;
+LA395:  STA TextBuffer,X        ;Add a newline after the number.
+LA398:  INX                     ;
+LA399:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+Txt4Digits:
+LA39A:  LDA (CrntChrPtr),Y      ;
+LA39C:  STA BinInputLB          ;
+LA39E:  INY                     ;Get the 16-bit word to convert.
+LA39F:  LDA (CrntChrPtr),Y      ;
+LA3A1:  STA BinInputUB          ;
+
+LA3A3:  STX GenByte2C           ;Temp storage for X.
+LA3A5:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+LA3A8:  LDX GenByte2C           ;Restore X.
+
+LA3AA:  LDA #$00                ;
+LA3AC:  STA TextBuffer,X        ;Clear a leading byte in the buffer before the number.
+LA3AF:  INX                     ;
+
+LA3B0:  LDY #$02                ;Set index to the beginning of the BCD digits.
+
+LA3B2:* LDA BCDDigitBase,Y      ;
+LA3B5:  STA TextBuffer,X        ;
+LA3B8:  INX                     ;Copy the 4 digit number into the text buffer.
+LA3B9:  INY                     ;
+LA3BA:  CPY #$06                ;
+LA3BC:  BCC -                   ;
+
+LA3BE:  LDA #TXT_NEWLINE        ;
+LA3C0:  STA TextBuffer,X        ;Add newline after number.
+LA3C3:  INX                     ;
+LA3C4:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+ClrTxtBytes:
+LA3C5:  LDA #$00                ;
+LA3C7:* STA TextBuffer,X        ;Clears bytes in text buffer.
+LA3CA:  INX                     ;X is the index into the buffer.
+LA3CB:  DEY                     ;Y is the number of bytes to clear.
+LA3CC:  BNE -                   ;
+LA3CE:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table contains the X position of each character's stats.
+
+StatsXPosTbl:
 LA3CF:  .byte $02, $08, $12, $18
 
 ;----------------------------------------------------------------------------------------------------
@@ -4787,7 +4894,7 @@ LA496:  LSR
 LA497:  LSR
 LA498:  TAX
 LA499:  LDA $A4E3,X
-LA49C:  STA $2A
+LA49C:  STA TXTXPos
 LA49E:  PLA
 LA49F:  CMP #$18
 LA4A1:  AND #$07
@@ -4795,7 +4902,7 @@ LA4A3:  BCC LA4A7
 LA4A5:  ADC #$07
 LA4A7:  TAX
 LA4A8:  LDA $A4E7,X
-LA4AB:  STA $29
+LA4AB:  STA TXTYPos
 
 LA4AD:  LDA $30
 LA4AF:  PHA
@@ -4835,8 +4942,11 @@ LA4DE:  LDX $28
 LA4E0:  LDY $27
 LA4E2:  RTS
 
-LA4E3:  .byte $0D, $16, $11, $04, $08, $0A, $0C, $0E, $10, $12, $14, $16, $0D, $0F, $12, $14
+LA4E3:  .byte $0D, $16, $11, $04
+LA4E7:  .byte $08, $0A, $0C, $0E, $10, $12, $14, $16, $0D, $0F, $12, $14
 LA4F3:  .byte $16, $18
+
+;----------------------------------------------------------------------------------------------------
 
 LA4F5:  STX $28
 LA4F7:  LDX #$00
@@ -4862,12 +4972,16 @@ StatsTxt:
 LA515:  .byte $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD
 ;              _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n
 LA525:  .byte $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD
-;              _    \n   _    \n   _    \n   S    T    R    _    \n   D    E    X    _    \n
-LA535:  .byte $00, $FD, $00, $FD, $00, $FD, $9C, $9D, $9B, $00, $FD, $8D, $8E, $A1, $00, $FD
-;              I    N    T    _    \n   W    I    S    _    \n   M    M    P    _    \n   M
-LA545:  .byte $92, $97, $9D, $00, $FD, $A0, $92, $9C, $00, $FD, $96, $96, $99, $00, $FD, $96
-;              H    P    _    \n   E    X    P    _    \n   G    O    L    D    \n  END
-LA555:  .byte $91, $99, $00, $FD, $8E, $A1, $99, $00, $FD, $90, $98, $95, $8D, $FD, $FF
+;              _    \n   _    \n   _    \n   
+LA535:  .byte $00, $FD, $00, $FD, $00, $FD
+
+_StatsTxt:
+;              S    T    R    _    \n   D    E    X    _    \n   I    N    T    _    \n   W
+LA53B:  .byte $9C, $9D, $9B, $00, $FD, $8D, $8E, $A1, $00, $FD, $92, $97, $9D, $00, $FD, $A0
+;              I    S    _    \n   M    M    P    _    \n   M    H    P    _    \n   E    X
+LA54B:  .byte $92, $9C, $00, $FD, $96, $96, $99, $00, $FD, $96, $91, $99, $00, $FD, $8E, $A1
+;              P    _    \n   G    O    L    D    \n  END
+LA55B:  .byte $99, $00, $FD, $90, $98, $95, $8D, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4875,41 +4989,41 @@ RaceTxt:
 ;              H    U    M    A    N    \n   E    L    F    \n   D    W    A    R    F    \n
 LA564:  .byte $91, $9E, $96, $8A, $97, $FD, $8E, $95, $8F, $FD, $8D, $A0, $8A, $9B, $8F, $FD
 ;              B    O    B    I    T    \n   F    U    Z    Z    Y    \n  END
-LA565:  .byte $8B, $98, $8B, $92, $9D, $FD, $8F, $9E, $A3, $A3, $A2, $FD, $FF
+LA574:  .byte $8B, $98, $8B, $92, $9D, $FD, $8F, $9E, $A3, $A3, $A2, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 ClassTxt:
 ;              F    T    R    \n   C    L    R    C    \n   W    Z    R    D    \n   T    H
-LA572:  .byte $8F, $9D, $9B, $FD, $8C, $95, $9B, $8C, $FD, $A0, $A3, $9B, $8D, $FD, $9D, $91
+LA581:  .byte $8F, $9D, $9B, $FD, $8C, $95, $9B, $8C, $FD, $A0, $A3, $9B, $8D, $FD, $9D, $91
 ;              I    E    F    \n   P    L    D    N    \n   B    R    B    R    N    \n   L
-LA575:  .byte $92, $8E, $8F, $FD, $99, $95, $8D, $97, $FD, $8B, $9B, $8B, $9B, $97, $FD, $95
+LA591:  .byte $92, $8E, $8F, $FD, $99, $95, $8D, $97, $FD, $8B, $9B, $8B, $9B, $97, $FD, $95
 ;              A    R    K    \n   I    L    S    N    T    \n   D    R    U    I    D    \n
-LA585:  .byte $8A, $9B, $94, $FD, $92, $95, $9C, $97, $9D, $FD, $8D, $9B, $9E, $92, $8D, $FD
+LA5A1:  .byte $8A, $9B, $94, $FD, $92, $95, $9C, $97, $9D, $FD, $8D, $9B, $9E, $92, $8D, $FD
 ;              A    L    C    M    T    \n   R    N    G    R   END
-LA595:  .byte $8A, $95, $8C, $96, $9D, $FD, $9B, $97, $90, $9B, $FF
+LA5B1:  .byte $8A, $95, $8C, $96, $9D, $FD, $9B, $97, $90, $9B, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 InventoryTxt:
 ;              T    O    R    C    H    _    _    \n   K    E    Y    _    _    _    _    \n
-LA5A0:  .byte $9D, $98, $9B, $8C, $91, $00, $00, $FD, $94, $8E, $A2, $00, $00, $00, $00, $FD
+LA5BC:  .byte $9D, $98, $9B, $8C, $91, $00, $00, $FD, $94, $8E, $A2, $00, $00, $00, $00, $FD
 ;              G    E    M    _    _    _    _    \n   S    A    N    D    S    _    _    \n
-LA5A5:  .byte $90, $8E, $96, $00, $00, $00, $00, $FD, $9C, $8A, $97, $8D, $9C, $00, $00, $FD
+LA5CC:  .byte $90, $8E, $96, $00, $00, $00, $00, $FD, $9C, $8A, $97, $8D, $9C, $00, $00, $FD
 ;              T    E    N    T    _    _    _    \n   G    L    D    _    P    I    C    K
-LA5B5:  .byte $9D, $8E, $97, $9D, $00, $00, $00, $FD, $90, $95, $8D, $00, $99, $92, $8C, $94
+LA5DC:  .byte $9D, $8E, $97, $9D, $00, $00, $00, $FD, $90, $95, $8D, $00, $99, $92, $8C, $94
 ;              \n   S    L    V    _    P    I    C    K    \n   G    L    D    _    H    O
-LA5C5:  .byte $FD, $9C, $95, $9F, $00, $99, $92, $8C, $94, $FD, $90, $95, $8D, $00, $91, $98
+LA5EC:  .byte $FD, $9C, $95, $9F, $00, $99, $92, $8C, $94, $FD, $90, $95, $8D, $00, $91, $98
 ;              R    N    \n   C    O    M    P    A    S    S    \n  END
-LA5D5:  .byte $9B, $97, $FD, $8C, $98, $96, $99, $8A, $9C, $9C, $FD, $FF
+LA5FC:  .byte $9B, $97, $FD, $8C, $98, $96, $99, $8A, $9C, $9C, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
 MarksTxt:
 ;              F    O    R    C    E    \n   F    I    R    E    \n   S    N    A    K    E
-LA5E1:  .byte $8F, $98, $9B, $8C, $8E, $FD, $8F, $92, $9B, $8E, $FD, $9C, $97, $8A, $94, $8E
+LA608:  .byte $8F, $98, $9B, $8C, $8E, $FD, $8F, $92, $9B, $8E, $FD, $9C, $97, $8A, $94, $8E
 ;              \n   K    I    N    G    \n  END
-LA5F1:  .byte $FD, $94, $92, $97, $90, $FD, $FF
+LA618:  .byte $FD, $94, $92, $97, $90, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5304,7 +5418,7 @@ LAD9F:  .byte $FF
 ;----------------------------------------------------------------------------------------------------
 
 TB0E1C:
-;              _    W    E    A    P    O    N    \n   A    A    N    D   END
+;              _    W    E    A    P    O    N    \n   H    A    N    D   END
 LADA0:  .byte $00, $A0, $8E, $8A, $99, $98, $97, $FD, $91, $8A, $97, $8D, $FF
 
 ;----------------------------------------------------------------------------------------------------
@@ -5626,15 +5740,15 @@ LB67E:  PLA
 LB67F:  PHA
 LB680:  TAY
 LB681:  LDA ($99),Y
-LB683:  STA $A0
+LB683:  STA BinInputLB
 LB685:  LDA #$00
-LB687:  STA $A1
-LB689:  JSR L9883
-LB68C:  LDA $A4
+LB687:  STA BinInputUB
+LB689:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+LB68C:  LDA BCDOutput2
 LB68E:  LDY $2D
 LB690:  STA TextBuffer,Y
 LB693:  INY
-LB694:  LDA $A5
+LB694:  LDA BCDOutput3
 LB696:  STA TextBuffer,Y
 LB699:  INY
 LB69A:  LDA #$FD

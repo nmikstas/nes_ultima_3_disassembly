@@ -6,10 +6,12 @@
 
 ;Forward declarations.
 
+.alias  GFXCharacterSet         $8000
 .alias  InitMusic               $8000
 .alias  DoCreateMenus           $8000
 .alias  _DrawWindow             $8000
 .alias  UpdateMusic             $8100
+.alias  GFXForceField           $8F00
 .alias  LgCharBase              $9600
 .alias  UpdateSpriteRAM         $9900
 .alias  InitSFX                 $A000
@@ -17,6 +19,10 @@
 .alias  UpdateSFX               $A100
 .alias  GetInput                $A500
 .alias  TextConvert             $B000
+.alias  GFXSnakeBack            $B100
+.alias  GFXSnakeFront           $B140
+.alias  GFXFlower1              $B180
+.alias  GFXFlower2              $B1C0
 .alias  ShowIntroText           $B800
 
 ;----------------------------------------------------------------------------------------------------
@@ -42,7 +48,10 @@ LC015:  JMP ShowWindow          ;($F42A)Show a window on the display.
 
 LC018:  JMP LE50B
 LC01B:  JMP LE4A5
-LC01E:  JMP LED76
+
+LoadnAlphaNumMaps1:
+LC01E:  JMP LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
+
 LC021:  JMP LF4D1
 LC024:  JMP LF90B
 LC027:  JMP LF981
@@ -139,7 +148,7 @@ LC0CD:  STA TextBasePtrLB
 
 LC0CF:  LDA #$01
 LC0D1:  STA TimeStopTimer
-LC0D3:  JSR LED76
+LC0D3:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 
 LC0D6:  LDA Pad1Input           ;Is the B button being held down during startup?
 LC0D8:  AND #BTN_B              ;
@@ -157,7 +166,7 @@ LC0EB:* LDA #$01
 LC0ED:  STA $B0
 LC0EF:  LDA #$00
 LC0F1:  STA CurPPUConfig1
-LC0F3:  JSR LED76
+LC0F3:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LC0F6:  JSR LEE2E
 LC0F9:  JSR LEF65
 
@@ -175,7 +184,7 @@ LC10A:  STA DoAnimations        ;
 LC10C:  LDA MapBank
 LC10E:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC111:  JSR LEE2E
-LC114:  JSR LED76
+LC114:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LC117:  LDA #$18
 LC119:  STA CurPPUConfig1
 LC11B:  LDA #$01
@@ -424,7 +433,7 @@ LC2E7:  BCC LC2EC
 LC2E9:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC2EC:  LDA CurPRGBank
 LC2EE:  PHA
-LC2EF:  LDA #$0B
+LC2EF:  LDA #BANK_HELPERS1
 LC2F1:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC2F4:  JSR $AB00
 LC2F7:  PLA
@@ -438,7 +447,7 @@ LC307:  BCC LC30C
 LC309:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC30C:  LDA CurPRGBank
 LC30E:  PHA
-LC30F:  LDA #$0B
+LC30F:  LDA #BANK_HELPERS1
 LC311:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC314:  JSR $AB80
 LC317:  PLA
@@ -452,7 +461,7 @@ LC327:  BCC LC32C
 LC329:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC32C:  LDA CurPRGBank
 LC32E:  PHA
-LC32F:  LDA #$0B
+LC32F:  LDA #BANK_HELPERS1
 LC331:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC334:  JSR $AC00
 LC337:  PLA
@@ -467,7 +476,7 @@ LC347:  BCC LC34C
 LC349:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC34C:  LDA CurPRGBank
 LC34E:  PHA
-LC34F:  LDA #$0B
+LC34F:  LDA #BANK_HELPERS1
 LC351:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC354:  JSR $AC80
 LC357:  PLA
@@ -796,7 +805,7 @@ LC5AF: STA $2B
 LC5B1: LDA #$09
 LC5B3: ADC $B8
 LC5B5: STA $2C
-LC5B7: LDA #$03
+LC5B7: LDA #BANK_NPCS
 LC5B9: JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC5BC: LDA #$40
 LC5BE: JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
@@ -978,13 +987,13 @@ LC71A:  CPX #$80
 LC71C:  BNE LC714
 LC71E:  LDA #$05
 LC720:  JMP LC72B
-LC723:  LDA #$0B
+LC723:  LDA #BANK_HELPERS1
 LC725:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC728:  JSR $AE80
 LC72B:  PHA
 LC72C:  LDA #$00
 LC72E:  STA CurPPUConfig1
-LC730:  JSR LED76
+LC730:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LC733:  LDA #$FE
 LC735:  STA $2A
 LC737:  LDA #$3E
@@ -995,7 +1004,7 @@ LC740:  STA DisNPCMovement
 LC742:  STA FightTurnIndex
 LC744:  STA CurPieceYVis
 LC746:  STA $D9
-LC748:  LDA #$04
+LC748:  LDA #BANK_ENEMIES
 LC74A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC74D:  LDA MapProperties
 LC74F:  STA PrevMapProp
@@ -1045,7 +1054,7 @@ LC79B:  LDA #$00
 LC79D:  STA FightTurnIndex
 LC79F:  STA CurPieceYVis
 LC7A1:  STA $D9
-LC7A3:  LDA #$04
+LC7A3:  LDA #BANK_ENEMIES
 LC7A5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC7A8:  LDA #$00
 LC7AA:  STA CurPPUConfig1
@@ -1166,7 +1175,7 @@ LC884:  ASL
 LC885:  TAX
 LC886:  LDA $2E
 LC888:  STA $03F1,X
-LC88B:  LDA #$03
+LC88B:  LDA #BANK_NPCS
 LC88D:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC890:  JMP LC903
 LC893:  SEC
@@ -1222,7 +1231,7 @@ LC8F6:  DEY
 LC8F7:  BNE LC8DB
 LC8F9:  LDA $2E
 LC8FB:  STA $03F7
-LC8FE:  LDA #$04
+LC8FE:  LDA #BANK_ENEMIES
 LC900:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC903:  LDA #$75
 LC905:  STA $2A
@@ -1932,7 +1941,7 @@ LCEE3:  .byte $00, $03, $00, $00, $02, $02, $02, $02, $02, $02, $02, $02, $03, $
 
 LCEF1:  LDA CurPRGBank
 LCEF3:  PHA
-LCEF4:  LDA #$0B
+LCEF4:  LDA #BANK_HELPERS1
 LCEF6:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LCEF9:  JSR $9480
 LCEFC:  PLA
@@ -2332,7 +2341,7 @@ LD200:  PLA
 LD201:  STA $30
 LD203:  LDA CurPRGBank
 LD205:  PHA
-LD206:  LDA #$0B
+LD206:  LDA #BANK_HELPERS1
 LD208:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LD20B:  JSR $B900
 LD20E:  PLA
@@ -2342,7 +2351,7 @@ LD213:  PLP
 LD214:  RTS
 LD215:  LDA CurPRGBank
 LD217:  PHA
-LD218:  LDA #$0B
+LD218:  LDA #BANK_HELPERS1
 LD21A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LD21D:  JSR $BA00
 LD220:  PLA
@@ -2472,7 +2481,7 @@ LD301:  SEC
 LD302:  RTS
 LD303:  LDA CurPRGBank
 LD305:  PHA
-LD306:  LDA #$0B
+LD306:  LDA #BANK_HELPERS1
 LD308:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LD30B:  JSR $BB00
 LD30E:  PLA
@@ -2491,7 +2500,7 @@ LD322:  LDA CurPRGBank
 LD324:  PHA
 LD325:  LDA #MUS_NONE+INIT
 LD327:  STA InitNewMusic
-LD329:  LDA #$0B
+LD329:  LDA #BANK_HELPERS1
 LD32B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LD32E:  JSR $9380
 LD331:  PLA
@@ -3077,7 +3086,7 @@ LD855:  STA TextIndex
 LD857:  JSR ShowText            ;($E675)Show text in window.
 LD85A:  LDA #$A3
 LD85C:  STA ThisSFX
-LD85E:  LDA #$06
+LD85E:  LDA #BANK_GEM
 LD860:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LD863:  LDA DisNPCMovement
 LD865:  PHA
@@ -3170,7 +3179,7 @@ LD91D:  STA $9B
 LD91F:  JSR LE6D8
 LD922:  PLA
 LD923:  STA DisNPCMovement
-LD925:  JSR LED76
+LD925:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LD928:  LDA #$01
 LD92A:  RTS
 LD92B:  LDX #$00
@@ -3752,7 +3761,7 @@ LDD6B:  JMP LDC23
 LDD6E:  STA $30
 LDD70:  LDA CurPRGBank
 LDD72:  PHA
-LDD73:  LDA #$0B
+LDD73:  LDA #BANK_HELPERS1
 LDD75:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LDD78:  LDA $30
 LDD7A:  JSR $AF00
@@ -4266,7 +4275,7 @@ LE15A:  JMP LE13B
 DoFoodCmd:
 LE15D:  LDA CurPRGBank
 LE15F:  PHA
-LE160:  LDA #$0B
+LE160:  LDA #BANK_HELPERS1
 LE162:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE165:  JSR $B300
 LE168:  PLA
@@ -4305,7 +4314,7 @@ DoGoldCmd:
 LE19C:  LDA CurPRGBank
 LE19E:  PHA
 
-LE19F:  LDA #$0D
+LE19F:  LDA #BANK_HELPERS2
 LE1A1:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 
 LE1A4:  LDA #$01
@@ -4348,7 +4357,7 @@ LE1E8:  LDA $03D9,Y
 LE1EB:  STA $03D9,X
 LE1EE:  LDA $2E
 LE1F0:  STA $03D9,Y
-LE1F3:  LDA #$0B
+LE1F3:  LDA #BANK_HELPERS1
 LE1F5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE1F8:  JSR $B780
 LE1FB:  PLA
@@ -4375,7 +4384,7 @@ LE216:  STA PPUControl1
 LE219:  LDA MapBank
 LE21B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 
-LE21E:  JSR LED76
+LE21E:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LE221:  LDA #$FE
 LE223:  STA $2A
 LE225:  LDA #$3E
@@ -4396,7 +4405,7 @@ LE237:  JMP LoadNewMap          ;($C175)Load a new map.
 DoGiveCmd:
 LE23A:  LDA CurPRGBank
 LE23C:  PHA
-LE23D:  LDA #$0B
+LE23D:  LDA #BANK_HELPERS1
 LE23F:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE242:  LDA #$01
 LE244:  STA $E9
@@ -4616,7 +4625,7 @@ LE3C3:  .byte $02, $08, $01, $04
 
 LE3C7:  LDA CurPRGBank
 LE3C9:  PHA
-LE3CA:  LDA #$0B
+LE3CA:  LDA #BANK_HELPERS1
 LE3CC:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE3CF:  JSR $9100
 LE3D2:  PLA
@@ -4643,7 +4652,7 @@ LE3F4:  LDA #$1E
 LE3F6:  STA CurPPUConfig1
 LE3F8:  LDA #MUS_END+INIT
 LE3FA:  STA InitNewMusic
-LE3FC:  LDA #$0D
+LE3FC:  LDA #BANK_HELPERS2
 LE3FE:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE401:  LDA #$BE
 LE403:  STA $2A
@@ -4906,7 +4915,7 @@ LE601:  RTS
 
 LE602:  LDA CurPRGBank
 LE604:  PHA
-LE605:  LDA #$0D
+LE605:  LDA #BANK_HELPERS2
 LE607:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE60A:  JSR $9A00
 LE60D:  TAX
@@ -4919,7 +4928,7 @@ LE615:  RTS
 
 LE616:  LDA CurPRGBank
 LE618:  PHA
-LE619:  LDA #$0D
+LE619:  LDA #BANK_HELPERS2
 LE61B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE61E:  JSR $9C40
 LE621:  TAX
@@ -4932,7 +4941,7 @@ LE629:  RTS
 
 LE62A:  LDA CurPRGBank
 LE62C:  PHA
-LE62D:  LDA #$0D
+LE62D:  LDA #BANK_HELPERS2
 LE62F:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE632:  JSR $9D00
 LE635:  TAX
@@ -4945,7 +4954,7 @@ LE63D:  RTS
 
 LE63E:  LDA CurPRGBank
 LE640:  PHA
-LE641:  LDA #$0B
+LE641:  LDA #BANK_HELPERS1
 LE643:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE646:  JSR $B400
 LE649:  PLA
@@ -4991,7 +5000,7 @@ LE684:  RTS
 
 LE685:  LDA CurPRGBank
 LE687:  PHA
-LE688:  LDA #$0B
+LE688:  LDA #BANK_HELPERS1
 LE68A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE68D:  JSR $B500
 LE690:  TAX
@@ -5132,7 +5141,7 @@ LE767:  .byte $00, $02, $01, $00, $08, $00, $00, $00, $04
 
 LE770:  LDA CurPRGBank
 LE772:  PHA
-LE773:  LDA #$0B
+LE773:  LDA #BANK_HELPERS1
 LE775:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE778:  JSR $B700
 LE77B:  PLA
@@ -5140,7 +5149,7 @@ LE77C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE77F:  RTS
 LE780:  LDA CurPRGBank
 LE782:  PHA
-LE783:  LDA #$0B
+LE783:  LDA #BANK_HELPERS1
 LE785:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE788:  JSR $BE00
 LE78B:  PLA
@@ -5415,7 +5424,7 @@ LE9B0:  CLC
 LE9B1:  RTS
 LE9B2:  LDA CurPRGBank
 LE9B4:  PHA
-LE9B5:  LDA #$0B
+LE9B5:  LDA #BANK_HELPERS1
 LE9B7:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE9BA:  JSR $AFA0
 LE9BD:  PLA
@@ -5479,7 +5488,7 @@ LEA3A:  INC Increment1          ;
 
 LEA3C:  LDA CurPRGBank
 LEA3E:  PHA
-LEA3F:  LDA #$0B
+LEA3F:  LDA #BANK_HELPERS1
 LEA41:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 
 LEA44:  LDA WorldUpdating
@@ -5842,7 +5851,7 @@ LED0C:  RTI                     ;
 
 LED0D:  LDA CurPRGBank
 LED0F:  PHA
-LED10:  LDA #$03
+LED10:  LDA #BANK_NPCS
 LED12:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LED15:  LDY #$00
 LED17:  LDA ($4D),Y
@@ -5903,90 +5912,127 @@ LED75:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-LED76:  LDA CurPRGBank
-LED78:  PHA
-LED79:  LDA #$0A
-LED7B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LED7E:  LDA #$80
-LED80:  STA $2A
-LED82:  LDA #$00
-LED84:  STA $29
-LED86:  LDA #$10
-LED88:  STA $2C
-LED8A:  LDA #$00
-LED8C:  STA $2B
-LED8E:  LDA #$10
-LED90:  STA $2E
-LED92:  LDA #$00
-LED94:  STA $2D
-LED96:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
-LED99:  LDA ThisMap
-LED9B:  BNE LEDC6
-LED9D:  LDA #$B1
-LED9F:  STA $2A
-LEDA1:  LDA #$00
-LEDA3:  STA $29
-LEDA5:  LDA #$1C
-LEDA7:  STA $2C
-LEDA9:  LDA #$40
-LEDAB:  STA $2B
-LEDAD:  LDA #$00
-LEDAF:  STA $2E
-LEDB1:  LDA #$40
-LEDB3:  STA $2D
-LEDB5:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
-LEDB8:  LDA #$40
-LEDBA:  STA $29
-LEDBC:  LDA #$1D
-LEDBE:  STA $2C
-LEDC0:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
-LEDC3:  JMP LEE1E
-LEDC6:  CMP #$0F
-LEDC8:  BNE LEDFB
-LEDCA:  LDA #$8E
-LEDCC:  STA $2A
-LEDCE:  LDA #$40
-LEDD0:  STA $29
-LEDD2:  LDA #$1D
-LEDD4:  STA $2C
-LEDD6:  LDA #$C0
-LEDD8:  STA $2B
-LEDDA:  LDA #$00
-LEDDC:  STA $2E
-LEDDE:  LDA #$40
-LEDE0:  STA $2D
-LEDE2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
-LEDE5:  LDA #$B1
-LEDE7:  STA $2A
-LEDE9:  LDA #$80
-LEDEB:  STA $29
-LEDED:  LDA #$1D
-LEDEF:  STA $2C
-LEDF1:  LDA #$80
-LEDF3:  STA $2B
-LEDF5:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
-LEDF8:  JMP LEE1E
+LoadAlphaNumMaps:
+LED76:  LDA CurPRGBank          ;Save the current lower PRG bank.
+LED78:  PHA                     ;
 
-LEDFB:  CMP #$06
-LEDFD:  BEQ LEE03
-LEDFF:  CMP #$14
-LEE01:  BNE LEE1E
-LEE03:  LDA #$8F
-LEE05:  STA $2A
-LEE07:  LDA #$00
-LEE09:  STA $29
+LED79:  LDA #BANK_MISC_GFX      ;Load the misc. graphics bank.
+LED7B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
+
+;Load character set and overhead map tiles.
+LED7E:  LDA #>GFXCharacterSet   ;
+LED80:  STA PPUSrcPtrUB         ;Get a pointer to the character set and overhead map tiles.
+LED82:  LDA #<GFXCharacterSet   ;
+LED84:  STA PPUSrcPtrLB         ;
+
+LED86:  LDA #PPU_PT1_UB         ;
+LED88:  STA PPUDstPtrUB         ;Prepare to fill pattern table 1.
+LED8A:  LDA #PPU_PT1_LB         ;
+LED8C:  STA PPUDstPtrLB         ;
+
+LED8E:  LDA #$10                ;
+LED90:  STA PPUByteCntUB        ;Prepare to load 4096 bytes.
+LED92:  LDA #$00                ;The entire pattern table 1.
+LED94:  STA PPUByteCntLB        ;
+
+LED96:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+
+;Load unique tiles for overworld map.
+LED99:  LDA ThisMap             ;Is this the overworld map?
+LED9B:  BNE ChkAmbrosiaMap      ;If not, branch to check other maps.
+
+LED9D:  LDA #>GFXSnakeBack      ;
+LED9F:  STA PPUSrcPtrUB         ;Get a pointer to the snake back tiles.
+LEDA1:  LDA #<GFXSnakeBack      ;
+LEDA3:  STA PPUSrcPtrLB         ;
+
+LEDA5:  LDA #$1C                ;
+LEDA7:  STA PPUDstPtrUB         ;Destination is PT1 starting tile $C4.
+LEDA9:  LDA #$40                ;
+LEDAB:  STA PPUDstPtrLB         ;
+
+LEDAD:  LDA #$00                ;
+LEDAF:  STA PPUByteCntUB        ;Copy 64 bytes to the PPU.
+LEDB1:  LDA #$40                ;
+LEDB3:  STA PPUByteCntLB        ;
+
+LEDB5:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+
+LEDB8:  LDA #$40                ;
+LEDBA:  STA PPUSrcPtrLB         ;Copy the snake back tiles to the PPU.
+LEDBC:  LDA #$1D                ;
+LEDBE:  STA PPUDstPtrUB         ;
+
+LEDC0:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEDC3:  JMP EndLoadMap          ;($EE1E)Finish loading map GFX.
+
+;Load unique tiles for Ambrosia map.
+ChkAmbrosiaMap:
+LEDC6:  CMP #MAP_AMBROSIA       ;Is the current map Ambrosia?
+LEDC8:  BNE ChkLBCastleMap      ;If not, branch to check other maps.
+
+LEDCA:  LDA #$8E
+LEDCC:  STA PPUSrcPtrUB
+LEDCE:  LDA #$40
+LEDD0:  STA PPUSrcPtrLB
+
+LEDD2:  LDA #$1D
+LEDD4:  STA PPUDstPtrUB
+LEDD6:  LDA #$C0
+LEDD8:  STA PPUDstPtrLB
+
+LEDDA:  LDA #$00
+LEDDC:  STA PPUByteCntUB
+LEDDE:  LDA #$40
+LEDE0:  STA PPUByteCntLB
+
+LEDE2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+
+LEDE5:  LDA #$B1
+LEDE7:  STA PPUSrcPtrUB
+LEDE9:  LDA #$80
+LEDEB:  STA PPUSrcPtrLB
+
+LEDED:  LDA #$1D
+LEDEF:  STA PPUDstPtrUB
+LEDF1:  LDA #$80
+LEDF3:  STA PPUDstPtrLB
+
+LEDF5:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEDF8:  JMP EndLoadMap          ;($EE1E)Finish loading map GFX.
+
+;Load unique tiles for Lord British and Exodus castles.
+ChkLBCastleMap:
+LEDFB:  CMP #MAP_LB_CSTL
+LEDFD:  BEQ +
+
+LEDFF:  CMP #MAP_EXODUS
+LEE01:  BNE EndLoadMap
+
+LEE03:* LDA #>GFXForceField
+LEE05:  STA PPUSrcPtrUB
+LEE07:  LDA #<GFXForceField
+LEE09:  STA PPUSrcPtrLB
+
 LEE0B:  LDA #$1D
-LEE0D:  STA $2C
+LEE0D:  STA PPUDstPtrUB
 LEE0F:  LDA #$C0
-LEE11:  STA $2B
+LEE11:  STA PPUDstPtrLB
+
 LEE13:  LDA #$00
-LEE15:  STA $2E
+LEE15:  STA PPUByteCntUB
 LEE17:  LDA #$40
-LEE19:  STA $2D
+LEE19:  STA PPUByteCntLB
+
 LEE1B:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
-LEE1E:  PLA
+
+EndLoadMap:
+LEE1E:  PLA                     ;Restore A from stack before exiting.
 LEE1F:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LEE22:  RTS
+LEE22:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
 LEE23:  LDA CurPRGBank
 LEE25:  PHA
 LEE26:  JSR LEE4E
@@ -5994,7 +6040,7 @@ LEE29:  PLA
 LEE2A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEE2D:  RTS
 
-LEE2E:  LDA #$0A
+LEE2E:  LDA #BANK_MISC_GFX
 LEE30:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEE33:  LDA #$A0
 LEE35:  STA $2A
@@ -6022,7 +6068,7 @@ LEE61:  BNE LEE6A
 LEE63:  LDA OnHorse
 LEE65:  BPL LEE6A
 LEE67:  JMP LEF28
-LEE6A:  LDA #$07
+LEE6A:  LDA #BANK_CHARS
 LEE6C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEE6F:  LDA #$01
 LEE71:  STA $2C
@@ -6096,7 +6142,7 @@ LEEE9:  LDA OnBoat
 LEEEB:  AND #$7F
 LEEED:  STA OnBoat
 LEEEF:  RTS
-LEEF0:  LDA #$03
+LEEF0:  LDA #BANK_NPCS
 LEEF2:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEEF5:  LDA #$8A
 LEEF7:  STA $2A
@@ -6149,7 +6195,7 @@ LEF59:  RTS
 
 LEF5A:  .byte $00, $03, $00, $01, $03, $01, $01, $03, $00, $00, $01
 
-LEF65:  LDA #$07
+LEF65:  LDA #BANK_CHARS
 LEF67:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEF6A:  LDA #$80
 LEF6C:  STA $2A
@@ -6190,7 +6236,7 @@ LEFAF:  PLA
 LEFB0:  SEC
 LEFB1:  SBC #$01
 LEFB3:  BNE LEF97
-LEFB5:  LDA #$03
+LEFB5:  LDA #BANK_NPCS
 LEFB7:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEFBA:  LDA #$80
 LEFBC:  STA $2A
@@ -6200,7 +6246,7 @@ LEFC2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LEFC5:  RTS
 LEFC6:  LDA CurPRGBank
 LEFC8:  PHA
-LEFC9:  LDA #$0B
+LEFC9:  LDA #BANK_HELPERS1
 LEFCB:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEFCE:  JSR $B880
 LEFD1:  PLA
@@ -6952,7 +6998,7 @@ LF4CE:  STA $2A
 LF4D0:  RTS
 LF4D1:  LDA CurPRGBank
 LF4D3:  PHA
-LF4D4:  LDA #$0B
+LF4D4:  LDA #BANK_HELPERS1
 LF4D6:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF4D9:  JSR $8400
 LF4DC:  PLA
@@ -6990,14 +7036,14 @@ LF513:  INC MapDatPtrUB
 LF515:  INC $2A
 LF517:  DEX
 LF518:  BNE LF50C
-LF51A:  LDA #$0B
+LF51A:  LDA #BANK_HELPERS1
 LF51C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF51F:  JSR $8800
 LF522:  LDA #$00
 LF524:  STA CurPPUConfig1
 LF526:  PLA
 LF527:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LF52A:  JSR LED76
+LF52A:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LF52D:  JSR LEE2E
 LF530:  JSR LF5C0
 LF533:  LDX #$00
@@ -7033,7 +7079,7 @@ LF56F:  RTS
 
 LF570:  LDA CurPRGBank
 LF572:  PHA
-LF573:  LDA #$0B
+LF573:  LDA #BANK_HELPERS1
 LF575:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF578:  JSR $8A00
 LF57B:  PLA
@@ -7042,7 +7088,7 @@ LF57F:  RTS
 
 LF580:  LDA CurPRGBank
 LF582:  PHA
-LF583:  LDA #$0B
+LF583:  LDA #BANK_HELPERS1
 LF585:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF588:  JSR $8C00
 LF58B:  PLA
@@ -7051,7 +7097,7 @@ LF58F:  RTS
 
 LF590:  LDA CurPRGBank
 LF592:  PHA
-LF593:  LDA #$0B
+LF593:  LDA #BANK_HELPERS1
 LF595:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF598:  JSR $8D00
 LF59B:  PLA
@@ -7060,7 +7106,7 @@ LF59F:  RTS
 
 LF5A0:  LDA CurPRGBank
 LF5A2:  PHA
-LF5A3:  LDA #$0B
+LF5A3:  LDA #BANK_HELPERS1
 LF5A5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF5A8:  JSR $8E00
 LF5AB:  PLA
@@ -7069,7 +7115,7 @@ LF5AF:  RTS
 
 LF5B0:  LDA CurPRGBank
 LF5B2:  PHA
-LF5B3:  LDA #$0B
+LF5B3:  LDA #BANK_HELPERS1
 LF5B5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF5B8:  JSR $9000
 LF5BB:  PLA
@@ -7136,7 +7182,7 @@ LF627:  RTS
 
 LF628:  LDA CurPRGBank
 LF62A:  PHA
-LF62B:  LDA #$0B
+LF62B:  LDA #BANK_HELPERS1
 LF62D:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF630:  JSR $B000
 LF633:  LDA OnBoat
@@ -7148,7 +7194,7 @@ LF63D:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF640:  RTS
 LF641:  LDA CurPRGBank
 LF643:  PHA
-LF644:  LDA #$0B
+LF644:  LDA #BANK_HELPERS1
 LF646:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF649:  JSR $B100
 LF64C:  PLA
@@ -7228,7 +7274,7 @@ LF6D6:  STA $B1
 LF6D8:  STA $D2
 LF6DA:  LDA #$FF
 LF6DC:  STA $D8
-LF6DE:  LDA #$02
+LF6DE:  LDA #BANK_DUNGEONS
 LF6E0:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF6E3:  LDA ThisMap
 LF6E5:  AND #$7F
@@ -7274,7 +7320,7 @@ LF729:  STA CurPPUConfig1
 LF72B:  STA PPUControl1
 LF72E:  LDA #$01
 LF730:  STA DisNPCMovement
-LF732:  LDA #$02
+LF732:  LDA #BANK_DUNGEONS
 LF734:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF737:  JSR LF991
 LF73A:  JSR LFAC2
@@ -7473,7 +7519,7 @@ LF8D4:  STA $2A
 LF8D6:  LDA #$3E
 LF8D8:  STA $29
 LF8DA:  JSR LED33
-LF8DD:  JSR LED76
+LF8DD:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LF8E0:  LDA #$00
 LF8E2:  STA DisNPCMovement
 LF8E4:  JMP LC142
@@ -7495,7 +7541,7 @@ LF90B:  LDA CurPRGBank
 LF90D:  PHA
 LF90E:  LDA #$00
 LF910:  STA CurPPUConfig1
-LF912:  LDA #$0A
+LF912:  LDA #BANK_MISC_GFX
 LF914:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF917:  JSR LF974
 LF91A:  LDX #$00
@@ -7557,7 +7603,7 @@ LF980:  RTS
 
 LF981:  LDA CurPRGBank
 LF983:  PHA
-LF984:  LDA #$0B
+LF984:  LDA #BANK_HELPERS1
 LF986:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF989:  JSR $B380
 LF98C:  PLA
@@ -7635,7 +7681,7 @@ LFA1D:  LDA #$24
 LFA1F:  STA $2C
 LFA21:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
 LFA24:  JSR LF981
-LFA27:  LDA #$0A
+LFA27:  LDA #BANK_MISC_GFX
 LFA29:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFA2C:  LDA #$90
 LFA2E:  STA $2A
@@ -7670,7 +7716,7 @@ LFA6B:  RTS
 
 LFA6C:  LDA CurPRGBank
 LFA6E:  PHA
-LFA6F:  LDA #$0D
+LFA6F:  LDA #BANK_HELPERS2
 LFA71:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFA74:  JSR $BD00
 LFA77:  PLA
@@ -7681,7 +7727,7 @@ LFA7C:  .byte $95, $8E, $9F, $8E, $95, $00, $39, $00, $00, $00, $8D, $92, $9B, $
 
 LFA8B:  LDA CurPRGBank
 LFA8D:  PHA
-LFA8E:  LDA #$0D
+LFA8E:  LDA #BANK_HELPERS2
 LFA90:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFA93:  JSR $BC00
 LFA96:  PLA
@@ -7707,7 +7753,7 @@ LFABF:  BNE LFAB5
 LFAC1:  RTS
 LFAC2:  LDA CurPRGBank
 LFAC4:  PHA
-LFAC5:  LDA #$0D
+LFAC5:  LDA #BANK_HELPERS2
 LFAC7:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFACA:  JSR $A800
 LFACD:  PLA
@@ -7715,7 +7761,7 @@ LFACE:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFAD1:  RTS
 LFAD2:  LDA CurPRGBank
 LFAD4:  PHA
-LFAD5:  LDA #$0D
+LFAD5:  LDA #BANK_HELPERS2
 LFAD7:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFADA:  JSR $AA00
 LFADD:  PLA
@@ -7735,7 +7781,7 @@ LFAF1:  STA $2D
 LFAF3:  JSR ShowWindow          ;($F42A)Show a window on the display.
 LFAF6:  LDA CurPRGBank
 LFAF8:  PHA
-LFAF9:  LDA #$0D
+LFAF9:  LDA #BANK_HELPERS2
 LFAFB:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFAFE:  JSR $A600
 LFB01:  PLA
@@ -7743,7 +7789,7 @@ LFB02:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFB05:  RTS
 LFB06:  LDA CurPRGBank
 LFB08:  PHA
-LFB09:  LDA #$0B
+LFB09:  LDA #BANK_HELPERS1
 LFB0B:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFB0E:  JSR $B800
 LFB11:  PLA
@@ -7964,7 +8010,7 @@ LFC34:  RTS
 
 LFC35:  LDA CurPRGBank
 LFC37:  PHA
-LFC38:  LDA #$0D
+LFC38:  LDA #BANK_HELPERS2
 LFC3A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFC3D:  JSR $8400
 LFC40:  PLA
@@ -7974,7 +8020,7 @@ LFC44:  RTS
 LFC45:  LDA CurPRGBank
 LFC47:  PHA
 
-LFC48:  LDA #$0D
+LFC48:  LDA #BANK_HELPERS2
 LFC4A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFC4D:  JSR $8000
 
@@ -7984,7 +8030,7 @@ LFC54:  RTS
 
 LFC55:  LDA CurPRGBank
 LFC57:  PHA
-LFC58:  LDA #$0D
+LFC58:  LDA #BANK_HELPERS2
 LFC5A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFC5D:  JSR $8600
 LFC60:  LDA MapProperties
@@ -8039,7 +8085,7 @@ LFCBF:  RTS
 
 LFCC0:  LDA CurPRGBank
 LFCC2:  PHA
-LFCC3:  LDA #$0B
+LFCC3:  LDA #BANK_HELPERS1
 LFCC5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFCC8:  JSR $B200
 LFCCB:  PLA
@@ -8055,7 +8101,7 @@ LFCD4:  BNE +                   ;If so, branch to exit.
 
 LFCD6:  LDA CurPRGBank
 LFCD8:  PHA
-LFCD9:  LDA #$0B
+LFCD9:  LDA #BANK_HELPERS1
 LFCDB:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFCDE:  JSR $BC00
 LFCE1:  PLA
@@ -8084,7 +8130,7 @@ LFD09:  RTS
 
 LFD0A:  LDA CurPRGBank
 LFD0C:  PHA
-LFD0D:  LDA #$0B
+LFD0D:  LDA #BANK_HELPERS1
 LFD0F:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFD12:  JSR $BD00
 LFD15:  PLA
@@ -8167,7 +8213,7 @@ LFD92:  RTS
 
 LFD93:  LDA CurPRGBank
 LFD95:  PHA
-LFD96:  LDA #$0D
+LFD96:  LDA #BANK_HELPERS2
 LFD98:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFD9B:  JSR $8800
 LFD9E:  PLA
@@ -8176,7 +8222,7 @@ LFDA2:  RTS
 
 LFDA3:  LDA CurPRGBank
 LFDA5:  PHA
-LFDA6:  LDA #$0B
+LFDA6:  LDA #BANK_HELPERS1
 LFDA8:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFDAB:  JSR $BF00
 LFDAE:  PLA

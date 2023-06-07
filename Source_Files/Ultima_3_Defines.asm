@@ -114,6 +114,7 @@
 .alias Ch1StClass       $30     ;Character 1 class used in status screen.
 
 .alias TextIndex        $30     ;Index to text message. $FE, $FF=Buffer already filled.
+.alias ChrStatSelect    $30     ;Current character selected in the character status screen.
 
 .alias MapDatPtr        $41     ;Map data pointer.
 .alias MapDatPtrLB      $41     ;Map data pointer, lower byte.
@@ -179,6 +180,14 @@
 
 .alias DisSpriteAnim    $9E     ;Non-zero value disables sprite animations.
 .alias DisNPCMovement   $9F     ;Non-zero value stops NPCs from moving and disables water animation.
+
+.alias BCDDigitBase     $00A0   ;Base address for getting BDC digit.
+.alias BinInputLB       $A0     ;Binary to BCD input binary word, lower byte.
+.alias BinInputUB       $A1     ;Binary to BCD input binary word, upper byte.
+.alias BCDOutput0       $A2     ;Binary to BCD ouput BCD digit 0(thousands).
+.alias BCDOutput1       $A3     ;Binary to BCD ouput BCD digit 1(hundreds).
+.alias BCDOutput2       $A4     ;Binary to BCD ouput BCD digit 2(tens).
+.alias BCDOutput3       $A5     ;Binary to BCD ouput BCD digit 3(ones).
 
 .alias NotUsedA6        $A6     ;Written to but never read.
 
@@ -683,10 +692,10 @@
 .alias BANK_CHARS       $07     ;MMC1 bank $07. Character class tile patterns
 .alias BANK_MUSIC       $08     ;MMC1 bank $08. Music routines
 .alias BANK_SFX         $09     ;MMC1 bank $09. Music/SFX routines.
-.alias BANK0A           $0A     ;MMC1 bank $0A.
-.alias BANK_HELPERS1    $0B     ;MMC1 bank $0B.
+.alias BANK_MISC_GFX    $0A     ;MMC1 bank $0A. Various GFX. Character set, selector, etc.
+.alias BANK_HELPERS1    $0B     ;MMC1 bank $0B. Various hepler functions.
 .alias BANK_CREATE      $0C     ;MMC1 bank $0C. Load save game/character creation.
-.alias BANK_HELPERS2    $0D     ;MMC1 bank $0D.
+.alias BANK_HELPERS2    $0D     ;MMC1 bank $0D. Various hepler functions.
 .alias BANK_INTRO       $0E     ;MMC1 bank $0E. Intro and end game routines.
 .alias BANK_GAME_ENG    $0F     ;MMC1 bank $0F. Main game engine.
 
@@ -809,6 +818,17 @@
 .alias SG_VALID2        $42     ;Second byte indicating a save game is valid.
 .alias SG_NONE          $FF     ;Indicates no selection for current save game byte.
 
+.alias CHR_CLASS        $06     ;Index to character's class.
+.alias CHR_STR          $07     ;Index to character's strength.
+.alias CHR_DEX          $08     ;Index to character's dexterity.
+.alias CHR_INT          $09     ;Index to character's intelligence.
+.alias CHR_WIS          $0A     ;Index to character's wisdom.
+.alias CHR_GOLD         $30     ;Index to character's gold.
+.alias CHR_MAX_HP       $36     ;Index to character's max hit points.
+.alias CHR_MAX_MP       $38     ;Index to character's max magic points.
+.alias CHR_EXP          $39     ;Index to character's experience.
+.alias CHR_FLOWER       $3D     ;Index to character's flower status.
+
 .alias CHN_CONTROL      $F0     ;Any value >= than this is a music control byte.
 .alias CHN_VOLUME       $FB     ;Control byte to set channel base volume.
 .alias CHN_ASR          $FC     ;Control byte to set ASR (attack, sustain, release) profile.
@@ -869,3 +889,5 @@
 .alias CLS_ALCHEMIST    $09     ;Alchemist class.
 .alias CLS_RANGER       $0A     ;Ranger class.
 .alias CLS_UNCHOSEN     $FF     ;Unchosen class.
+
+.alias TP_ZERO          $38     ;Index into tile patterns for the number 0.
