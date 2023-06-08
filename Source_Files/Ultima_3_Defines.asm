@@ -2,8 +2,10 @@
 
 .alias GenByte18        $18     ;General use byte.
 
+.alias GenByte25        $25     ;General use byte.
 .alias GenByte26        $26     ;General use byte.
 .alias GenByte27        $27     ;General use byte.
+.alias GenByte28        $28     ;General use byte.
 
 .alias GenByte29        $29     ;General use byte.
 .alias GenByte2A        $2A     ;General use byte.
@@ -818,15 +820,20 @@
 .alias SG_VALID2        $42     ;Second byte indicating a save game is valid.
 .alias SG_NONE          $FF     ;Indicates no selection for current save game byte.
 
+.alias CHR_RACE         $05     ;Index to character's race.
 .alias CHR_CLASS        $06     ;Index to character's class.
 .alias CHR_STR          $07     ;Index to character's strength.
 .alias CHR_DEX          $08     ;Index to character's dexterity.
 .alias CHR_INT          $09     ;Index to character's intelligence.
 .alias CHR_WIS          $0A     ;Index to character's wisdom.
+.alias CHR_WEAPONS      $0C     ;Index to character's weapons.
+.alias CHR_ARMOR        $1B     ;Index to character's Armor.
 .alias CHR_GOLD         $30     ;Index to character's gold.
 .alias CHR_MAX_HP       $36     ;Index to character's max hit points.
 .alias CHR_MAX_MP       $38     ;Index to character's max magic points.
 .alias CHR_EXP          $39     ;Index to character's experience.
+.alias CHR_MARKS        $3B     ;Index to character's marks.
+.alias CHR_CARDS        $3C     ;Index to character's cards.
 .alias CHR_FLOWER       $3D     ;Index to character's flower status.
 
 .alias CHN_CONTROL      $F0     ;Any value >= than this is a music control byte.

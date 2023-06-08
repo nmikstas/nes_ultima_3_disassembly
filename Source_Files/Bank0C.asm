@@ -2640,46 +2640,46 @@ L916A:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L916D:  JSR EnterName           ;($871D)Show screen for entring name info.
 L9170:  LDY #$0B
 L9172:  LDA #$00
-L9174:  STA ($99),Y
+L9174:  STA (CrntChrPtr),Y
 L9176:  INY
 L9177:  CPY #$40
 L9179:  BNE L9172
 
 L917B:  LDY #$33
 L917D:  LDA #$01
-L917F:  STA ($99),Y
+L917F:  STA (CrntChrPtr),Y
 L9181:  LDY #$32
-L9183:  STA ($99),Y
+L9183:  STA (CrntChrPtr),Y
 L9185:  LDY #$30
 L9187:  LDA #$64
-L9189:  STA ($99),Y
+L9189:  STA (CrntChrPtr),Y
 L918B:  LDA #$96
 L918D:  LDY #$2B
-L918F:  STA ($99),Y
+L918F:  STA (CrntChrPtr),Y
 L9191:  LDY #$2D
-L9193:  STA ($99),Y
+L9193:  STA (CrntChrPtr),Y
 L9195:  LDA #$01
 L9197:  LDY #$0C
-L9199:  STA ($99),Y
+L9199:  STA (CrntChrPtr),Y
 L919B:  LDY #$1B
-L919D:  STA ($99),Y
+L919D:  STA (CrntChrPtr),Y
 L919F:  LDY #$34
-L91A1:  STA ($99),Y
+L91A1:  STA (CrntChrPtr),Y
 L91A3:  LDY #$35
-L91A5:  STA ($99),Y
+L91A5:  STA (CrntChrPtr),Y
 
 L91A7:  LDY #$00
 L91A9:  LDA TextBuffer,Y
 L91AC:  CMP #$FF
 L91AE:  BEQ L91B8
 
-L91B0:  STA ($99),Y
+L91B0:  STA (CrntChrPtr),Y
 L91B2:  INY
 L91B3:  CPY #$05
 L91B5:  BNE L91A9
 L91B7:  RTS
 L91B8:  LDA #$00
-L91BA:  STA ($99),Y
+L91BA:  STA (CrntChrPtr),Y
 L91BC:  INY
 L91BD:  CPY #$05
 L91BF:  BNE L91B8
@@ -4307,7 +4307,7 @@ LA12B:  STA ChrStatSelect       ;
 ;Get user input.
 StatLoop:
 LA12D:  LDX ChrStatSelect       ;
-LA12F:  LDA ChrStatXPosTbl,X   ;Set the X pixel coord of the selector sprite.
+LA12F:  LDA ChrStatXPosTbl,X    ;Set the X pixel coord of the selector sprite.
 LA132:  STA SpriteBuffer+3      ;
 
 StatInputLoop:
@@ -4347,28 +4347,28 @@ StatChkA:
 LA164:  CMP #BTN_A              ;Was the A button pressed?
 LA166:  BNE StatInputLoop       ;If not, branch to get next input.
 
-LA168:  LDA ChrStatSelect
-LA16A:  ASL
-LA16B:  TAX
+LA168:  LDA ChrStatSelect       ;
+LA16A:  ASL                     ;*2. Character addresses are 2 bytes.
+LA16B:  TAX                     ;
 
-LA16C:  LDA ChrPtrBaseLB,X
-LA16E:  STA CrntChrPtrLB
-LA170:  LDA ChrPtrBaseUB,X
-LA172:  STA CrntChrPtrUB
+LA16C:  LDA ChrPtrBaseLB,X      ;
+LA16E:  STA CrntChrPtrLB        ;Get a pointer to the selected character's data.
+LA170:  LDA ChrPtrBaseUB,X      ;
+LA172:  STA CrntChrPtrUB        ;
 
 LA174:  JSR InitPPU             ;($990C)Initialize the PPU.
 LA177:  JSR LoadnAlphaNumMaps1  ;($C01E)Load character set and map tiles.
 
-LA17A:  LDY #CHR_CLASS
-LA17C:  LDA (CrntChrPtr),Y
-LA17E:  STA Ch4StClass
+LA17A:  LDY #CHR_CLASS          ;
+LA17C:  LDA (CrntChrPtr),Y      ;Get the character's class and store it in character 4 slot.
+LA17E:  STA Ch4StClass          ;
 
-LA180:  LDA #CLS_UNCHOSEN
-LA182:  STA Ch1StClass
-LA184:  STA Ch2StClass
-LA186:  STA Ch3StClass
+LA180:  LDA #CLS_UNCHOSEN       ;
+LA182:  STA Ch1StClass          ;Indicate the other characters are not active.
+LA184:  STA Ch2StClass          ;
+LA186:  STA Ch3StClass          ;
+
 LA188:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character class portraits.
-
 LA18B:  JSR StatLoad1Chr        ;($A28C)Load a single character's portrait.
 
 LA18E:  LDA #$11                ;
@@ -4385,11 +4385,11 @@ LA19E:  LDA #$1C                ;WEAPON text.
 LA1A0:  STA TextIndex           ;
 LA1A2:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-LA1A5:  JSR LA3D3
+LA1A5:  JSR Chr1stPage          ;($A3D3)Show marks and weapons status page.
 
-LA1A8:  LDY #CHR_FLOWER
-LA1AA:  LDA (CrntChrPtr),Y
-LA1AC:  BEQ LA1C5
+LA1A8:  LDY #CHR_FLOWER         ;Does the character have a flower?
+LA1AA:  LDA (CrntChrPtr),Y      ;
+LA1AC:  BEQ PrepSelWeapon       ;If not, branch to skip showing flower text.
 
 LA1AE:  LDA #$04                ;
 LA1B0:  STA TXTXPos             ;Text will be located at tile coords X,Y=4,26.
@@ -4405,21 +4405,27 @@ LA1BE:  LDA #$26                ;FLOWER text.
 LA1C0:  STA TextIndex           ;
 LA1C2:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-LA1C5:  LDA #$F0
-LA1C7:  STA SpriteBuffer
-LA1CA:  JSR LB5F8
+PrepSelWeapon:
+LA1C5:  LDA #$F0                ;Hide selectior sprite off bottom of screen.
+LA1C7:  STA SpriteBuffer        ;
+
+LA1CA:  JSR DoSelWeapon         ;($B5F8)Select equipped weapon.
 
 LA1CD:  STA $30
 LA1CF:  CMP #$0F
-LA1D1:  BEQ LA1E1
-LA1D3:  LDY #$06
+LA1D1:  BEQ ChrEquipWeapon
+
+LA1D3:  LDY #CHR_CLASS
 LA1D5:  LDA (CrntChrPtr),Y
 LA1D7:  TAX
-LA1D8:  LDA $A23B,X
-LA1DB:  CMP $30
-LA1DD:  BCS LA1E1
-LA1DF:  BCC LA1C5
+LA1D8:  LDA ChrWeaponTbl,X
 
+LA1DB:  CMP $30
+LA1DD:  BCS ChrEquipWeapon
+
+LA1DF:  BCC PrepSelWeapon
+
+ChrEquipWeapon:
 LA1E1:  LDY #$34
 LA1E3:  LDA $30
 LA1E5:  STA (CrntChrPtr),Y
@@ -4441,21 +4447,30 @@ LA1FD:  LDA #$1D                ;ARMOR text.
 LA1FF:  STA TextIndex           ;
 LA201:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-LA204:  JSR LA3ED
-LA207:  LDA #$F0
-LA209:  STA SpriteBufferBase
-LA20C:  JSR LB5E1
+LA204:  JSR Chr2ndPage          ;($A3ED)Show cards and armor status page.
+
+PrepSelArmor:
+LA207:  LDA #$F0                ;Hide selectior sprite off bottom of screen.
+LA209:  STA SpriteBufferBase    ;
+
+LA20C:  JSR DoSelArmor          ;($B5E1)Select equipped armor.
 LA20F:  STA $30
+
 LA211:  LDA $30
 LA213:  CMP #$07
-LA215:  BEQ LA225
-LA217:  LDY #$06
+LA215:  BEQ ChrEquipArmor
+
+LA217:  LDY #CHR_CLASS
 LA219:  LDA (CrntChrPtr),Y
 LA21B:  TAX
-LA21C:  LDA $A246,X
+LA21C:  LDA ChrArmorTbl,X
+
 LA21F:  CMP $30
-LA221:  BCS LA225
-LA223:  BCC LA207
+LA221:  BCS ChrEquipArmor
+
+LA223:  BCC PrepSelArmor
+
+ChrEquipArmor:
 LA225:  LDA $30
 LA227:  LDY #$35
 LA229:  STA (CrntChrPtr),Y
@@ -4469,11 +4484,52 @@ LA22B:  JMP DoStatusScreen      ;($A000)Show status screen on the display.
 ChrStatXPosTbl:
 LA22E:  .byte $20, $50, $A0, $D0
 
+;----------------------------------------------------------------------------------------------------
+
+;Unused.
 LA232:  .byte $30, $40, $50, $60, $70, $80, $90, $A0, $B0
 
-LA23B:  .byte $0F, $02, $01, $06, $0F, $0F, $0F, $02, $02, $01, $0A, $07, $03
-LA24B:  .byte $01, $02, $04, $02, $01, $02, $01, $01, $06, $A2, $00
+;----------------------------------------------------------------------------------------------------
 
+;The following 2 tables determine which weapons and armors each class can and cannot equip.
+;There are 11 entries per table, one for each class. The class number is the index into each
+;table. The weapon if the number in the table is less than the weapon/armor number, then the
+;corresponding class cannot equip it. Since all characters can equip mystic items, they are
+;not taken into account in the tables below.
+
+;Weapon Numbers:
+;Dagger     1
+;Mace       2
+;Sling      3
+;Axe        4
+;Blowgun    5
+;Sword      6
+;Spear      7
+;Broad Axe  8
+;Bow        9
+;Iron Sword A
+;Gloves     B
+;Halberd    C
+;Silver Bow D
+;Sun Sword  E
+
+ChrWeaponTbl:
+LA23B:  .byte $0F, $02, $01, $06, $0F, $0F, $0F, $02, $02, $01, $0A
+
+;Armor Numbers:
+;Cloth      1
+;Leather    2
+;Bronze     3
+;Iron       4
+;Steel      5
+;Dragon     6
+
+ChrArmorTbl:
+LA246:  .byte $07, $03, $01, $02, $04, $02, $01, $02, $01, $01, $06
+
+;----------------------------------------------------------------------------------------------------
+
+LA251:  LDX #$00
 LA253:  LDA $30
 LA255:  BNE LA258
 LA257:  RTS
@@ -4783,101 +4839,148 @@ LA3CF:  .byte $02, $08, $12, $18
 
 ;----------------------------------------------------------------------------------------------------
 
-LA3D3:  JSR LA407
-LA3D6:  LDX #$00
-LA3D8:  JSR LA43D
+Chr1stPage:
+LA3D3:  JSR TxtRaceClass        ;($A407)Print race and class of character on screen.
+
+LA3D6:  LDX #$00                ;Prepare to print marks.
+LA3D8:  JSR TxtMarksCards       ;($A43D)Print marks/cards of character on screen.
+
 LA3DB:  LDA #$15
-LA3DD:  STA $2B
+LA3DD:  STA TXTSrcPtrLB
 LA3DF:  LDA #$A5
-LA3E1:  STA $2C
-LA3E3:  LDY #$0C
-LA3E5:  LDX #$0F
-LA3E7:  LDA #$00
-LA3E9:  JSR LA470
+LA3E1:  STA TXTSrcPtrUB
+
+LA3E3:  LDY #CHR_WEAPONS        ;Offset to character's weapon inventory.
+LA3E5:  LDX #$0F                ;Total number of weapons in the game.
+LA3E7:  LDA #$00                ;Prepare to show weapons.
+LA3E9:  JSR TxtWeaponsArmor     ;($A470)Show list of character's weapons.
 LA3EC:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-LA3ED:  JSR LA407
-LA3F0:  LDX #$03
-LA3F2:  JSR LA43D
+Chr2ndPage:
+LA3ED:  JSR TxtRaceClass        ;($A407)Print race and class of character on screen.
+
+LA3F0:  LDX #$03                ;Prepare to print cards.
+LA3F2:  JSR TxtMarksCards       ;($A43D)Print marks/cards of character on screen.
+
 LA3F5:  LDA #$15
-LA3F7:  STA $2B
+LA3F7:  STA TXTSrcPtrLB
 LA3F9:  LDA #$A5
-LA3FB:  STA $2C
-LA3FD:  LDY #$1B
+LA3FB:  STA TXTSrcPtrUB
+
+LA3FD:  LDY #CHR_ARMOR
 LA3FF:  LDX #$07
-LA401:  LDA #$10
-LA403:  JSR LA470
+LA401:  LDA #$10                ;Prepare to show armor.
+LA403:  JSR TxtWeaponsArmor     ;($A470)Show list of character's armor.
 LA406:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-LA407:  LDX #$00
-LA409:  LDA $A435,X
-LA40C:  STA $2B
+TxtRaceClass:
+LA407:  LDX #$00                ;Start at beginning of the table below.
+
+RaceClassLoop:
+LA409:  LDA RaceClassTbl,X
+LA40C:  STA TXTSrcPtrLB
 LA40E:  INX
-LA40F:  LDA $A435,X
-LA412:  STA $2C
+LA40F:  LDA RaceClassTbl,X
+LA412:  STA TXTSrcPtrUB
+
 LA414:  INX
-LA415:  LDY $A435,X
+LA415:  LDY RaceClassTbl,X
 LA418:  INX
-LA419:  LDA ($99),Y
+LA419:  LDA (CrntChrPtr),Y
+
 LA41B:  CLC
 LA41C:  ADC #$01
-LA41E:  STA $30
-LA420:  LDY #$00
-LA422:  JSR LA4F5
-LA425:  DEC $30
-LA427:  BNE LA422
-LA429:  LDA $A435,X
-LA42C:  INX
-LA42D:  JSR LA490
-LA430:  CPX #$08
-LA432:  BNE LA409
-LA434:  RTS
+LA41E:  STA GenByte30
 
-LA435:  .byte $64, $A5, $05, $18, $81, $A5, $06, $19
+LA420:  LDY #$00                ;Start looking at the beginning of the string.
+
+LA422:* JSR GetTxtSegment       ;($A4F5)Puts a newline terminated text segment in the text buffer.
+LA425:  DEC GenByte30           ;Was this the text segment we were looking for?
+LA427:  BNE -                   ;If not, branch to get the next text segment.
+
+LA429:  LDA RaceClassTbl,X
+LA42C:  INX
+LA42D:  JSR ChrAlignText        ;($A490)Set the proper X and Y positions for status text.
+
+LA430:  CPX #$08                ;Have both the race and class been processed?
+LA432:  BNE RaceClassLoop       ;
+LA434:  RTS                     ;If not, loop to get the class text.
 
 ;----------------------------------------------------------------------------------------------------
 
-LA43D:  LDA $A46A,X
+;The following 2 tables contain information about where to find the race and class test.
+;The first work is the base address to the race/class text. The first byte after the word
+;is the index into the text strings to find the proper race/class. The last byte is used
+;to find the correct Y location for the text.
+
+RaceClassTbl:
+
+;Race data.
+LA435:  .word RaceTxt
+LA437:  .byte CHR_RACE, $18
+
+;Class data.
+LA439:  .word ClassTxt
+LA43B:  .byte CHR_CLASS, $19
+
+;----------------------------------------------------------------------------------------------------
+
+TxtMarksCards:
+LA43D:  LDA MarksCardsTbl,X
 LA440:  STA $2B
 LA442:  INX
-LA443:  LDA $A46A,X
+LA443:  LDA MarksCardsTbl,X
 LA446:  STA $2C
 LA448:  INX
-LA449:  LDY $A46A,X
-LA44C:  LDA ($99),Y
+LA449:  LDY MarksCardsTbl,X
+LA44C:  LDA (CrntChrPtr),Y
 LA44E:  STA $2F
 LA450:  LDX #$04
 LA452:  LDY #$00
 LA454:  LDA #$1A
 LA456:  STA $30
-LA458:  JSR LA4F5
+
+LA458:  JSR GetTxtSegment       ;($A4F5)Puts a newline terminated text segment in the text buffer.
 LA45B:  LSR $2F
 LA45D:  BCC LA466
 LA45F:  LDA $30
 LA461:  INC $30
-LA463:  JSR LA490
+LA463:  JSR ChrAlignText        ;($A490)Set the proper X and Y positions for status text.
 LA466:  DEX
 LA467:  BNE LA458
 LA469:  RTS
 
-LA46A:  .byte $08, $A6, $3B, $1F
+;----------------------------------------------------------------------------------------------------
 
-LA46E:  LDX $3C
+;The following tables hold pointers to the desired marks/cards text and the index into the
+;character's current marks/cards.
+
+MarksCardsTbl:
+LA46A:  .word MarksTxt
+LA46C:  .byte CHR_MARKS
+
+LA46D:  .word CardsTxt
+LA46F:  .byte CHR_CARDS
+
+;----------------------------------------------------------------------------------------------------
+
+TxtWeaponsArmor:
 LA470:  STA $30
 LA472:  STY $26
 LA474:  LDY #$00
-LA476:  JSR LA4F5
+
+LA476:  JSR GetTxtSegment       ;($A4F5)Puts a newline terminated text segment in the text buffer.
 LA479:  STY $25
 LA47B:  LDY $26
-LA47D:  LDA ($99),Y
+LA47D:  LDA (CrntChrPtr),Y
 LA47F:  BEQ LA488
 LA481:  LDA $30
 LA483:  INC $30
-LA485:  JSR LA490
+LA485:  JSR ChrAlignText        ;($A490)Set the proper X and Y positions for status text.
 LA488:  INC $26
 LA48A:  LDY $25
 LA48C:  DEX
@@ -4886,84 +4989,110 @@ LA48F:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-LA490:  STX $28
-LA492:  STY $27
-LA494:  PHA
-LA495:  LSR
-LA496:  LSR
-LA497:  LSR
-LA498:  TAX
-LA499:  LDA $A4E3,X
-LA49C:  STA TXTXPos
-LA49E:  PLA
-LA49F:  CMP #$18
-LA4A1:  AND #$07
-LA4A3:  BCC LA4A7
-LA4A5:  ADC #$07
-LA4A7:  TAX
-LA4A8:  LDA $A4E7,X
-LA4AB:  STA TXTYPos
+ChrAlignText:
+LA490:  STX GenByte28           ;
+LA492:  STY GenByte27           ;Save the state of X, Y and A.
+LA494:  PHA                     ;
 
-LA4AD:  LDA $30
-LA4AF:  PHA
-LA4B0:  LDA $2E
-LA4B2:  PHA
-LA4B3:  LDA $2D
-LA4B5:  PHA
-LA4B6:  LDA $28
-LA4B8:  PHA
-LA4B9:  LDA $27
-LA4BB:  PHA
-LA4BC:  LDA $26
-LA4BE:  PHA
-LA4BF:  LDA $25
-LA4C1:  PHA
+LA495:  LSR                     ;
+LA496:  LSR                     ;Divide by 8 to get index into tables below.
+LA497:  LSR                     ;
 
-LA4C2:  LDA #$FF
-LA4C4:  STA TextIndex
+LA498:  TAX                     ;
+LA499:  LDA ChrXPosTbl,X        ;Get the X position of text from table below.
+LA49C:  STA TXTXPos             ;
+
+LA49E:  PLA                     ;Get Y alignment control byte.
+
+LA49F:  CMP #$18                ;Is this loop showing race/class or marks/cards?
+LA4A1:  AND #$07                ;
+LA4A3:  BCC +                   ;If not, branch.
+
+LA4A5:  ADC #$07                ;Move to second part of ChrYPosTbl.
+
+LA4A7:* TAX                     ;
+LA4A8:  LDA ChrYPosTbl,X        ;Get the Y position of text from the table below.
+LA4AB:  STA TXTYPos             ;
+
+LA4AD:  LDA GenByte30           ;
+LA4AF:  PHA                     ;
+LA4B0:  LDA GenByte2E           ;
+LA4B2:  PHA                     ;
+LA4B3:  LDA GenByte2D           ;
+LA4B5:  PHA                     ;
+LA4B6:  LDA GenByte28           ;
+LA4B8:  PHA                     ;Temporarily save values on stack.
+LA4B9:  LDA GenByte27           ;
+LA4BB:  PHA                     ;
+LA4BC:  LDA GenByte26           ;
+LA4BE:  PHA                     ;
+LA4BF:  LDA GenByte25           ;
+LA4C1:  PHA                     ;
+
+LA4C2:  LDA #TXT_DBL_SPACE      ;Indicate text buffer is aleady filled. Double space.
+LA4C4:  STA TextIndex           ;
 LA4C6:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-LA4C9:  PLA
-LA4CA:  STA $25
-LA4CC:  PLA
-LA4CD:  STA $26
-LA4CF:  PLA
-LA4D0:  STA $27
-LA4D2:  PLA
-LA4D3:  STA $28
-LA4D5:  PLA
-LA4D6:  STA $2D
-LA4D8:  PLA
-LA4D9:  STA $2E
-LA4DB:  PLA
-LA4DC:  STA $30
+LA4C9:  PLA                     ;
+LA4CA:  STA GenByte25           ;
+LA4CC:  PLA                     ;
+LA4CD:  STA GenByte26           ;
+LA4CF:  PLA                     ;
+LA4D0:  STA GenByte27           ;
+LA4D2:  PLA                     ;
+LA4D3:  STA GenByte28           ;Restore values from stack.
+LA4D5:  PLA                     ;
+LA4D6:  STA GenByte2D           ;
+LA4D8:  PLA                     ;
+LA4D9:  STA GenByte2E           ;
+LA4DB:  PLA                     ;
+LA4DC:  STA GenByte30           ;
 
-LA4DE:  LDX $28
-LA4E0:  LDY $27
-LA4E2:  RTS
-
-LA4E3:  .byte $0D, $16, $11, $04
-LA4E7:  .byte $08, $0A, $0C, $0E, $10, $12, $14, $16, $0D, $0F, $12, $14
-LA4F3:  .byte $16, $18
+LA4DE:  LDX GenByte28           ;
+LA4E0:  LDY GenByte27           ;Restore X and Y from the stack.
+LA4E2:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-LA4F5:  STX $28
-LA4F7:  LDX #$00
-LA4F9:  LDA ($2B),Y
-LA4FB:  INY
-LA4FC:  CMP #$FD
-LA4FE:  BEQ LA507
-LA500:  STA TextBuffer,X
-LA503:  INX
-LA504:  JMP LA4F9
-LA507:  LDA #$FF
-LA509:  STA TextBuffer,X
-LA50C:  STX $2E
-LA50E:  LDA #$01
-LA510:  STA $2D
-LA512:  LDX $28
-LA514:  RTS
+ChrXPosTbl:
+;X positions for wapons/armor and marks/cards.
+LA4E3:  .byte $0D, $16, $11, $04
+
+ChrYPosTbl:
+;Y positions for weapons/armor.
+LA4E7:  .byte $08, $0A, $0C, $0E, $10, $12, $14, $16
+
+;Y positions for race, class marks/cards.
+LA4EF:  .byte $0D, $0F, $12, $14, $16, $18
+
+;----------------------------------------------------------------------------------------------------
+
+GetTxtSegment:
+LA4F5:  STX GenByte28           ;Store X just in case this is the wrong entry.
+LA4F7:  LDX #$00                ;Zero out the index.
+
+TxtSegmentLoop:
+LA4F9:  LDA (TXTSrcPtr),Y       ;Get a byte from the text string.
+LA4FB:  INY                     ;
+
+LA4FC:  CMP #TXT_NEWLINE        ;Have we found the end of the text segment?
+LA4FE:  BEQ TxtSegmentEnd       ;If so, branch.
+
+LA500:  STA TextBuffer,X        ;Not a newline character so we are going to store the 
+LA503:  INX                     ;character in the text buffer.
+LA504:  JMP TxtSegmentLoop      ;($A4F9)Loop to keep looking for newline indicator.
+
+TxtSegmentEnd:
+LA507:  LDA #TXT_END            ;We found the end of this text segment so we will put
+LA509:  STA TextBuffer,X        ;a string teminator in the buffer.
+
+LA50C:  STX TXTClrCols          ;Keep track of the length of the text segment.
+
+LA50E:  LDA #$01                ;Text segment will always be 1 row.
+LA510:  STA TXTClrRows          ;
+
+LA512:  LDX GenByte28           ;Restore the original value of X.
+LA514:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5657,6 +5786,9 @@ LB5B1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $
 LB5C1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $55, $11, $00, $00, $00
 LB5D1:  .byte $00, $00, $00, $05, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00                                             
 
+;----------------------------------------------------------------------------------------------------
+
+DoSelArmor:
 LB5E1:  LDA #$BB
 LB5E3:  STA $2A
 LB5E5:  LDA #$97
@@ -5668,6 +5800,10 @@ LB5F0:  STA $2E
 LB5F2:  LDA #$1B
 LB5F4:  PHA
 LB5F5:  JMP LB60C
+
+;----------------------------------------------------------------------------------------------------
+
+DoSelWeapon:
 LB5F8:  LDA #$BB
 LB5FA:  STA $2A
 LB5FC:  LDA #$01
@@ -5678,6 +5814,7 @@ LB605:  LDA #$0F
 LB607:  STA $2E
 LB609:  LDA #$0C
 LB60B:  PHA
+
 LB60C:  LDA #$06
 LB60E:  STA $2C
 LB610:  LDA #$00
