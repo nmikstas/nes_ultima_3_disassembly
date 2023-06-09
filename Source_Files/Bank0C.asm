@@ -4347,6 +4347,7 @@ StatChkA:
 LA164:  CMP #BTN_A              ;Was the A button pressed?
 LA166:  BNE StatInputLoop       ;If not, branch to get next input.
 
+;See individual character items.
 LA168:  LDA ChrStatSelect       ;
 LA16A:  ASL                     ;*2. Character addresses are 2 bytes.
 LA16B:  TAX                     ;
@@ -4411,24 +4412,24 @@ LA1C7:  STA SpriteBuffer        ;
 
 LA1CA:  JSR DoSelWeapon         ;($B5F8)Select equipped weapon.
 
-LA1CD:  STA $30
-LA1CF:  CMP #$0F
-LA1D1:  BEQ ChrEquipWeapon
+LA1CD:  STA GenByte30           ;Is the selected weapon the mystic weapon?
+LA1CF:  CMP #WPN_MYSTIC_W       ;
+LA1D1:  BEQ ChrEquipWeapon      ;If so, branch to equip the weapon.
 
-LA1D3:  LDY #CHR_CLASS
-LA1D5:  LDA (CrntChrPtr),Y
-LA1D7:  TAX
-LA1D8:  LDA ChrWeaponTbl,X
+LA1D3:  LDY #CHR_CLASS          ;
+LA1D5:  LDA (CrntChrPtr),Y      ;Get the highest allowable weapon for this character.
+LA1D7:  TAX                     ;
+LA1D8:  LDA ChrWeaponTbl,X      ;
 
-LA1DB:  CMP $30
-LA1DD:  BCS ChrEquipWeapon
+LA1DB:  CMP GenByte30           ;Is the weapon being equipped equal or less than max weapon?
+LA1DD:  BCS ChrEquipWeapon      ;If so, branch to equip weapon.
 
-LA1DF:  BCC PrepSelWeapon
+LA1DF:  BCC PrepSelWeapon       ;Weapon not equippable by character. Branch to not equip.
 
 ChrEquipWeapon:
-LA1E1:  LDY #$34
-LA1E3:  LDA $30
-LA1E5:  STA (CrntChrPtr),Y
+LA1E1:  LDY #CHR_EQ_WEAPON      ;
+LA1E3:  LDA GenByte30           ;Equip selected weapon.
+LA1E5:  STA (CrntChrPtr),Y      ;
 
 LA1E7:  JSR InitPPU             ;($990C)Initialize the PPU.
 LA1EA:  JSR StatLoad1Chr        ;($A28C)Load a single character's portrait.
@@ -4454,26 +4455,27 @@ LA207:  LDA #$F0                ;Hide selectior sprite off bottom of screen.
 LA209:  STA SpriteBufferBase    ;
 
 LA20C:  JSR DoSelArmor          ;($B5E1)Select equipped armor.
-LA20F:  STA $30
+LA20F:  STA GenByte30           ;
 
-LA211:  LDA $30
-LA213:  CMP #$07
-LA215:  BEQ ChrEquipArmor
+LA211:  LDA GenByte30           ;Is the selected armor the mystic armor?
+LA213:  CMP #ARM_MYSTIC_A       ;
+LA215:  BEQ ChrEquipArmor       ;If so, branch to equip the armor.
 
-LA217:  LDY #CHR_CLASS
-LA219:  LDA (CrntChrPtr),Y
-LA21B:  TAX
-LA21C:  LDA ChrArmorTbl,X
+LA217:  LDY #CHR_CLASS          ;
+LA219:  LDA (CrntChrPtr),Y      ;Get the highest allowable armor for this character.
+LA21B:  TAX                     ;
+LA21C:  LDA ChrArmorTbl,X       ;
 
-LA21F:  CMP $30
-LA221:  BCS ChrEquipArmor
+LA21F:  CMP GenByte30           ;Is the armor being equipped equal or less than max armor?
+LA221:  BCS ChrEquipArmor       ;If so, branch to equip armor.
 
-LA223:  BCC PrepSelArmor
+LA223:  BCC PrepSelArmor        ;Armor not equippable by character. Branch to not equip.
 
 ChrEquipArmor:
-LA225:  LDA $30
-LA227:  LDY #$35
-LA229:  STA (CrntChrPtr),Y
+LA225:  LDA GenByte30           ;
+LA227:  LDY #CHR_EQ_ARMOR       ;Equip selected armor.
+LA229:  STA (CrntChrPtr),Y      ;
+
 LA22B:  JMP DoStatusScreen      ;($A000)Show status screen on the display.
 
 ;----------------------------------------------------------------------------------------------------
@@ -4497,112 +4499,66 @@ LA232:  .byte $30, $40, $50, $60, $70, $80, $90, $A0, $B0
 ;corresponding class cannot equip it. Since all characters can equip mystic items, they are
 ;not taken into account in the tables below.
 
-;Weapon Numbers:
-;Dagger     1
-;Mace       2
-;Sling      3
-;Axe        4
-;Blowgun    5
-;Sword      6
-;Spear      7
-;Broad Axe  8
-;Bow        9
-;Iron Sword A
-;Gloves     B
-;Halberd    C
-;Silver Bow D
-;Sun Sword  E
-
 ChrWeaponTbl:
-LA23B:  .byte $0F, $02, $01, $06, $0F, $0F, $0F, $02, $02, $01, $0A
-
-;Armor Numbers:
-;Cloth      1
-;Leather    2
-;Bronze     3
-;Iron       4
-;Steel      5
-;Dragon     6
+LA23B:  .byte WPN_MYSTIC_W, WPN_MACE,     WPN_DAGGER,   WPN_SWORD
+LA23F:  .byte WPN_MYSTIC_W, WPN_MYSTIC_W, WPN_MYSTIC_W, WPN_MACE
+LA233:  .byte WPN_MACE,     WPN_DAGGER,   WPN_IRN_SWRD
 
 ChrArmorTbl:
-LA246:  .byte $07, $03, $01, $02, $04, $02, $01, $02, $01, $01, $06
+LA246:  .byte ARM_MYSTIC_A, ARM_BRONZE,  ARM_CLOTH, ARM_LEATHER
+LA24A:  .byte ARM_IRON,     ARM_LEATHER, ARM_CLOTH, ARM_LEATHER
+LA24E:  .byte ARM_CLOTH,    ARM_CLOTH,   ARM_DRAGON
 
 ;----------------------------------------------------------------------------------------------------
 
-LA251:  LDX #$00
-LA253:  LDA $30
-LA255:  BNE LA258
-LA257:  RTS
-LA258:  LDA ($99),Y
-LA25A:  BEQ LA25D
-LA25C:  INX
-LA25D:  INY
-LA25E:  DEC $30
-LA260:  BNE LA258
-LA262:  STX $30
-LA264:  RTS
-LA265:  LDA #$00
-LA267:  STA $19
-LA269:  LDA ($99),Y
-LA26B:  BEQ LA26F
-LA26D:  INC $19
-LA26F:  INY
-LA270:  DEX
-LA271:  BNE LA269
-LA273:  RTS
-LA274:  LDX #$00
-LA276:  LDA $30
-LA278:  BNE LA27B
-LA27A:  RTS
-LA27B:  LDA ($99),Y
-LA27D:  BEQ LA283
-LA27F:  DEC $30
-LA281:  BEQ LA288
-LA283:  INX
-LA284:  INY
-LA285:  JMP LA27B
-LA288:  INX
-LA289:  STX $30
-LA28B:  RTS
+;Unused.
+LA251:  .byte $A2, $00, $A5, $30, $D0, $01, $60, $B1, $99, $F0, $01, $E8, $C8, $C6, $30, $D0
+LA261:  .byte $F6, $86, $30, $60, $A9, $00, $85, $19, $B1, $99, $F0, $02, $E6, $19, $C8, $CA
+LA271:  .byte $D0, $F6, $60, $A2, $00, $A5, $30, $D0, $01, $60, $B1, $99, $F0, $04, $C6, $30
+LA281:  .byte $F0, $05, $E8, $C8, $4C, $7B, $A2, $E8, $86, $30, $60
 
 ;----------------------------------------------------------------------------------------------------
 
 StatLoad1Chr:
-LA28C:  LDA #$20
-LA28E:  STA $2A
-LA290:  LDA #$C4
-LA292:  STA $29
-LA294:  LDA #$DC
-LA296:  STA $2D
+LA28C:  LDA #$20                ;
+LA28E:  STA GenPtr29UB          ;Prepare to load character portrait on name table 0 at X,Y=4,6.
+LA290:  LDA #$C4                ;
+LA292:  STA GenPtr29LB          ;
+
+LA294:  LDA #$DC                ;Prepare to load portrait statring at tile $DC.
+LA296:  STA GenPtr2D            ;
 LA298:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
 LA29B:  LDA #$40                ;Prepare to load 64 bytes into PPU buffer.
 LA29D:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
 
-LA2A0:  LDA #$23
-LA2A2:  STA PPUBufBase,X
-LA2A5:  INX
-LA2A6:  LDA #$C0
-LA2A8:  STA PPUBufBase,X
-LA2AB:  INX
-LA2AC:  LDY #$00
-LA2AE:  LDA $A635,Y
-LA2B1:  STA PPUBufBase,X
-LA2B4:  INX
-LA2B5:  INY
-LA2B6:  CPY #$40
-LA2B8:  BNE LA2AE
+LA2A0:  LDA #PPU_AT0_UB         ;
+LA2A2:  STA PPUBufBase,X        ;
+LA2A5:  INX                     ;Prepare to write data to attribute table 0.
+LA2A6:  LDA #PPU_AT0_LB         ;
+LA2A8:  STA PPUBufBase,X        ;
+
+LA2AB:  INX                     ;Zero out index and counter.
+LA2AC:  LDY #$00                ;
+
+LA2AE:* LDA Chr1PtrtAtribDat,Y  ;
+LA2B1:  STA PPUBufBase,X        ;
+LA2B4:  INX                     ;Load 64 bytes of attribute table data into the PPU buffer.
+LA2B5:  INY                     ;
+LA2B6:  CPY #$40                ;
+LA2B8:  BNE -                   ;
+
 LA2BA:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
 
-LA2BD:  LDA #$05
-LA2BF:  STA $2C
-LA2C1:  LDA #$04
-LA2C3:  STA $2B
+LA2BD:  LDA #>AttribBuffer      ;
+LA2BF:  STA PPUDstPtrUB         ;Prepare to load 4 bytes of palette data into the PPU.
+LA2C1:  LDA #<AttribBuffer+4    ;
+LA2C3:  STA PPUDstPtrLB         ;
 
-LA2C5:  LDY #CHR_CLASS
-LA2C7:  LDA (CrntChrPtr),Y
+LA2C5:  LDY #CHR_CLASS          ;Get the ccharacter class so the proper palette data
+LA2C7:  LDA (CrntChrPtr),Y      ;can be loaded into PPU.
 LA2C9:  JSR LoadLgChrPalettes   ;($9701)Load palette data for individual character portraits.
-LA2CC:  RTS
+LA2CC:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4673,7 +4629,7 @@ LA2E9:  .byte $FF, $33, $0F, $03
 
 ShowChrStats:
 LA2ED:  LDX #$00                ;
-LA2EF:* LDA _StatsTxt,X         ;
+LA2EF:* LDA StatsTxt,X          ;
 LA2F2:  STA TextBuffer,X        ;Load STR DEX INT WIS MMP MHP EXP GOLD into the text buffer.
 LA2F5:  INX                     ;This also loads a buch of unecessary stuff off screen.
 LA2F6:  CPX #$41                ;
@@ -4845,16 +4801,16 @@ LA3D3:  JSR TxtRaceClass        ;($A407)Print race and class of character on scr
 LA3D6:  LDX #$00                ;Prepare to print marks.
 LA3D8:  JSR TxtMarksCards       ;($A43D)Print marks/cards of character on screen.
 
-LA3DB:  LDA #$15
-LA3DD:  STA TXTSrcPtrLB
-LA3DF:  LDA #$A5
-LA3E1:  STA TXTSrcPtrUB
+LA3DB:  LDA #<BlanksTxt         ;
+LA3DD:  STA TXTSrcPtrLB         ;Prepare to load blank rows into PPU buffer.
+LA3DF:  LDA #>BlanksTxt         ;
+LA3E1:  STA TXTSrcPtrUB         ;
 
 LA3E3:  LDY #CHR_WEAPONS        ;Offset to character's weapon inventory.
 LA3E5:  LDX #$0F                ;Total number of weapons in the game.
 LA3E7:  LDA #$00                ;Prepare to show weapons.
-LA3E9:  JSR TxtWeaponsArmor     ;($A470)Show list of character's weapons.
-LA3EC:  RTS
+LA3E9:  JSR TxtBlankRows        ;($A470)Make a list of blank rows in front of weapons/armors.
+LA3EC:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4864,16 +4820,16 @@ LA3ED:  JSR TxtRaceClass        ;($A407)Print race and class of character on scr
 LA3F0:  LDX #$03                ;Prepare to print cards.
 LA3F2:  JSR TxtMarksCards       ;($A43D)Print marks/cards of character on screen.
 
-LA3F5:  LDA #$15
-LA3F7:  STA TXTSrcPtrLB
-LA3F9:  LDA #$A5
-LA3FB:  STA TXTSrcPtrUB
+LA3F5:  LDA #<BlanksTxt         ;
+LA3F7:  STA TXTSrcPtrLB         ;Prepare to load blank rows into PPU buffer.
+LA3F9:  LDA #>BlanksTxt         ;
+LA3FB:  STA TXTSrcPtrUB         ;
 
-LA3FD:  LDY #CHR_ARMOR
-LA3FF:  LDX #$07
+LA3FD:  LDY #CHR_ARMOR          ;Offset to character's armor inventory.
+LA3FF:  LDX #$07                ;Total number of armors in the game.
 LA401:  LDA #$10                ;Prepare to show armor.
-LA403:  JSR TxtWeaponsArmor     ;($A470)Show list of character's armor.
-LA406:  RTS
+LA403:  JSR TxtBlankRows        ;($A470)Make a list of blank rows in front of weapons/armors.
+LA406:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4881,20 +4837,20 @@ TxtRaceClass:
 LA407:  LDX #$00                ;Start at beginning of the table below.
 
 RaceClassLoop:
-LA409:  LDA RaceClassTbl,X
-LA40C:  STA TXTSrcPtrLB
-LA40E:  INX
-LA40F:  LDA RaceClassTbl,X
-LA412:  STA TXTSrcPtrUB
+LA409:  LDA RaceClassTbl,X      ;
+LA40C:  STA TXTSrcPtrLB         ;
+LA40E:  INX                     ;Set a pointer to the race/class text string.
+LA40F:  LDA RaceClassTbl,X      ;
+LA412:  STA TXTSrcPtrUB         ;
 
-LA414:  INX
-LA415:  LDY RaceClassTbl,X
-LA418:  INX
-LA419:  LDA (CrntChrPtr),Y
+LA414:  INX                     ;
+LA415:  LDY RaceClassTbl,X      ;Get index to character's race/class.
+LA418:  INX                     ;
+LA419:  LDA (CrntChrPtr),Y      ;
 
-LA41B:  CLC
-LA41C:  ADC #$01
-LA41E:  STA GenByte30
+LA41B:  CLC                     ;
+LA41C:  ADC #$01                ;Save character's race/class+1.
+LA41E:  STA GenByte30           ;
 
 LA420:  LDY #$00                ;Start looking at the beginning of the string.
 
@@ -4902,8 +4858,8 @@ LA422:* JSR GetTxtSegment       ;($A4F5)Puts a newline terminated text segment i
 LA425:  DEC GenByte30           ;Was this the text segment we were looking for?
 LA427:  BNE -                   ;If not, branch to get the next text segment.
 
-LA429:  LDA RaceClassTbl,X
-LA42C:  INX
+LA429:  LDA RaceClassTbl,X      ;Get Y position control byte for text.
+LA42C:  INX                     ;
 LA42D:  JSR ChrAlignText        ;($A490)Set the proper X and Y positions for status text.
 
 LA430:  CPX #$08                ;Have both the race and class been processed?
@@ -4930,29 +4886,36 @@ LA43B:  .byte CHR_CLASS, $19
 ;----------------------------------------------------------------------------------------------------
 
 TxtMarksCards:
-LA43D:  LDA MarksCardsTbl,X
-LA440:  STA $2B
-LA442:  INX
-LA443:  LDA MarksCardsTbl,X
-LA446:  STA $2C
-LA448:  INX
-LA449:  LDY MarksCardsTbl,X
-LA44C:  LDA (CrntChrPtr),Y
-LA44E:  STA $2F
-LA450:  LDX #$04
-LA452:  LDY #$00
-LA454:  LDA #$1A
-LA456:  STA $30
+LA43D:  LDA MarksCardsTbl,X     ;
+LA440:  STA TXTSrcPtrLB         ;
+LA442:  INX                     ;Set a pointer to the marks/cards text string.
+LA443:  LDA MarksCardsTbl,X     ;
+LA446:  STA TXTSrcPtrUB         ;
 
+LA448:  INX                     ;
+LA449:  LDY MarksCardsTbl,X     ;Get character's current marks/cards.
+LA44C:  LDA (CrntChrPtr),Y      ;
+LA44E:  STA GenByte2F           ;
+
+LA450:  LDX #$04                ;Prepare to check 4 marks/cards.
+LA452:  LDY #$00                ;Zero out index.
+
+LA454:  LDA #$1A                ;Set proper row for marks/cards.
+LA456:  STA GenByte30           ;
+
+MarksCardsLoop:
 LA458:  JSR GetTxtSegment       ;($A4F5)Puts a newline terminated text segment in the text buffer.
-LA45B:  LSR $2F
-LA45D:  BCC LA466
-LA45F:  LDA $30
-LA461:  INC $30
+
+LA45B:  LSR GenByte2F           ;Shift LSB into carry.
+LA45D:  BCC +                   ;Does character have this markcard? If not, branch to skip text.
+
+LA45F:  LDA GenByte30           ;Align and print this mark/card.
+LA461:  INC GenByte30           ;
 LA463:  JSR ChrAlignText        ;($A490)Set the proper X and Y positions for status text.
-LA466:  DEX
-LA467:  BNE LA458
-LA469:  RTS
+
+LA466:* DEX                     ;Are there more marks/cards to check?
+LA467:  BNE MarksCardsLoop      ;If so, branch to get next mark/card.
+LA469:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4968,24 +4931,30 @@ LA46F:  .byte CHR_CARDS
 
 ;----------------------------------------------------------------------------------------------------
 
-TxtWeaponsArmor:
-LA470:  STA $30
-LA472:  STY $26
-LA474:  LDY #$00
+TxtBlankRows:
+LA470:  STA GenByte30           ;Store Y position control byte.
+LA472:  STY GenByte26           ;Store index to inventory to check.
 
+LA474:  LDY #$00                ;Zero out index.
+
+BlankRowLoop:
 LA476:  JSR GetTxtSegment       ;($A4F5)Puts a newline terminated text segment in the text buffer.
-LA479:  STY $25
-LA47B:  LDY $26
-LA47D:  LDA (CrntChrPtr),Y
-LA47F:  BEQ LA488
-LA481:  LDA $30
-LA483:  INC $30
+LA479:  STY GenByte25           ;tore updated index into inventory.
+
+LA47B:  LDY GenByte26           ;Does character have any of the selected inventory item?
+LA47D:  LDA (CrntChrPtr),Y      ;
+LA47F:  BEQ +                   ;If not, branch to move to next inventory item.
+
+LA481:  LDA GenByte30           ;Prepare to add blank row for upcomming weapon/armor.
+LA483:  INC GenByte30           ;
 LA485:  JSR ChrAlignText        ;($A490)Set the proper X and Y positions for status text.
-LA488:  INC $26
-LA48A:  LDY $25
-LA48C:  DEX
-LA48D:  BNE LA476
-LA48F:  RTS
+
+LA488:* INC GenByte26           ;Increment to next inventory item.
+LA48A:  LDY GenByte25           ;
+
+LA48C:  DEX                     ;Are there more weapons/armor to make blank rows for?
+LA48D:  BNE BlankRowLoop        ;If so, branch to check next inventory slot.
+LA48F:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5096,7 +5065,7 @@ LA514:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-StatsTxt:
+BlanksTxt:
 ;              _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n
 LA515:  .byte $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD
 ;              _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n   _    \n
@@ -5104,7 +5073,9 @@ LA525:  .byte $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $FD, $00, $
 ;              _    \n   _    \n   _    \n   
 LA535:  .byte $00, $FD, $00, $FD, $00, $FD
 
-_StatsTxt:
+;----------------------------------------------------------------------------------------------------
+
+StatsTxt:
 ;              S    T    R    _    \n   D    E    X    _    \n   I    N    T    _    \n   W
 LA53B:  .byte $9C, $9D, $9B, $00, $FD, $8D, $8E, $A1, $00, $FD, $92, $97, $9D, $00, $FD, $A0
 ;              I    S    _    \n   M    M    P    _    \n   M    H    P    _    \n   E    X
@@ -5164,7 +5135,11 @@ LA62F:  .byte $98, $98, $97, $9C, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
-;Unused.
+;The following table is loaded into attribute table 0 when showing the character portrait
+;when lookinig at an individual character's items. The attribute table is always the same.
+;The palette data is what changes.
+
+Chr1PtrtAtribDat:
 LA635:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $50, $10, $00, $00, $00, $00, $00
 LA645:  .byte $00, $55, $11, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 LA655:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
@@ -5789,36 +5764,42 @@ LB5D1:  .byte $00, $00, $00, $05, $01, $00, $00, $00, $00, $00, $00, $00, $00, $
 ;----------------------------------------------------------------------------------------------------
 
 DoSelArmor:
-LB5E1:  LDA #$BB
+LB5E1:  LDA #>ArmorDesc
 LB5E3:  STA $2A
-LB5E5:  LDA #$97
+LB5E5:  LDA #<ArmorDesc
 LB5E7:  STA $29
+
 LB5E9:  LDA #$10
 LB5EB:  STA $03D2
 LB5EE:  LDA #$07
 LB5F0:  STA $2E
+
 LB5F2:  LDA #$1B
 LB5F4:  PHA
-LB5F5:  JMP LB60C
+LB5F5:  JMP DoList              ;($B60C)Show list of armor.
 
 ;----------------------------------------------------------------------------------------------------
 
 DoSelWeapon:
-LB5F8:  LDA #$BB
+LB5F8:  LDA #>WeaponDesc
 LB5FA:  STA $2A
-LB5FC:  LDA #$01
+LB5FC:  LDA #<WeaponDesc
 LB5FE:  STA $29
+
 LB600:  LDA #$10
 LB602:  STA $03D2
 LB605:  LDA #$0F
 LB607:  STA $2E
+
 LB609:  LDA #$0C
 LB60B:  PHA
 
+DoList:
 LB60C:  LDA #$06
 LB60E:  STA $2C
 LB610:  LDA #$00
 LB612:  STA $2B
+
 LB614:  LDY #$00
 LB616:  LDA ($29),Y
 LB618:  STA ($2B),Y
@@ -5833,14 +5814,14 @@ LB628:  PLA
 LB629:  PHA
 LB62A:  CMP #$1B
 LB62C:  BEQ LB63D
-LB62E:  LDA $BBDE,X
+LB62E:  LDA HandTxt,X
 LB631:  STA TextBuffer,Y
 LB634:  INX
 LB635:  INY
 LB636:  CMP #$FD
 LB638:  BEQ LB64C
 LB63A:  JMP LB62E
-LB63D:  LDA $BBEB,X
+LB63D:  LDA SkinTxt,X
 LB640:  STA TextBuffer,Y
 LB643:  INX
 LB644:  INY
@@ -6043,54 +6024,54 @@ LB7D3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $
 LB7E3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 LB7F3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 
-LB800:  LDA $0B
+LB800:  LDA ScrollDirAmt
 LB802:  BEQ LB808
 LB804:  CMP #$A0
 LB806:  BCC LB800
 LB808:  SEC
-LB809:  LDA $4A
+LB809:  LDA MapXPos
 LB80B:  SBC #$07
 LB80D:  BCS LB811
 LB80F:  LDA #$00
 LB811:  STA $2E
 LB813:  CLC
-LB814:  LDA $4A
+LB814:  LDA MapXPos
 LB816:  ADC #$08
 LB818:  CMP #$40
 LB81A:  BCC LB81E
 LB81C:  LDA #$40
 LB81E:  STA $2D
 LB820:  SEC
-LB821:  LDA $49
+LB821:  LDA MapYPos
 LB823:  SBC #$07
 LB825:  BCS LB829
 LB827:  LDA #$00
 LB829:  STA $2C
 LB82B:  CLC
-LB82C:  LDA $49
+LB82C:  LDA MapYPos
 LB82E:  ADC #$07
 LB830:  CMP #$40
 LB832:  BCC LB836
 LB834:  LDA #$40
 LB836:  STA $2B
 LB838:  LDX #$00
-LB83A:  LDA $0400,X
+LB83A:  LDA NPCSprIndex,X
 LB83D:  CMP #$FF
 LB83F:  BNE LB844
 LB841:  JMP LB9AA
-LB844:  LDA $0401,X
+LB844:  LDA NPCSprIndex+1,X
 LB847:  BEQ LB876
 LB849:  JSR LB9B6
 LB84C:  BCS LB851
 LB84E:  JMP LB9AA
-LB851:  LDY $0401,X
+LB851:  LDY NPCSprIndex+1,X
 LB854:  LDA #$F0
 LB856:  STA SpriteBuffer,Y
 LB859:  STA $7304,Y
 LB85C:  STA $7308,Y
 LB85F:  STA $730C,Y
 LB862:  LDA #$00
-LB864:  STA $0401,X
+LB864:  STA NPCSprIndex+1,X
 LB867:  STA $7301,Y
 LB86A:  STA $7305,Y
 LB86D:  STA $7309,Y
@@ -6099,7 +6080,7 @@ LB873:  JMP LB9AA
 LB876:  JSR LB9B6
 LB879:  BCS LB898
 LB87B:  LDY #$44
-LB87D:  LDA $0400,X
+LB87D:  LDA NPCSprIndex,X
 LB880:  BPL LB884
 LB882:  LDY #$84
 LB884:  LDA #$04
@@ -6115,10 +6096,10 @@ LB894:  DEC $30
 LB896:  BNE LB888
 LB898:  JMP LB9AA
 LB89B:  TYA
-LB89C:  STA $0401,X
-LB89F:  LDA $0402,X
+LB89C:  STA NPCSprIndex+1,X
+LB89F:  LDA NPCSprIndex+2,X
 LB8A2:  SEC
-LB8A3:  SBC $4A
+LB8A3:  SBC MapXPos
 LB8A5:  CLC
 LB8A6:  ADC #$07
 LB8A8:  ASL
@@ -6126,9 +6107,9 @@ LB8A9:  ASL
 LB8AA:  ASL
 LB8AB:  ASL
 LB8AC:  STA $19
-LB8AE:  LDA $0403,X
+LB8AE:  LDA NPCSprIndex+3,X
 LB8B1:  SEC
-LB8B2:  SBC $49
+LB8B2:  SBC MapYPos
 LB8B4:  CLC
 LB8B5:  ADC #$07
 LB8B7:  ASL
@@ -6136,7 +6117,7 @@ LB8B8:  ASL
 LB8B9:  ASL
 LB8BA:  ASL
 LB8BB:  STA $18
-LB8BD:  LDA $0B
+LB8BD:  LDA ScrollDirAmt
 LB8BF:  AND #$F0
 LB8C1:  BEQ LB900
 LB8C3:  EOR #$FF
@@ -6145,7 +6126,7 @@ LB8C6:  LSR
 LB8C7:  LSR
 LB8C8:  LSR
 LB8C9:  STA $30
-LB8CB:  LDA $0B
+LB8CB:  LDA ScrollDirAmt
 LB8CD:  AND #$0F
 LB8CF:  CMP #$02
 LB8D1:  BNE LB8DD
@@ -6172,7 +6153,7 @@ LB8F9:  CLC
 LB8FA:  LDA $18
 LB8FC:  SBC $30
 LB8FE:  STA $18
-LB900:  LDY $0401,X
+LB900:  LDY NPCSprIndex+1,X
 LB903:  LDA $19
 LB905:  STA $7303,Y
 LB908:  STA $7307,Y
@@ -6201,7 +6182,7 @@ LB932:  LDA $2B
 LB934:  PHA
 LB935:  TYA
 LB936:  PHA
-LB937:  LDA $0401,X
+LB937:  LDA NPCSprIndex+1,X
 LB93A:  SEC
 LB93B:  SBC #$44
 LB93D:  LSR
@@ -6209,7 +6190,7 @@ LB93E:  LSR
 LB93F:  LSR
 LB940:  TAY
 LB941:  STY $18
-LB943:  LDA $0400,X
+LB943:  LDA NPCSprIndex,X
 LB946:  AND #$7F
 LB948:  ASL
 LB949:  CLC
@@ -6217,7 +6198,7 @@ LB94A:  ADC #$80
 LB94C:  STA $77E1,Y
 LB94F:  LDA #$00
 LB951:  STA $77E0,Y
-LB954:  LDA $0400,X
+LB954:  LDA NPCSprIndex,X
 LB957:  AND #$7F
 LB959:  TAX
 LB95A:  LDA $BA08,X
@@ -6277,16 +6258,16 @@ LB9BA:  BEQ LB9EE
 LB9BC:  TYA
 LB9BD:  PHA
 LB9BE:  LDY #$00
-LB9C0:  LDA $4A
+LB9C0:  LDA MapXPos
 LB9C2:  SEC
-LB9C3:  SBC $0402,X
+LB9C3:  SBC NPCSprIndex+2,X
 LB9C6:  BMI LB9CA
 LB9C8:  EOR #$FF
 LB9CA:  CMP #$F8
 LB9CC:  JSR LB9E5
-LB9CF:  LDA $49
+LB9CF:  LDA MapYPos
 LB9D1:  SEC
-LB9D2:  SBC $0403,X
+LB9D2:  SBC NPCSprIndex+3,X
 LB9D5:  BMI LB9DB
 LB9D7:  EOR #$FF
 LB9D9:  ADC #$00
@@ -6301,12 +6282,12 @@ LB9E7:  CMP #$C8
 LB9E9:  BMI LB9ED
 LB9EB:  LDY #$FF
 LB9ED:  RTS
-LB9EE:  LDA $0402,X
+LB9EE:  LDA NPCSprIndex+2,X
 LB9F1:  CMP $2E
 LB9F3:  BCC LBA06
 LB9F5:  CMP $2D
 LB9F7:  BCS LBA06
-LB9F9:  LDA $0403,X
+LB9F9:  LDA NPCSprIndex+3,X
 LB9FC:  CMP $2C
 LB9FE:  BCC LBA06
 LBA00:  CMP $2B
@@ -6473,6 +6454,7 @@ LBB00:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+WeaponDesc:
 ;              D    A    G    G    E    R    _    _    _    \n
 LBB01:  .byte $8D, $8A, $90, $90, $8E, $9B, $00, $00, $00, $FD
 ;              M    A    C    E    _    _    _    _    _    \n
@@ -6503,6 +6485,8 @@ LBB79:  .byte $9C, $95, $9F, $00, $8B, $98, $A0, $00, $00, $FD
 LBB83:  .byte $9C, $9E, $97, $00, $9C, $A0, $9B, $8D, $00, $FD
 ;              M    Y    S    T    I    C    _    W    .    \n
 LBB8D:  .byte $96, $A2, $9C, $9D, $92, $8C, $00, $A0, $43, $FD
+
+ArmorDesc:
 ;              C    L    O    T    H    _    _    _    _    \n
 LBB97:  .byte $8C, $95, $98, $9D, $91, $00, $00, $00, $00, $FD
 ;              L    E    A    T    H    E    R    _    _    \n
@@ -6517,10 +6501,16 @@ LBBBF:  .byte $9C, $9D, $8E, $8E, $95, $00, $00, $00, $00, $FD
 LBBC9:  .byte $8D, $9B, $90, $97, $00, $8A, $9B, $96, $00, $FD
 ;              M    Y    S    T    I    C    _    A    .    \n  END
 LBBD3:  .byte $96, $A2, $9C, $9D, $92, $8C, $00, $8A, $43, $FD, $FF
+
+HandTxt:
 ;              H    A    N    D    _    _    _    _    _    _    _    _    \n
 LBBDE:  .byte $91, $8A, $97, $8D, $00, $00, $00, $00, $00, $00, $00, $00, $FD
+
+SkinTxt:
 ;              S    K    I    N    _    _    _    _    _    _    _    _    \n
 LBBEB:  .byte $9C, $94, $92, $97, $00, $00, $00, $00, $00, $00, $00, $00, $FD                        
+
+;----------------------------------------------------------------------------------------------------
 
 LBBF8:  LDA HideUprSprites
 LBBFA:  STA $E1

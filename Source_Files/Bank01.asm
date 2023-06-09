@@ -23,7 +23,7 @@
 ;Montor West Town Map.
 ;Map block translation:
 ;#$0=Grass, #$1=Shrub, #$2=Tree, #$3=Water, #$4=Mountain, #$5=Door, #$6=Path, #$7=Fire,
-;#$8=Wall3, #$9=Wall2, #$A=Chest, #$B=Floor, #$C=Wall1, #$D=Not Used, #$E=Force, #$F=Not Used
+;#$8=Horz Wall, #$9=Counter, #$A=Chest, #$B=Floor, #$C=Vert Wall, #$D=Not Used, #$E=Force, #$F=Not Used
 
 L8000:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 L8020:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
@@ -95,7 +95,7 @@ L87E0:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $
 ;Grey Town Map.
 ;Map block translation:
 ;#$0=Grass, #$1=Shrub, #$2=Tree, #$3=Water, #$4=Mountain, #$5=Door, #$6=Path, #$7=Fire,
-;#$8=Wall3, #$9=Wall2, #$A=Chest, #$B=Floor, #$C=Wall1, #$D=Not Used, #$E=Force, #$F=Not Used
+;#$8=Horz Wall, #$9=Counter, #$A=Chest, #$B=Floor, #$C=Vert Wall, #$D=Not Used, #$E=Force, #$F=Not Used
 
 L8800:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 L8820:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
@@ -167,7 +167,7 @@ L8FE0:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $
 ;Death Gulch Town Map.
 ;Map block translation:
 ;#$0=Grass, #$1=Shrub, #$2=Tree, #$3=Water, #$4=Mountain, #$5=Door, #$6=Path, #$7=Fire,
-;#$8=Wall3, #$9=Wall2, #$A=Chest, #$B=Floor, #$C=Wall1, #$D=Not Used, #$E=Force, #$F=Not Used
+;#$8=Horz Wall, #$9=Counter, #$A=Chest, #$B=Floor, #$C=Vert Wall, #$D=Not Used, #$E=Force, #$F=Not Used
 
 L9000:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44
 L9020:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $42, $22, $44, $22, $24, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44
@@ -239,7 +239,7 @@ L97E0:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $
 ;Devil Guard Town Map.
 ;Map block translation:
 ;#$0=Grass, #$1=Shrub, #$2=Tree, #$3=Water, #$4=Mountain, #$5=Door, #$6=Path, #$7=Fire,
-;#$8=Wall3, #$9=Wall2, #$A=Chest, #$B=Floor, #$C=Wall1, #$D=Not Used, #$E=Force, #$F=Not Used
+;#$8=Horz Wall, #$9=Counter, #$A=Chest, #$B=Floor, #$C=Vert Wall, #$D=Not Used, #$E=Force, #$F=Not Used
 
 L9800:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33
 L9820:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33
@@ -311,7 +311,7 @@ L9FE0:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $
 ;Dawn Town Map;
 ;Map block translation:
 ;#$0=Grass, #$1=Shrub, #$2=Tree, #$3=Water, #$4=Mountain, #$5=Door, #$6=Path, #$7=Fire,
-;#$8=Wall3, #$9=Wall2, #$A=Chest, #$B=Floor, #$C=Wall1, #$D=Not Used, #$E=Force, #$F=Not Used
+;#$8=Horz Wall, #$9=Counter, #$A=Chest, #$B=Floor, #$C=Vert Wall, #$D=Not Used, #$E=Force, #$F=Not Used
 
 LA000:  .byte $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22
 LA020:  .byte $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22, $22
@@ -454,7 +454,7 @@ LAFE0:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $
 ;Castle Exodus Map.
 ;Map block translation:
 ;#$0=Grass, #$1=Shrub, #$2=Tree, #$3=Water, #$4=Mountain, #$5=Door, #$6=Path, #$7=Fire,
-;#$8=Wall3, #$9=Wall2, #$A=Chest, #$B=Floor, #$C=Wall1, #$D=Not Used, #$E=Force, #$F=Not Used
+;#$8=Horz Wall, #$9=Counter, #$A=Chest, #$B=Floor, #$C=Vert Wall, #$D=Not Used, #$E=Force, #$F=Not Used
 
 LB000:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33
 LB020:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33

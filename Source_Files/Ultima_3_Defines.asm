@@ -1,6 +1,7 @@
 ;-------------------------------------[General Purpose Variables]------------------------------------
 
 .alias GenByte18        $18     ;General use byte.
+.alias GenByte19        $19     ;General use byte.
 
 .alias GenByte25        $25     ;General use byte.
 .alias GenByte26        $26     ;General use byte.
@@ -28,7 +29,6 @@
 .alias GenPtr2DUB       $2E     ;General use pointer, upper byte.
 
 .alias GenByte2F        $2F     ;General use byte.
-
 .alias GenByte30        $30     ;General use byte.
 
 .alias GenByte4E        $4E     ;General use byte.
@@ -74,6 +74,9 @@
 .alias NTXPosUB16       $14     ;Name table pixel X position, upper byte, block aligned.
 .alias NTYPosLB16       $15     ;Name table pixel Y position, lower byte, block aligned.
 .alias NTYPosUB16       $16     ;Name table pixel Y position, upper byte, block aligned.
+
+.alias TargetY          $18     ;Target block/NPC Y coord.
+.alias TargetX          $19     ;Target block/NPC X coord.
 
 ;Name entry variables.
 .alias NameLength       $17     ;The current length of the name being entered.
@@ -311,7 +314,7 @@
 .alias TextBufferBase   $0580   ;The base address of the text buffer.
 .alias TextBuffer       $0580   ;Buffer for text to be displayed on the screen.
 
-.alias ScreenBlocks     $0700   ;Through $07FF. The blocks currently on the screen.
+.alias ScreenBlocks     $0700   ;Through $07EF. The blocks currently on the screen.
 
 ;---------- Save Game 1 Data ----------
 .alias SG1Base          $6000   ;Base address of save game 1 data.
@@ -684,6 +687,30 @@
 .alias NPC_SHERRY       $1D     ;Sherry.
 .alias NPC_WHIRLPOOL    $1E     ;Whirlpool.
 
+.alias WPN_DAGGER       $01     ;Dagger.
+.alias WPN_MACE         $02     ;Mace.
+.alias WPN_SLING        $03     ;Sling.
+.alias WPN_AXE          $04     ;Axe.
+.alias WPN_BLOWGUN      $05     ;Blowgun.
+.alias WPN_SWORD        $06     ;Sword.
+.alias WPN_SPEAR        $07     ;Spear.
+.alias WPN_BRD_AXE      $08     ;Broad Axe.
+.alias WPN_BOW          $09     ;Bow.
+.alias WPN_IRN_SWRD     $0A     ;Iron Sword.
+.alias WPN_GLOVES       $0B     ;Gloves.
+.alias WPN_HALBERD      $0C     ;Halberd.
+.alias WPN_SLV_BOW      $0D     ;Silver Bow.
+.alias WPN_SUN_SWRD     $0E     ;Sun Sword.
+.alias WPN_MYSTIC_W     $0F     ;Mystic Weapon.
+
+.alias ARM_CLOTH        $01     ;Cloth.
+.alias ARM_LEATHER      $02     ;Leather.
+.alias ARM_BRONZE       $03     ;Bronze.
+.alias ARM_IRON         $04     ;Iron.
+.alias ARM_STEEL        $05     ;Steel.
+.alias ARM_DRAGON       $06     ;Dragon.
+.alias ARM_MYSTIC_A     $07     ;Mystic Armor.
+
 .alias BANK_MAPS0       $00     ;MMC1 bank $00. Overhead maps.
 .alias BANK_MAPS1       $01     ;MMC1 bank $01. Overhead maps.
 .alias BANK_DUNGEONS    $02     ;MMC1 bank $02. Dungeon maps.
@@ -829,12 +856,36 @@
 .alias CHR_WEAPONS      $0C     ;Index to character's weapons.
 .alias CHR_ARMOR        $1B     ;Index to character's Armor.
 .alias CHR_GOLD         $30     ;Index to character's gold.
+.alias CHR_EQ_WEAPON    $34     ;Index to character's equipped weapon.
+.alias CHR_EQ_ARMOR     $35     ;Index to character's equipped armor.
 .alias CHR_MAX_HP       $36     ;Index to character's max hit points.
 .alias CHR_MAX_MP       $38     ;Index to character's max magic points.
 .alias CHR_EXP          $39     ;Index to character's experience.
 .alias CHR_MARKS        $3B     ;Index to character's marks.
 .alias CHR_CARDS        $3C     ;Index to character's cards.
 .alias CHR_FLOWER       $3D     ;Index to character's flower status.
+
+.alias BLK_GRASS        $00     ;Grass GFX block.
+.alias BLK_SHRUB        $01     ;Shrubs GFX block.
+.alias BLK_TREE         $02     ;Tree GFX block.
+.alias BLK_WATER        $03     ;Water GFX block.
+.alias BLK_MOUNTAIN     $04     ;Mountain GFX block.
+.alias BLK_DOOR         $05     ;Door GFX block.
+.alias BLK_PATH         $06     ;Path GFX block.
+.alias BLK_FIRE         $07     ;Fire GFX block.
+.alias BLK_HWALL        $08     ;Horizontal wall GFX block.
+.alias BLK_BSNAKE       $08     ;Back half of snake GFX block.
+.alias BLK_COUNTER      $09     ;Shop counter GFX block.
+.alias BLK_CHEST        $0A     ;Treasure cheest GFX block.
+.alias BLK_FLOOR        $0B     ; GFX block.
+.alias BLK_VWALL        $0C     ;Vertical wall GFX block.
+.alias BLK_FSNAKE       $0C     ;Front half of snake GFX block.
+.alias BLK_CASTLE       $0D     ;Castle GFX block.
+.alias BLK_FLOWER       $0D     ;Flower GFX block.
+.alias BLK_CAVE         $0E     ;Cave GFX block.
+.alias BLK_FORCE        $0E     ;Force field GFX block.
+.alias BLK_SHRINE       $0E     ;Shrine GFX block.
+.alias BLK_TOWN         $0F     ;Town GFX block.
 
 .alias CHN_CONTROL      $F0     ;Any value >= than this is a music control byte.
 .alias CHN_VOLUME       $FB     ;Control byte to set channel base volume.

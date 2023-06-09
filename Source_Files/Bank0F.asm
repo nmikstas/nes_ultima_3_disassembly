@@ -766,6 +766,7 @@ LC567: JSR $B800
 LC56A: PLA
 LC56B: JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC56E: RTS
+
 LC56F: TAX
 LC570: LDA CurPRGBank
 LC572: PHA
@@ -780,7 +781,7 @@ LC581: PLA
 LC582: TAY
 LC583: TXA
 LC584: PHA
-LC585: LDA $EA17,Y
+LC585: LDA DirConvTbl,Y
 LC588: STA $B5
 LC58A: LDA #$80
 LC58C: STA $B6
@@ -896,7 +897,8 @@ LC661:  RTS
 
 DoTalkCmd:
 LC662:  JSR LC6EC
-LC665:  BCS LC6C3
+LC665:  BCS NoTalk
+
 LC667:  LDA LastTalkedNPC0
 LC669:  STA LastTalkedNPC1
 LC66B:  LDA NPCSprIndex,Y
@@ -938,14 +940,19 @@ LC6AD:  LDA #$9D
 LC6AF:  STA TextBasePtrUB
 LC6B1:  LDA #$80
 LC6B3:  STA TextBasePtrLB
+
 LC6B5:  JSR ShowText            ;($E675)Show text in window.
+
 LC6B8:  LDA #$80
 LC6BA:  STA TextBasePtrUB
 LC6BC:  LDA #$00
 LC6BE:  STA TextBasePtrLB
+
 LC6C0:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
-LC6C3:  LDA #$02
-LC6C5:  STA TextIndex
+
+NoTalk:
+LC6C3:  LDA #$02                ;NO ONE IS HERE text.
+LC6C5:  STA TextIndex           ;
 LC6C7:  JSR ShowText            ;($E675)Show text in window.
 LC6CA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
@@ -956,7 +963,7 @@ LC6E9:  JMP ($0029)
 
 ;----------------------------------------------------------------------------------------------------
 
-LC6EC:  JSR LE6EF
+LC6EC:  JSR GetTargetNPC        ;($E6EF)Check if valid NPC at target.
 LC6EF:  BCS LC704
 LC6F1:  STA $30
 LC6F3:  LDY #$00
@@ -1018,7 +1025,7 @@ LC759:  JMP LC7D4
 ;----------------------------------------------------------------------------------------------------
 
 DoFightCmd:
-LC75C:  JSR LE6EF
+LC75C:  JSR GetTargetNPC        ;($E6EF)Check if valid NPC at target.
 LC75F:  BCC LC764
 LC761:  JMP LC6C3
 LC764:  STA $30
@@ -1097,10 +1104,11 @@ LC7E8:  TXA
 LC7E9:  AND #$1F
 LC7EB:  ASL
 LC7EC:  TAX
-LC7ED:  LDA $CEAC,X
+LC7ED:  LDA FightMapAdrTbl,X
 LC7F0:  STA $29
-LC7F2:  LDA $CEAD,X
+LC7F2:  LDA FightMapAdrTbl+1,X
 LC7F5:  STA $2A
+
 LC7F7:  LDA #MUS_FIGHT+INIT
 LC7F9:  STA InitNewMusic
 LC7FB:  LDY #$00
@@ -1933,11 +1941,15 @@ LCE9B:  STA MapProperties
 LCE9D:  JSR LFC55
 LCEA0:  JMP LoadNewMap          ;($C175)Load a new map.
 
-LCEA3:  .byte $00, $78, $76, $00, $87, $00, $00, $00, $67, $00, $A1, $00, $A2, $00, $A3, $00
-LCEB3:  .byte $A6, $00, $A8, $00, $A4, $00, $A4, $00, $A4, $00, $A5, $00, $A5, $00, $A5, $00
-LCEC3:  .byte $A5, $00, $A5, $00, $A5, $00, $A5, $00, $A5, $00, $A7, $00, $AA, $00, $A9, $03
-LCED3:  .byte $00, $00, $00, $01, $03, $00, $03, $00, $00, $00, $03, $03, $03, $01, $03, $00
-LCEE3:  .byte $00, $03, $00, $00, $02, $02, $02, $02, $02, $02, $02, $02, $03, $00
+LCEA3:  .byte $00, $78, $76, $00, $87, $00, $00, $00, $67
+
+FightMapAdrTbl:
+LCEAC:  .word $A100, $A200, $A300, $A600, $A800, $A400, $A400, $A400
+LCEBC:  .word $A500, $A500, $A500, $A500, $A500, $A500, $A500, $A500
+LCECC:  .word $A700, $AA00, $A900
+
+LCED2:  .byte $03, $00, $00, $00, $01, $03, $00, $03, $00, $00, $00, $03, $03, $03, $01, $03
+LCEE2:  .byte $00, $00, $03, $00, $00, $02, $02, $02, $02, $02, $02, $02, $02, $03, $00
 
 LCEF1:  LDA CurPRGBank
 LCEF3:  PHA
@@ -3375,6 +3387,7 @@ LDA8C:  CLC
 LDA8D:  ADC #$01
 LDA8F:  JSR LDB38
 LDA92:  RTS
+
 LDA93:  STA $30
 LDA95:  STA $A0
 LDA97:  LDY #$2D
@@ -3396,6 +3409,7 @@ LDAB2:  LDA #$03
 LDAB4:  STA (CrntChrPtr),Y
 LDAB6:  LDA #$29
 LDAB8:  JMP LDABD
+
 LDABB:  LDA #$2D
 LDABD:  JMP LDC23
 LDAC0:  STA $30
@@ -3594,7 +3608,7 @@ UseKey:
 LDC29:  LDA MapProperties
 LDC2B:  AND #$07
 LDC2D:  BNE LDC86
-LDC2F:  JSR LE739
+LDC2F:  JSR GetFrontBlock       ;($E739)Get the block in front of character 1.
 LDC32:  AND #$1F
 LDC34:  CMP #$05
 LDC36:  BNE LDC86
@@ -3930,7 +3944,7 @@ LDEC8:  STX TextIndex
 LDECA:  JSR ShowText            ;($E675)Show text in window.
 LDECD:  SEC
 LDECE:  RTS
-LDECF:  JSR LE739
+LDECF:  JSR GetFrontBlock       ;($E739)Get the block in front of character 1.
 LDED2:  CMP #$09
 LDED4:  BNE LDF0E
 LDED6:  LDA $E75F,X
@@ -3955,7 +3969,7 @@ LDEF5:  CMP #$0A
 LDEF7:  BNE LDF0E
 LDEF9:  STY $EB
 LDEFB:  LDX Ch1Dir
-LDEFD:  LDA $EA17,X
+LDEFD:  LDA DirConvTbl,X
 LDF00:  ASL
 LDF01:  TAX
 LDF02:  LDA $DF10,X
@@ -5054,11 +5068,9 @@ LE6D8:  LDA #$00
 LE6DA:  STA IgnoreInput
 LE6DC:  STA InputChange
 
-LE6DE:  LDA Increment0
-
-WaitForNMI:
-LE6E0:  CMP Increment0          ;Wait here until the next NMI interrupt.
-LE6E2:  BEQ WaitForNMI          ;
+LE6DE:  LDA Increment0          ;
+LE6E0:* CMP Increment0          ;Wait here until the next NMI interrupt.
+LE6E2:  BEQ -                   ;
 
 LE6E4:  LDA InputChange
 LE6E6:  BEQ LE6D8
@@ -5067,77 +5079,117 @@ LE6EA:  AND $9B
 LE6EC:  BEQ LE6D8
 LE6EE:  RTS
 
-LE6EF:  JSR LE739
-LE6F2:  CMP #$09
-LE6F4:  BNE LE706
-LE6F6:  LDA $E75F,X
-LE6F9:  CLC
-LE6FA:  ADC $19
-LE6FC:  STA $19
-LE6FE:  LDA $E760,X
-LE701:  CLC
-LE702:  ADC $18
-LE704:  STA $18
-LE706:  LDX #$44
-LE708:  LDA $7300,X
-LE70B:  CMP $18
-LE70D:  BNE LE716
-LE70F:  LDA $7303,X
-LE712:  CMP $19
-LE714:  BEQ LE722
-LE716:  CPX #$B4
-LE718:  BEQ LE737
+;----------------------------------------------------------------------------------------------------
+
+GetTargetNPC:
+LE6EF:  JSR GetFrontBlock       ;($E739)Get the block in front of character 1.
+LE6F2:  CMP #BLK_COUNTER        ;Is the target block a shop counter?
+LE6F4:  BNE +                   ;If not, branch.
+
+LE6F6:  LDA FrntBlkOfstTbl,X    ;
+LE6F9:  CLC                     ;
+LE6FA:  ADC TargetX             ;
+LE6FC:  STA TargetX             ;Set the new target block to be the
+LE6FE:  LDA FrntBlkOfstTbl+1,X  ;one just beyond the shop counter.
+LE701:  CLC                     ;
+LE702:  ADC TargetY             ;
+LE704:  STA TargetY             ;
+
+LE706:* LDX #$44                ;Start at the NPC sprites.
+
+FindNPCLoop:
+LE708:  LDA SpriteBuffer,X
+LE70B:  CMP TargetY
+LE70D:  BNE +
+
+LE70F:  LDA SpriteBuffer+3,X
+LE712:  CMP TargetX
+LE714:  BEQ NPCFound
+
+LE716:* CPX #$B4
+LE718:  BEQ NPCNotFound
+
 LE71A:  TXA
 LE71B:  CLC
 LE71C:  ADC #$10
 LE71E:  TAX
-LE71F:  JMP LE708
-LE722:  TXA
-LE723:  PHA
-LE724:  SEC
-LE725:  SBC #$44
-LE727:  LSR
-LE728:  LSR
-LE729:  LSR
+LE71F:  JMP FindNPCLoop         ;($E708)Loop to find an NPC at the target location.
+
+NPCFound:
+LE722:  TXA                     ;Save a copy of the sprite byte index on the stack.
+LE723:  PHA                     ;
+
+LE724:  SEC                     ;Subtract starting point of NPC sprites from index.
+LE725:  SBC #$44                ;
+LE727:  LSR                     ;/8. Create an index
+LE728:  LSR                     ;
+LE729:  LSR                     ;
+
 LE72A:  TAY
 LE72B:  LDX Ch1Dir
-LE72D:  LDA LE767,X
+LE72D:  LDA NPCDirTbl,X
 LE730:  JSR LC56F
+
 LE733:  PLA
 LE734:  TAX
+
 LE735:  CLC
 LE736:  RTS
+
+NPCNotFound:
 LE737:  SEC
 LE738:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-LE739:  LDX Ch1Dir
-LE73B:  LDA $EA17,X
-LE73E:  ASL
-LE73F:  TAX
-LE740:  LDA $E75F,X
-LE743:  CLC
-LE744:  ADC SpriteBuffer+7
-LE747:  STA $19
-LE749:  LDA $E760,X
-LE74C:  CLC
-LE74D:  ADC #$70
-LE74F:  STA $18
-LE751:  LDA $19
-LE753:  LSR
-LE754:  LSR
-LE755:  LSR
-LE756:  LSR
-LE757:  CLC
-LE758:  ADC $18
-LE75A:  TAY
-LE75B:  LDA ScreenBlocks,Y
-LE75E:  RTS
+GetFrontBlock:
+LE739:  LDX Ch1Dir              ;Convert character direction to 0,1,2 or 3.
+LE73B:  LDA DirConvTbl,X        ;
 
+LE73E:  ASL                     ;*2. Up/down and left/right stored in same table.
+LE73F:  TAX                     ;
+
+LE740:  LDA FrntBlkOfstTbl,X    ;Get the offset in the X direction in pixels of the target block.
+LE743:  CLC                     ;
+LE744:  ADC SpriteBuffer+7      ;Target block will always br +16, -16 or 0 pixels offset from
+LE747:  STA TargetX             ;the character's X pixel position.
+
+LE749:  LDA FrntBlkOfstTbl+1,X  ;Calculate up/down block offset from character's block row.
+LE74C:  CLC                     ;Target block will always be on row $6F,$70 or $71.
+LE74D:  ADC #$70                ;Add $70 as character is always on row starting with $70.
+LE74F:  STA TargetY             ;Store the row number that target block is on. 
+
+LE751:  LDA TargetX             ;
+LE753:  LSR                     ;/16. To convert sprite X position to screen block position, the
+LE754:  LSR                     ;pixel position is /16 since sprites are always block aligned.
+LE755:  LSR                     ;
+LE756:  LSR                     ;
+
+LE757:  CLC                     ;
+LE758:  ADC TargetY             ;Add X and Y offsets together to get final target block index.
+LE75A:  TAY                     ;
+
+LE75B:  LDA ScreenBlocks,Y      ;Store the block type in front of the character to A.
+LE75E:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table is used to calculate the block in front of character 1.
+
+FrntBlkOfstTbl:
+;              0   +16   0   -16  +16   0   -16   0
 LE75F:  .byte $00, $10, $00, $F0, $10, $00, $F0, $00
 
+;----------------------------------------------------------------------------------------------------
+
+;The following table is used to change the direction of an NPC when talking to them.
+;The index into the table is the player's character direction. The value in the table
+;at the given index is the opposite direction as the player's character.
+
+NPCDirTbl:
 LE767:  .byte $00, $02, $01, $00, $08, $00, $00, $00, $04
+
+;----------------------------------------------------------------------------------------------------
 
 LE770:  LDA CurPRGBank
 LE772:  PHA
@@ -5230,7 +5282,7 @@ LE820:  STA $30
 LE822:  LDA Pad1Input
 LE824:  AND #D_PAD
 LE826:  TAX
-LE827:  LDA $EA17,X
+LE827:  LDA DirConvTbl,X
 LE82A:  CLC
 LE82B:  ADC $30
 LE82D:  TAX
@@ -5468,7 +5520,15 @@ LEA06:  RTS
 
 LEA07:  .byte $10, $18, $14, $1C, $08, $02, $04, $01, $70, $70, $78, $70, $70, $78, $78, $78
 
+;----------------------------------------------------------------------------------------------------
+
+;The following table converts character direction/D pad input and converts it to 0,1,2 or 3.
+;Down -> 0, Up -> 1, Right -> 2, Left -> 3.
+
+DirConvTbl:
 LEA17:  .byte $00, $02, $03, $01, $00, $01, $01, $01, $01
+
+;----------------------------------------------------------------------------------------------------
 
 LEA20:  .byte $10, $30, $00, $00, $00, $00, $30, $10, $30, $10, $00, $00, $00, $00, $10, $30
 
