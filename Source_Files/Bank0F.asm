@@ -11,8 +11,22 @@
 .alias  DoCreateMenus           $8000
 .alias  _DrawWindow             $8000
 .alias  UpdateMusic             $8100
+.alias  SherryTalk              $8900
+.alias  FortuneTalk             $8A00
+.alias  HealerTalk              $8B00
+.alias  WeaponTalk              $8D00
+.alias  ArmoryTalk              $8F00
 .alias  GFXForceField           $8F00
+.alias  GroceryTalk             $9000
+.alias  PubTalk                 $9100
+.alias  GuildTalk               $9200
+.alias  StableTalk              $9300
+.alias  InnTalk                 $9400
+.alias  TempleTalk              $9500
+.alias  CasinoTalk              $9600
 .alias  LgCharBase              $9600
+.alias  ShrineTalk              $9700
+.alias  LBTalk                  $9800
 .alias  UpdateSpriteRAM         $9900
 .alias  InitSFX                 $A000
 .alias  DoStatusScreen          $A000
@@ -903,15 +917,22 @@ LC667:  LDA LastTalkedNPC0
 LC669:  STA LastTalkedNPC1
 LC66B:  LDA NPCSprIndex,Y
 LC66E:  AND #$7F
-LC670:  CMP #$05
-LC672:  BEQ LC680
-LC674:  CMP #$1E
-LC676:  BEQ LC680
-LC678:  CMP #$15
-LC67A:  BCC LC683
-LC67C:  CMP #$1D
-LC67E:  BCS LC683
+LC670:  CMP #NPC_PLR_BOAT
+LC672:  BEQ EndTalk
+
+LC674:  CMP #NPC_WHIRLPOOL
+LC676:  BEQ EndTalk
+
+LC678:  CMP #NPC_LND_EN_1
+LC67A:  BCC GetDialogByte
+
+LC67C:  CMP #NPC_SHERRY
+LC67E:  BCS GetDialogByte
+
+EndTalk:
 LC680:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
+GetDialogByte:
 LC683:  INY
 LC684:  LDA (NPCSrcPtr),Y
 LC686:  STY LastTalkedNPC0
@@ -956,8 +977,10 @@ LC6C5:  STA TextIndex           ;
 LC6C7:  JSR ShowText            ;($E675)Show text in window.
 LC6CA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
-LC6CD:  .word $8A00, $8B00, $8D00, $8F00, $9000, $9100, $9200, $9300
-LC6DD:  .word $9400, $9500, $9600, $9700, $9800, $8900
+LC6CD:  .word FortuneTalk, HealerTalk, WeaponTalk, ArmoryTalk
+LC6D5:  .word GroceryTalk, PubTalk,    GuildTalk,  StableTalk
+LC6DD:  .word InnTalk,     TempleTalk, CasinoTalk, ShrineTalk
+LC6E5:  .word LBTalk,      SherryTalk
 
 LC6E9:  JMP ($0029)
 
@@ -2662,16 +2685,43 @@ LD454:  RTS
 
 LD455:  .byte $00, $01, $02, $00, $01, $00, $02, $01, $03, $02, $03
 
-LD460:  .byte $02, $00, $E0, $D4, $02, $05, $55, $D5, $01
-LD469:  .byte $0A, $A0, $D5, $01, $0F, $B1, $D5, $01, $14, $D2, $D5, $02
-LD475:  .byte $19, $F2, $D5, $04, $1E, $F9, $D5, $02, $23, $49, $D6, $01, $28, $53, $D6, $0F
-LD485:  .byte $2D, $93, $D6, $02, $32, $9B, $D6, $02, $37, $A5, $D6, $0F, $3C, $AC, $D6, $02
-LD495:  .byte $41, $C3, $D6, $02, $46, $D0, $D6, $02, $4B, $2B, $D7, $02, $00, $39, $D7, $0F
-LD4A5:  .byte $05, $5B, $D7, $0F, $0A, $83, $D7, $01, $0F, $9A, $D7, $01, $14, $A2, $D7, $01
-LD4B5:  .byte $19, $A5, $D7, $01, $1E, $AD, $D7, $0F, $23, $BF, $D7, $01, $28, $E4, $D7, $01
-LD4C5:  .byte $2D, $FC, $D7, $0F, $32, $04, $D8, $0F, $37, $1B, $D8, $02, $3C, $5A, $D9, $0F
-LD4D5:  .byte $41, $61, $D9, $02, $46, $B1, $D9, $0F, $4B, $BF, $D9, $AD, $F0, $03
+WizSpellTbl:
+LD460:  .byte $02, $00, $E0, $D4
+LD464:  .byte $02, $05, $55, $D5
+LD468:  .byte $01, $0A, $A0, $D5
+LD46C:  .byte $01, $0F, $B1, $D5
+LD470:  .byte $01, $14, $D2, $D5
+LD474:  .byte $02, $19, $F2, $D5
+LD478:  .byte $04, $1E, $F9, $D5
+LD47C:  .byte $02, $23, $49, $D6
+LD480:  .byte $01, $28, $53, $D6
+LD484:  .byte $0F, $2D, $93, $D6
+LD488:  .byte $02, $32, $9B, $D6
+LD48C:  .byte $02, $37, $A5, $D6
+LD490:  .byte $0F, $3C, $AC, $D6
+LD494:  .byte $02, $41, $C3, $D6
+LD498:  .byte $02, $46, $D0, $D6
+LD49C:  .byte $02, $4B, $2B, $D7
 
+ClrcSpellTbl:
+LD4A0:  .byte $02, $00, $39, $D7
+LD4A4:  .byte $0F, $05, $5B, $D7
+LD4A8:  .byte $0F, $0A, $83, $D7
+LD4AC:  .byte $01, $0F, $9A, $D7
+LD4B0:  .byte $01, $14, $A2, $D7
+LD4B4:  .byte $01, $19, $A5, $D7
+LD4B8:  .byte $01, $1E, $AD, $D7
+LD4BC:  .byte $0F, $23, $BF, $D7
+LD4C0:  .byte $01, $28, $E4, $D7
+LD4C4:  .byte $01, $2D, $FC, $D7
+LD4C8:  .byte $0F, $32, $04, $D8
+LD4CC:  .byte $0F, $37, $1B, $D8
+LD4D0:  .byte $02, $3C, $5A, $D9
+LD4D4:  .byte $0F, $41, $61, $D9
+LD4D8:  .byte $02, $46, $B1, $D9
+LD4DC:  .byte $0F, $4B, $BF, $D9
+
+LD4E0:  LDA $03F0
 LD4E3:  BEQ LD4F3
 LD4E5:  CMP #$01
 LD4E7:  BEQ LD4F3

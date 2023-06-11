@@ -946,32 +946,33 @@ L88DF:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $
 L88EF:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 L88FF:  .byte $00
 
+SherryTalk:
 L8900:  LDA #$89
-L8902:  STA $C1
+L8902:  STA InitNewMusic
 L8904:  LDA #$6F
-L8906:  STA $30
+L8906:  STA TextIndex
 L8908:  JSR L99E0
 L890B:  JSR L98F7
 L890E:  BCC L8913
-L8910:  JMP L94A9
+L8910:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8913:  CMP #$01
 L8915:  BEQ L8921
 L8917:  LDA #$8C
-L8919:  STA $30
+L8919:  STA TextIndex
 L891B:  JSR $C00F
-L891E:  JMP L94A9
+L891E:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8921:  LDA #$6F
-L8923:  STA $30
+L8923:  STA TextIndex
 L8925:  JSR L99E0
 L8928:  JSR L98F7
 L892B:  BCC L8930
-L892D:  JMP L94A9
+L892D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8930:  CMP #$01
 L8932:  BEQ L8921
 L8934:  LDA #$99
-L8936:  STA $30
+L8936:  STA TextIndex
 L8938:  JSR $C00F
-L893B:  JMP L94A9
+L893B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 
 L893E:  LDY #SG_BOAT_X
 L8940:  LDA BoatXPos
@@ -1052,19 +1053,20 @@ L89D9:  .byte $33, $33, $30, $00, $00, $00, $00, $00, $00, $00, $00, $03, $33, $
 L89E9:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33
 L89F9:  .byte $33, $33, $30, $00, $00, $00, $00
 
+FortuneTalk:
 L8A00:  LDA #$64
 L8A02:  STA $30
 L8A04:  JSR L99E0
 L8A07:  JSR L98F7
 L8A0A:  BCC L8A0F
-L8A0C:  JMP L94A9
+L8A0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8A0F:  CMP #$01
 L8A11:  BNE L8A18
 L8A13:  LDA #$66
 L8A15:  JMP L9475
 L8A18:  JSR $C00C
 L8A1B:  BCC L8A20
-L8A1D:  JMP L94A9
+L8A1D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8A20:  JSR L9D5E
 L8A23:  LDA #$67
 L8A25:  STA $03D4
@@ -1082,7 +1084,7 @@ L8A40:  LDA #$00
 L8A42:  STA $9D
 L8A44:  JSR $C018
 L8A47:  BCC L8A4C
-L8A49:  JMP L94A9
+L8A49:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8A4C:  ASL
 L8A4D:  PHA
 L8A4E:  CLC
@@ -1117,7 +1119,7 @@ L8A83:  STA $30
 L8A85:  JSR $C00F
 L8A88:  LDA #$69
 L8A8A:  JMP L9475
-L8A8D:  JMP L94A9
+L8A8D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 
 L8A90:  .byte $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01
 L8AA0:  .byte $00, $01, $00, $01, $00
@@ -1142,6 +1144,7 @@ L8ADB:  .byte $04, $64, $00, $64, $00, $C8, $00, $F4, $01, $33, $33, $33, $33, $
 L8AEB:  .byte $BB, $BB, $BB, $BB, $BC, $BB, $B8, $99, $99, $98, $88, $C0, $03, $33, $33, $33
 L8AFB:  .byte $33, $00, $00, $00, $00
 
+HealerTalk:
 L8B00:  LDA #$6A
 L8B02:  STA $30
 L8B04:  JSR L99E0
@@ -1168,7 +1171,7 @@ L8B34:  LDA #$00
 L8B36:  STA $9D
 L8B38:  JSR $C018
 L8B3B:  BCC L8B40
-L8B3D:  JMP L94A9
+L8B3D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8B40:  PHA
 L8B41:  LDX $70
 L8B43:  LDA $8ABF,X
@@ -1189,7 +1192,7 @@ L8B5B:  JSR L99E0
 L8B5E:  JSR $C00C
 L8B61:  PLA
 L8B62:  BCC L8B67
-L8B64:  JMP L94A9
+L8B64:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8B67:  PHA
 L8B68:  JSR L9D5E
 L8B6B:  PLA
@@ -1235,7 +1238,7 @@ L8BB1:  LDA #$00
 L8BB3:  STA $E9
 L8BB5:  PLA
 L8BB6:  PLA
-L8BB7:  JMP L94A9
+L8BB7:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8BBA:  CMP #$03
 L8BBC:  BNE L8BC2
 L8BBE:  LDA #$00
@@ -1391,18 +1394,19 @@ L8CFC:  RTS
 
 L8CFD:  .byte $00, $00, $00
 
+WeaponTalk:
 L8D00:  LDA #$77
 L8D02:  STA $30
 L8D04:  JSR L99E0
 L8D07:  JSR L98AA
 L8D0A:  BCC L8D0F
-L8D0C:  JMP L94A9
+L8D0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D0F:  CMP #$01
 L8D11:  BNE L8D16
 L8D13:  JMP L8DDC
 L8D16:  JSR $C00C
 L8D19:  BCC L8D1E
-L8D1B:  JMP L94A9
+L8D1B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D1E:  JSR L9D5E
 L8D21:  LDX $70
 L8D23:  LDA $8E56,X
@@ -1423,7 +1427,7 @@ L8D44:  LDA #$00
 L8D46:  STA $9D
 L8D48:  JSR $C012
 L8D4B:  BCC L8D50
-L8D4D:  JMP L94A9
+L8D4D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D50:  STA $30
 L8D52:  LDX $70
 L8D54:  LDA $8E56,X
@@ -1443,7 +1447,7 @@ L8D6B:  JSR L99E0
 L8D6E:  JSR L98F7
 L8D71:  BCC L8D77
 L8D73:  PLA
-L8D74:  JMP L94A9
+L8D74:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D77:  CMP #$01
 L8D79:  BEQ L8D7F
 L8D7B:  PLA
@@ -1458,7 +1462,7 @@ L8D8A:  LDA #$84
 L8D8C:  STA $30
 L8D8E:  JSR $C00F
 L8D91:  BCC L8D96
-L8D93:  JMP L94A9
+L8D93:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D96:  JMP L8DBE
 L8D99:  PHA
 L8D9A:  ASL
@@ -1474,7 +1478,7 @@ L8DAC:  LDA #$68
 L8DAE:  STA $30
 L8DB0:  JSR $C00F
 L8DB3:  BCC L8DB8
-L8DB5:  JMP L94A9
+L8DB5:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DB8:  JMP L8DBE
 L8DBB:  JSR L9463
 L8DBE:  JSR L9D5E
@@ -1483,7 +1487,7 @@ L8DC3:  STA $30
 L8DC5:  JSR L99E0
 L8DC8:  JSR L98F7
 L8DCB:  BCC L8DD0
-L8DCD:  JMP L94A9
+L8DCD:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DD0:  CMP #$01
 L8DD2:  BEQ L8DD7
 L8DD4:  JMP L8D07
@@ -1491,11 +1495,11 @@ L8DD7:  LDA #$86
 L8DD9:  JMP L9475
 L8DDC:  JSR $C00C
 L8DDF:  BCC L8DE4
-L8DE1:  JMP L94A9
+L8DE1:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DE4:  JSR L9D5E
 L8DE7:  JSR L9C40
 L8DEA:  BCC L8DEF
-L8DEC:  JMP L94A9
+L8DEC:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DEF:  PHA
 L8DF0:  JSR L8EB3
 L8DF3:  PLA
@@ -1525,7 +1529,7 @@ L8E22:  JSR L99E0
 L8E25:  JSR L98F7
 L8E28:  BCC L8E2E
 L8E2A:  PLA
-L8E2B:  JMP L94A9
+L8E2B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8E2E:  CMP #$01
 L8E30:  BNE L8E36
 L8E32:  PLA
@@ -1580,18 +1584,19 @@ L8ED1:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $00, $00, $00, $00, $00, $
 L8EE1:  .byte $00, $00, $00, $00, $00, $00, $00, $03, $33, $33, $33, $33, $33, $33, $33, $33
 L8EF1:  .byte $33, $33, $33, $33, $33, $33, $30, $00, $00, $00, $00, $00, $00, $00, $00
 
+ArmoryTalk:
 L8F00:  LDA #$78
 L8F02:  STA $30
 L8F04:  JSR L99E0
 L8F07:  JSR L98AA
 L8F0A:  BCC L8F0F
-L8F0C:  JMP L94A9
+L8F0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F0F:  CMP #$01
 L8F11:  BNE L8F16
 L8F13:  JMP L9349
 L8F16:  JSR $C00C
 L8F19:  BCC L8F1E
-L8F1B:  JMP L94A9
+L8F1B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F1E:  JSR L9D5E
 L8F21:  LDA #$0C
 L8F23:  STA $03D0
@@ -1609,7 +1614,7 @@ L8F3D:  LDA #$AB
 L8F3F:  STA $03D4
 L8F42:  JSR $C012
 L8F45:  BCC L8F4A
-L8F47:  JMP L94A9
+L8F47:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F4A:  PHA
 L8F4B:  JSR L97AC
 L8F4E:  PLA
@@ -1621,7 +1626,7 @@ L8F56:  JSR L99E0
 L8F59:  JSR L98F7
 L8F5C:  BCC L8F62
 L8F5E:  PLA
-L8F5F:  JMP L94A9
+L8F5F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F62:  CMP #$01
 L8F64:  BEQ L8F6A
 L8F66:  PLA
@@ -1636,7 +1641,7 @@ L8F75:  LDA #$84
 L8F77:  STA $30
 L8F79:  JSR $C00F
 L8F7C:  BCC L8F81
-L8F7E:  JMP L94A9
+L8F7E:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F81:  JMP L8FA9
 L8F84:  PHA
 L8F85:  ASL
@@ -1652,7 +1657,7 @@ L8F97:  LDA #$68
 L8F99:  STA $30
 L8F9B:  JSR $C00F
 L8F9E:  BCC L8FA3
-L8FA0:  JMP L94A9
+L8FA0:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8FA3:  JMP L8FA9
 L8FA6:  JSR L93C0
 L8FA9:  JSR L9D5E
@@ -1661,7 +1666,7 @@ L8FAE:  STA $30
 L8FB0:  JSR L99E0
 L8FB3:  JSR L98F7
 L8FB6:  BCC L8FBB
-L8FB8:  JMP L94A9
+L8FB8:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8FBB:  CMP #$01
 L8FBD:  BEQ L8FC2
 L8FBF:  JMP L8F07
@@ -1689,12 +1694,13 @@ L8FE3:  RTS
 L8FE4:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 L8FF4:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 
+GroceryTalk:
 L9000:  LDA #$79
 L9002:  STA $30
 L9004:  JSR L99E0
 L9007:  JSR $C00C
 L900A:  BCC L900F
-L900C:  JMP L94A9
+L900C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L900F:  JSR L9D5E
 L9012:  LDA #$0A
 L9014:  STA $03D0
@@ -1712,7 +1718,7 @@ L902E:  LDA #$B1
 L9030:  STA $03D4
 L9033:  JSR $C018
 L9036:  BCC L903B
-L9038:  JMP L94A9
+L9038:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L903B:  PHA
 L903C:  TAX
 L903D:  LDA $9088,X
@@ -1729,7 +1735,7 @@ L9051:  LDA #$68
 L9053:  STA $30
 L9055:  JSR $C00F
 L9058:  BCC L905D
-L905A:  JMP L94A9
+L905A:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L905D:  JMP L906D
 L9060:  TAX
 L9061:  LDA $9088,X
@@ -1742,7 +1748,7 @@ L906F:  STA $30
 L9071:  JSR L99E0
 L9074:  JSR L98F7
 L9077:  BCC L907C
-L9079:  JMP L94A9
+L9079:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L907C:  CMP #$01
 L907E:  BEQ L9083
 L9080:  JMP L900F
@@ -1784,6 +1790,7 @@ L90DB:  .byte $04, $40, $00, $44, $44, $44, $44, $42, $22, $22, $44, $C8, $88, $
 L90EB:  .byte $22, $24, $22, $44, $24, $42, $44, $44, $44, $40, $00, $04, $44, $44, $44, $00
 L90FB:  .byte $04, $00, $00, $04, $44
 
+PubTalk:
 L9100:  LDA #$88
 L9102:  STA $30
 L9104:  LDA #$0A
@@ -1798,7 +1805,7 @@ L9116:  CMP #$01
 L9118:  BEQ L9122
 L911A:  JSR $C00C
 L911D:  BCC L9125
-L911F:  JMP L94A9
+L911F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9122:  JMP L918E
 L9125:  JSR L9D5E
 L9128:  LDA #$0A
@@ -1828,7 +1835,7 @@ L915C:  LDA $9193,X
 L915F:  STA $30
 L9161:  JSR $C00F
 L9164:  BCC L9169
-L9166:  JMP L94A9
+L9166:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9169:  JMP L914C
 L916C:  CMP #$04
 L916E:  BNE L917F
@@ -1836,14 +1843,14 @@ L9170:  LDA #$7E
 L9172:  STA $30
 L9174:  JSR $C00F
 L9177:  BCC L917C
-L9179:  JMP L94A9
+L9179:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L917C:  JMP L914C
 L917F:  LDX $70
 L9181:  LDA $91A7,X
 L9184:  STA $30
 L9186:  JSR $C00F
 L9189:  BCC L918E
-L918B:  JMP L94A9
+L918B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L918E:  LDA #$89
 L9190:  JMP L9475
 
@@ -1855,12 +1862,13 @@ L91D3:  .byte $00, $44, $44, $44, $44, $40, $00, $04, $44, $77, $77, $74, $44, $
 L91E3:  .byte $22, $44, $44, $00, $04, $44, $00, $04, $44, $42, $22, $24, $42, $44, $44, $40
 L91F3:  .byte $00, $44, $44, $44, $44, $40, $00, $44, $44, $77, $77, $74, $44
 
+GuildTalk:
 L9200:  LDA #$7A
 L9202:  STA $30
 L9204:  JSR L99E0
 L9207:  JSR $C00C
 L920A:  BCC L920F
-L920C:  JMP L94A9
+L920C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L920F:  JSR L9D5E
 L9212:  LDA #$0C
 L9214:  STA $03D0
@@ -1878,7 +1886,7 @@ L922E:  LDA #$AC
 L9230:  STA $03D4
 L9233:  JSR $C012
 L9236:  BCC L923B
-L9238:  JMP L94A9
+L9238:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L923B:  TAX
 L923C:  LDA $929B,X
 L923F:  PHA
@@ -1889,7 +1897,7 @@ L9246:  LDA #$84
 L9248:  STA $30
 L924A:  JSR $C00F
 L924D:  BCC L9252
-L924F:  JMP L94A9
+L924F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9252:  JMP L9278
 L9255:  PHA
 L9256:  TAX
@@ -1904,7 +1912,7 @@ L9266:  LDA #$68
 L9268:  STA $30
 L926A:  JSR $C00F
 L926D:  BCC L9272
-L926F:  JMP L94A9
+L926F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9272:  JMP L9278
 L9275:  JSR L92B3
 L9278:  JSR L9D5E
@@ -1913,7 +1921,7 @@ L927D:  STA $30
 L927F:  JSR L99E0
 L9282:  JSR L98F7
 L9285:  BCC L928A
-L9287:  JMP L94A9
+L9287:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L928A:  CMP #$01
 L928C:  BEQ L9291
 L928E:  JMP L9207
@@ -1955,6 +1963,7 @@ L92DC:  .byte $77, $77, $74, $44, $04, $42, $22, $22, $22, $44, $44, $42, $22, $
 L92EC:  .byte $44, $44, $44, $44, $44, $44, $40, $00, $44, $44, $40, $00, $44, $44, $44, $44
 L92FC:  .byte $77, $77, $74, $44
 
+StableTalk:
 L9300:  LDA #$8B
 L9302:  STA $30
 L9304:  JSR L99E0
@@ -1969,7 +1978,7 @@ L9317:  LDA #$8D
 L9319:  JMP L9475
 L931C:  JSR $C00C
 L931F:  BCC L9324
-L9321:  JMP L94A9
+L9321:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9324:  JSR L9D5E
 L9327:  LDA #$03
 L9329:  STA $2E
@@ -1989,11 +1998,11 @@ L9346:  JMP L9475
 
 L9349:  JSR $C00C
 L934C:  BCC L9351
-L934E:  JMP L94A9
+L934E:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9351:  JSR L9D5E
 L9354:  JSR L9D00
 L9357:  BCC L935C
-L9359:  JMP L94A9
+L9359:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L935C:  PHA
 L935D:  JSR L8FC7
 L9360:  PLA
@@ -2021,7 +2030,7 @@ L938C:  JSR L99E0
 L938F:  JSR L98F7
 L9392:  BCC L9398
 L9394:  PLA
-L9395:  JMP L94A9
+L9395:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9398:  CMP #$01
 L939A:  BNE L93A0
 L939C:  PLA
@@ -2063,6 +2072,7 @@ L93D7L:  .byte $04, $4C, $BB, $BB, $BB, $BC, $47, $77, $44, $00, $00, $00, $00, 
 L93E7L:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $0C, $00, $00, $04, $04, $44, $00
 L93F7L:  .byte $00, $08, $99, $99, $99, $9C, $47, $77, $74
 
+InnTalk:
 L9400:  LDA #$90
 L9402:  STA $30
 L9404:  JSR L99E0
@@ -2070,7 +2080,7 @@ L9407:  JSR L98F7
 L940A:  CMP #$01
 L940C:  BNE L9412
 L940E:  SEC
-L940F:  JMP L94A9
+L940F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9412:  JSR L893E
 L9415:  LDA #$91
 L9417:  CLC
@@ -2148,7 +2158,10 @@ L94A2:  STA ($99),Y
 L94A4:  INY
 L94A5:  LDA $2E
 L94A7:  STA ($99),Y
+
+DialogExit:
 L94A9:  RTS
+
 L94AA:  LDY #$2D
 L94AC:  LDA ($99),Y
 L94AE:  CLC
@@ -2183,6 +2196,7 @@ L94DF:  RTS
 L94E0:  .byte $00, $22, $44, $44, $22, $24, $44, $42, $22, $44, $44, $44, $44, $44, $44, $44
 L94F0:  .byte $44, $44, $40, $00, $44, $44, $00, $04, $44, $44, $44, $44, $44, $47, $74, $44
 
+TempleTalk:
 L9500:  LDA #$92
 L9502:  STA $30
 L9504:  JSR L99E0
@@ -2200,7 +2214,7 @@ L951E:  LDA #$93
 L9520:  STA $03D4
 L9523:  JSR $C012
 L9526:  BCC L952B
-L9528:  JMP L94A9
+L9528:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L952B:  CMP #$01
 L952D:  BEQ L9534
 L952F:  LDA #$94
@@ -2213,7 +2227,7 @@ L953D:  STA $30
 L953F:  JSR L99E0
 L9542:  JSR $C00C
 L9545:  BCC L954A
-L9547:  JMP L94A9
+L9547:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L954A:  JSR L9D5E
 L954D:  LDY #$30
 L954F:  INY
@@ -2241,7 +2255,7 @@ L9576:  STA $2A
 L9578:  PLA
 L9579:  STA $29
 L957B:  BCC L9580
-L957D:  JMP L94A9
+L957D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9580:  LDY #$0B
 L9582:  LDA ($99),Y
 L9584:  CMP #$03
@@ -2283,7 +2297,7 @@ L95C9:  JSR $C03F
 L95CC:  LDA #$EA
 L95CE:  STA $30
 L95D0:  JSR $C00F
-L95D3:  JMP L94A9
+L95D3:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L95D6:  JSR L9D5E
 L95D9:  LDA #$9E
 L95DB:  JMP L9475
@@ -2291,12 +2305,13 @@ L95DE:  LDA #$D8
 L95E0:  STA $30
 L95E2:  JSR $C00F
 L95E5:  BCC L95EA
-L95E7:  JMP L94A9
+L95E7:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L95EA:  JMP L965D
 
 L95ED:  .byte $0A, $32, $64, $02, $02, $03, $05, $07, $0C, $40, $50, $60, $04, $44, $44, $77
 L95FD:  .byte $77, $74, $44
 
+CasinoTalk:
 L9600:  LDA #$98
 L9602:  STA $30
 L9604:  JSR L99E0
@@ -2307,7 +2322,7 @@ L960E:  LDA #$9A
 L9610:  JMP L9475
 L9613:  JSR $C00C
 L9616:  BCC L961B
-L9618:  JMP L94A9
+L9618:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L961B:  JSR L9D5E
 L961E:  LDA #$0A
 L9620:  STA $03D0
@@ -2325,7 +2340,7 @@ L963A:  LDA #$9B
 L963C:  STA $03D4
 L963F:  JSR $C018
 L9642:  BCC L9647
-L9644:  JMP L94A9
+L9644:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9647:  STA $48
 L9649:  TAX
 L964A:  LDA $95ED,X
@@ -2352,7 +2367,7 @@ L9679:  LDA #$9C
 L967B:  STA $03D4
 L967E:  JSR $C012
 L9681:  BCC L9686
-L9683:  JMP L94A9
+L9683:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9686:  PHA
 L9687:  JSR L99AE
 L968A:  LDA #$89
@@ -2413,7 +2428,8 @@ L96FB:  JMP L9475
 
 L96FE:  .byte $04, $44
 
-L9700:  LDA $70
+ShrineTalk:
+L9700:  LDA ThisMap
 L9702:  SEC
 L9703:  SBC #$15
 L9705:  TAX
@@ -2422,7 +2438,7 @@ L9709:  STA $30
 L970B:  JSR L99E0
 L970E:  JSR $C00C
 L9711:  BCC L9716
-L9713:  JMP L94A9
+L9713:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9716:  JSR L9D5E
 L9719:  LDA #$64
 L971B:  STA $2D
@@ -2464,7 +2480,7 @@ L975F:  JSR L99E0
 L9762:  JSR L9D5E
 L9765:  JSR L98F7
 L9768:  BCC L976D
-L976A:  JMP L94A9
+L976A:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L976D:  CMP #$00
 L976F:  BEQ L9716
 L9771:  LDA #$A1
@@ -2504,9 +2520,10 @@ L97D6:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $
 L97E6:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44
 L97F6:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $44
 
+LBTalk:
 L9800:  JSR $C00C
 L9803:  BCC L9808
-L9805:  JMP L94A9
+L9805:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9808:  LDA #$8A
 L980A:  STA $C1
 L980C:  LDY #$3B
@@ -2525,7 +2542,7 @@ L9826:  STA $D6
 L9828:  LDA #$01
 L982A:  JSR $C04E
 L982D:  JSR L8800
-L9830:  JMP L94A9
+L9830:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9833:  LDA $29
 L9835:  CMP #$06
 L9837:  BCS L983E
@@ -2545,7 +2562,7 @@ L9855:  STA $D6
 L9857:  LDA #$01
 L9859:  JSR $C04E
 L985C:  JSR L8800
-L985F:  JMP L94A9
+L985F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9862:  LDA $29
 L9864:  CMP #$19
 L9866:  BCS L986D
@@ -3087,7 +3104,7 @@ L9EFC:  .byte $33, $33, $33, $33
 
 L9F00:  JSR $C00C
 L9F03:  BCC L9F08
-L9F05:  JMP L94A9
+L9F05:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9F08:  JSR L9D5E
 L9F0B:  LDA #$DD
 L9F0D:  STA $03D4
@@ -3105,7 +3122,7 @@ L9F28:  LDA #$00
 L9F2A:  STA $9D
 L9F2C:  JSR $C018
 L9F2F:  BCC L9F34
-L9F31:  JMP L94A9
+L9F31:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9F34:  ASL
 L9F35:  TAX
 L9F36:  LDY #$30
@@ -3144,7 +3161,7 @@ L9F6F:  STA $2C
 L9F71:  PLA
 L9F72:  STA $2B
 L9F74:  BCC L9F79
-L9F76:  JMP L94A9
+L9F76:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9F79:  LDY #$30
 L9F7B:  CLC
 L9F7C:  LDA ($99),Y
