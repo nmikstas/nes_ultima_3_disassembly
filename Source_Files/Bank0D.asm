@@ -7,6 +7,7 @@
 ;Forward declarations.
 
 .alias  Reset1                  $C000
+.alias  ShowDialog1             $C00F
 .alias  ShowWindow1             $C015
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
@@ -644,13 +645,13 @@ L863F:  TXA
 L8640:  PHA
 L8641:  LSR
 L8642:  JSR L87AB
-L8645:  LDY #$0B
-L8647:  LDA ($99),Y
+L8645:  LDY #CHR_COND
+L8647:  LDA (CrntChrPtr),Y
 L8649:  CMP #$03
 L864B:  BCC L8650
 L864D:  JMP L86E4
-L8650:  LDY #$3B
-L8652:  LDA ($99),Y
+L8650:  LDY #CHR_MARKS
+L8652:  LDA (CrntChrPtr),Y
 L8654:  AND #$02
 L8656:  BNE L8676
 L8658:  LDA $A8
@@ -673,8 +674,8 @@ L867A:  BEQ L8683
 L867C:  CMP #$06
 L867E:  BEQ L8683
 L8680:  JMP L86A1
-L8683:  LDY #$3B
-L8685:  LDA ($99),Y
+L8683:  LDY #CHR_MARKS
+L8685:  LDA (CrntChrPtr),Y
 L8687:  AND #$01
 L8689:  BNE L86A1
 L868B:  LDA $0700,X
@@ -683,20 +684,20 @@ L8690:  CMP #$0E
 L8692:  BNE L86A1
 L8694:  LDY #$2D
 L8696:  LDA #$00
-L8698:  STA ($99),Y
+L8698:  STA (CrntChrPtr),Y
 L869A:  INY
-L869B:  STA ($99),Y
+L869B:  STA (CrntChrPtr),Y
 L869D:  LDA #$94
 L869F:  STA $D6
-L86A1:  LDY #$2E
-L86A3:  LDA ($99),Y
+L86A1:  LDY #CHR_HIT_PNTS+1
+L86A3:  LDA (CrntChrPtr),Y
 L86A5:  BNE L86E4
 L86A7:  DEY
-L86A8:  LDA ($99),Y
+L86A8:  LDA (CrntChrPtr),Y
 L86AA:  BNE L86E4
 L86AC:  LDY #$0B
 L86AE:  LDA #$03
-L86B0:  STA ($99),Y
+L86B0:  STA (CrntChrPtr),Y
 L86B2:  LDA $0B
 L86B4:  BNE L86B2
 L86B6:  LDA $0F
@@ -709,7 +710,7 @@ L86C2:  LDA $12
 L86C4:  STA $16
 L86C6:  LDA #$29
 L86C8:  STA $30
-L86CA:  JSR $C00F
+L86CA:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L86CD:  JSR $C021
 L86D0:  PLA
 L86D1:  PHA
@@ -732,8 +733,8 @@ L86EC:  JMP L8637
 L86EF:  RTS
 L86F0:  LDA #$00
 L86F2:  STA $2A
-L86F4:  LDY #$0B
-L86F6:  LDA ($99),Y
+L86F4:  LDY #CHR_COND
+L86F6:  LDA (CrntChrPtr),Y
 L86F8:  CMP #$03
 L86FA:  BCC L86FD
 L86FC:  RTS
@@ -751,11 +752,11 @@ L870F:  STA $29
 L8711:  LDA $AA
 L8713:  AND #$0F
 L8715:  BNE L872E
-L8717:  LDY #$2C
-L8719:  LDA ($99),Y
+L8717:  LDY #CHR_FOOD+1
+L8719:  LDA (CrntChrPtr),Y
 L871B:  BNE L872E
-L871D:  LDY #$2B
-L871F:  LDA ($99),Y
+L871D:  LDY #CHR_FOOD
+L871F:  LDA (CrntChrPtr),Y
 L8721:  BNE L872E
 L8723:  LDA $29
 L8725:  SEC
@@ -764,13 +765,13 @@ L8728:  STA $29
 L872A:  LDA #$FF
 L872C:  STA $2A
 L872E:  LDY #$2F
-L8730:  LDA ($99),Y
+L8730:  LDA (CrntChrPtr),Y
 L8732:  LDY #$38
-L8734:  CMP ($99),Y
+L8734:  CMP (CrntChrPtr),Y
 L8736:  BCS L873E
 L8738:  ADC #$01
 L873A:  LDY #$2F
-L873C:  STA ($99),Y
+L873C:  STA (CrntChrPtr),Y
 L873E:  LDA $AA
 L8740:  CMP #$50
 L8742:  BEQ L8748
@@ -795,39 +796,39 @@ L8766:  BEQ L876D
 L8768:  LDY #$2D
 L876A:  JSR L8793
 L876D:  LDY #$36
-L876F:  LDA ($99),Y
+L876F:  LDA (CrntChrPtr),Y
 L8771:  STA $29
 L8773:  INY
-L8774:  LDA ($99),Y
+L8774:  LDA (CrntChrPtr),Y
 L8776:  STA $2A
 L8778:  LDY #$2E
-L877A:  CMP ($99),Y
+L877A:  CMP (CrntChrPtr),Y
 L877C:  BCC L8787
 L877E:  BNE L8792
 L8780:  DEY
 L8781:  LDA $29
-L8783:  CMP ($99),Y
+L8783:  CMP (CrntChrPtr),Y
 L8785:  BCS L8792
 L8787:  LDY #$2D
 L8789:  LDA $29
-L878B:  STA ($99),Y
+L878B:  STA (CrntChrPtr),Y
 L878D:  INY
 L878E:  LDA $2A
-L8790:  STA ($99),Y
+L8790:  STA (CrntChrPtr),Y
 L8792:  RTS
 L8793:  CLC
-L8794:  ADC ($99),Y
+L8794:  ADC (CrntChrPtr),Y
 L8796:  STA $2D
 L8798:  LDA $2E
 L879A:  INY
-L879B:  ADC ($99),Y
+L879B:  ADC (CrntChrPtr),Y
 L879D:  BPL L87A3
 L879F:  LDA #$00
 L87A1:  STA $2D
-L87A3:  STA ($99),Y
+L87A3:  STA (CrntChrPtr),Y
 L87A5:  DEY
 L87A6:  LDA $2D
-L87A8:  STA ($99),Y
+L87A8:  STA (CrntChrPtr),Y
 L87AA:  RTS
 L87AB:  ASL
 L87AC:  ASL
@@ -870,12 +871,12 @@ L881B:  RTS
 L881C:  LDA #$00
 L881E:  STA $37
 L8820:  LDY #$0A
-L8822:  LDA ($99),Y
+L8822:  LDA (CrntChrPtr),Y
 L8824:  STA $31
 L8826:  LSR
 L8827:  STA $33
 L8829:  LDY #$09
-L882B:  LDA ($99),Y
+L882B:  LDA (CrntChrPtr),Y
 L882D:  STA $32
 L882F:  LSR
 L8830:  STA $34
@@ -889,19 +890,19 @@ L883E:  BCC L8842
 L8840:  LDA $33
 L8842:  STA $36
 L8844:  LDY #$06
-L8846:  LDA ($99),Y
+L8846:  LDA (CrntChrPtr),Y
 L8848:  TAX
 L8849:  LDA $8854,X
 L884C:  TAX
 L884D:  LDA $31,X
 L884F:  LDY #$38
-L8851:  STA ($99),Y
+L8851:  STA (CrntChrPtr),Y
 L8853:  RTS
 
 L8854:  .byte $06, $00, $01, $06, $02, $06, $03, $02, $04, $03, $05
 
 L885F:  LDY #$33
-L8861:  LDA ($99),Y
+L8861:  LDA (CrntChrPtr),Y
 L8863:  STA $B5
 L8865:  LDA #$64
 L8867:  STA $B6
@@ -915,10 +916,10 @@ L8875:  ADC #$00
 L8877:  STA $B8
 L8879:  LDY #$36
 L887B:  LDA $B7
-L887D:  STA ($99),Y
+L887D:  STA (CrntChrPtr),Y
 L887F:  INY
 L8880:  LDA $B8
-L8882:  STA ($99),Y
+L8882:  STA (CrntChrPtr),Y
 L8884:  RTS
 L8885:  TXA
 L8886:  PHA
@@ -938,6 +939,9 @@ L889C:  PLA
 L889D:  TAX
 L889E:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+;Unused.
 L889F:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 L88AF:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 L88BF:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
@@ -946,33 +950,49 @@ L88DF:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $
 L88EF:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 L88FF:  .byte $00
 
+;----------------------------------------------------------------------------------------------------
+
 SherryTalk:
-L8900:  LDA #$89
-L8902:  STA InitNewMusic
-L8904:  LDA #$6F
-L8906:  STA TextIndex
-L8908:  JSR L99E0
-L890B:  JSR L98F7
-L890E:  BCC L8913
+L8900:  LDA #MUS_CASTLE+INIT    ;Start the Lord British castle music.
+L8902:  STA InitNewMusic        ;
+
+L8904:  LDA #$6F                ;I AM SHERRY. THINK ME BEAUTIFUL? text.
+L8906:  STA TextIndex           ;
+
+L8908:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L890B:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
+L890E:  BCC +                   ;Did player hit B button? If not, branch.
+
 L8910:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8913:  CMP #$01
-L8915:  BEQ L8921
-L8917:  LDA #$8C
-L8919:  STA TextIndex
-L891B:  JSR $C00F
+
+L8913:* CMP #WND_NO             ;Did player select no?
+L8915:  BEQ +                   ;If so, branch.
+
+L8917:  LDA #$8C                ;THANK YOU. NEXT TIME BRING SOME FLOWERS text.
+L8919:  STA TextIndex           ;
+
+L891B:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L891E:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8921:  LDA #$6F
-L8923:  STA TextIndex
-L8925:  JSR L99E0
-L8928:  JSR L98F7
-L892B:  BCC L8930
+
+L8921:* LDA #$6F                ;I AM SHERRY. THINK ME BEAUTIFUL? text.
+L8923:  STA TextIndex           ;
+
+L8925:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L8928:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
+L892B:  BCC +                   ;Did player hit B button? If not, branch.
+
 L892D:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8930:  CMP #$01
-L8932:  BEQ L8921
-L8934:  LDA #$99
-L8936:  STA TextIndex
-L8938:  JSR $C00F
+
+L8930:* CMP #WND_NO             ;Did player select no?
+L8932:  BEQ --                  ;If so, branch.
+
+L8934:  LDA #$99                ;FLATTERY WILL GET YOU NOWHERE text.
+L8936:  STA TextIndex           ;
+
+L8938:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L893B:  JMP DialogExit          ;($94A9)Exit dialog routines.
+
+;----------------------------------------------------------------------------------------------------
 
 L893E:  LDY #SG_BOAT_X
 L8940:  LDA BoatXPos
@@ -1048,16 +1068,21 @@ L89C3:  LDA Ch4Index
 L89C6:  STA (SGDatPtr),Y
 L89C8:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+;Unused.
 L89C9:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33
 L89D9:  .byte $33, $33, $30, $00, $00, $00, $00, $00, $00, $00, $00, $03, $33, $33, $33, $33
 L89E9:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33
 L89F9:  .byte $33, $33, $30, $00, $00, $00, $00
 
+;----------------------------------------------------------------------------------------------------
+
 FortuneTalk:
 L8A00:  LDA #$64
 L8A02:  STA $30
-L8A04:  JSR L99E0
-L8A07:  JSR L98F7
+L8A04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L8A07:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8A0A:  BCC L8A0F
 L8A0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8A0F:  CMP #$01
@@ -1069,17 +1094,17 @@ L8A1B:  BCC L8A20
 L8A1D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8A20:  JSR L9D5E
 L8A23:  LDA #$67
-L8A25:  STA $03D4
+L8A25:  STA TextIndex2
 L8A28:  LDA #$0A
-L8A2A:  STA $03D0
+L8A2A:  STA Wnd2XPos
 L8A2D:  LDA #$06
-L8A2F:  STA $03D1
+L8A2F:  STA Wnd2YPos
 L8A32:  LDA #$0C
-L8A34:  STA $03D2
+L8A34:  STA Wnd2Width
 L8A37:  LDA #$0E
-L8A39:  STA $03D3
+L8A39:  STA Wnd2Height
 L8A3C:  LDA #$05
-L8A3E:  STA $9C
+L8A3E:  STA NumMenuItems
 L8A40:  LDA #$00
 L8A42:  STA $9D
 L8A44:  JSR $C018
@@ -1094,21 +1119,21 @@ L8A53:  LDA #$64
 L8A55:  STA $B6
 L8A57:  JSR L8885
 L8A5A:  LDY #$30
-L8A5C:  LDA ($99),Y
+L8A5C:  LDA (CrntChrPtr),Y
 L8A5E:  SEC
 L8A5F:  SBC $B7
 L8A61:  STA $2D
 L8A63:  INY
-L8A64:  LDA ($99),Y
+L8A64:  LDA (CrntChrPtr),Y
 L8A66:  SBC $B8
 L8A68:  BCS L8A70
 L8A6A:  PLA
 L8A6B:  LDA #$68
 L8A6D:  JMP L9475
-L8A70:  STA ($99),Y
+L8A70:  STA (CrntChrPtr),Y
 L8A72:  DEY
 L8A73:  LDA $2D
-L8A75:  STA ($99),Y
+L8A75:  STA (CrntChrPtr),Y
 L8A77:  JSR L9D5E
 L8A7A:  CLC
 L8A7B:  PLA
@@ -1116,7 +1141,7 @@ L8A7C:  LDX $70
 L8A7E:  ADC $8A90,X
 L8A81:  ADC #$C0
 L8A83:  STA $30
-L8A85:  JSR $C00F
+L8A85:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8A88:  LDA #$69
 L8A8A:  JMP L9475
 L8A8D:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1147,26 +1172,26 @@ L8AFB:  .byte $33, $00, $00, $00, $00
 HealerTalk:
 L8B00:  LDA #$6A
 L8B02:  STA $30
-L8B04:  JSR L99E0
+L8B04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8B07:  LDX $70
 L8B09:  LDA $8ABF,X
 L8B0C:  CLC
 L8B0D:  ADC #$6B
-L8B0F:  STA $03D4
+L8B0F:  STA TextIndex2
 L8B12:  LDA #$0A
-L8B14:  STA $03D0
+L8B14:  STA Wnd2XPos
 L8B17:  LDA #$06
-L8B19:  STA $03D1
+L8B19:  STA Wnd2YPos
 L8B1C:  LDA #$14
-L8B1E:  STA $03D2
+L8B1E:  STA Wnd2Width
 L8B21:  LDA #$08
 L8B23:  ADC $8ABF,X
 L8B26:  ADC $8ABF,X
-L8B29:  STA $03D3
+L8B29:  STA Wnd2Height
 L8B2C:  CLC
 L8B2D:  LDA #$03
 L8B2F:  ADC $8ABF,X
-L8B32:  STA $9C
+L8B32:  STA NumMenuItems
 L8B34:  LDA #$00
 L8B36:  STA $9D
 L8B38:  JSR $C018
@@ -1188,7 +1213,7 @@ L8B53:  CMP #$04
 L8B55:  BEQ L8B5E
 L8B57:  LDA #$F9
 L8B59:  STA $30
-L8B5B:  JSR L99E0
+L8B5B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8B5E:  JSR $C00C
 L8B61:  PLA
 L8B62:  BCC L8B67
@@ -1208,10 +1233,10 @@ L8B7B:  LDA $8ADC,X
 L8B7E:  STA $2D
 L8B80:  LDY #$30
 L8B82:  SEC
-L8B83:  LDA ($99),Y
+L8B83:  LDA (CrntChrPtr),Y
 L8B85:  SBC $2D
 L8B87:  INY
-L8B88:  LDA ($99),Y
+L8B88:  LDA (CrntChrPtr),Y
 L8B8A:  SBC $2E
 L8B8C:  PLA
 L8B8D:  BCS L8B94
@@ -1250,11 +1275,11 @@ L8BC6:  STA $29
 L8BC8:  LDA $30
 L8BCA:  BNE L8BF7
 L8BCC:  LDY #$0B
-L8BCE:  LDA ($99),Y
+L8BCE:  LDA (CrntChrPtr),Y
 L8BD0:  CMP #$02
 L8BD2:  BNE L8BF2
 L8BD4:  LDA #$00
-L8BD6:  STA ($99),Y
+L8BD6:  STA (CrntChrPtr),Y
 L8BD8:  LDA #$64
 L8BDA:  STA $2D
 L8BDC:  LDA #$00
@@ -1263,7 +1288,7 @@ L8BE0:  JSR L8CF1
 L8BE3:  JSR L9D5E
 L8BE6:  LDA #$EB
 L8BE8:  STA $30
-L8BEA:  JSR $C00F
+L8BEA:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8BED:  LDA #$76
 L8BEF:  JMP L9475
 L8BF2:  LDA #$75
@@ -1271,11 +1296,11 @@ L8BF4:  JMP L9475
 L8BF7:  CMP #$01
 L8BF9:  BNE L8C26
 L8BFB:  LDY #$0B
-L8BFD:  LDA ($99),Y
+L8BFD:  LDA (CrntChrPtr),Y
 L8BFF:  CMP #$01
 L8C01:  BNE L8C21
 L8C03:  LDA #$00
-L8C05:  STA ($99),Y
+L8C05:  STA (CrntChrPtr),Y
 L8C07:  LDA #$64
 L8C09:  STA $2D
 L8C0B:  LDA #$00
@@ -1284,7 +1309,7 @@ L8C0F:  JSR L8CF1
 L8C12:  JSR L9D5E
 L8C15:  LDA #$EB
 L8C17:  STA $30
-L8C19:  JSR $C00F
+L8C19:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C1C:  LDA #$76
 L8C1E:  JMP L9475
 L8C21:  LDA #$75
@@ -1292,10 +1317,10 @@ L8C23:  JMP L9475
 L8C26:  CMP #$02
 L8C28:  BNE L8C52
 L8C2A:  LDY #$36
-L8C2C:  LDA ($99),Y
+L8C2C:  LDA (CrntChrPtr),Y
 L8C2E:  STA $2D
 L8C30:  INY
-L8C31:  LDA ($99),Y
+L8C31:  LDA (CrntChrPtr),Y
 L8C33:  STA $2E
 L8C35:  JSR L94AA
 L8C38:  LDA #$C8
@@ -1306,11 +1331,11 @@ L8C40:  JSR L8CF1
 L8C43:  JSR L9D5E
 L8C46:  LDA #$EB
 L8C48:  STA $30
-L8C4A:  JSR $C00F
+L8C4A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C4D:  LDA #$76
 L8C4F:  JMP L9475
 L8C52:  LDY #$0B
-L8C54:  LDA ($99),Y
+L8C54:  LDA (CrntChrPtr),Y
 L8C56:  CMP #$03
 L8C58:  BNE L8CB4
 L8C5A:  LDA $99
@@ -1329,31 +1354,31 @@ L8C71:  PLA
 L8C72:  STA $99
 L8C74:  LDA #$70
 L8C76:  STA $30
-L8C78:  JSR $C00F
+L8C78:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C7B:  LDA #$02
 L8C7D:  JSR L992C
 L8C80:  BEQ L8CA9
 L8C82:  LDY #$0B
 L8C84:  LDA #$00
-L8C86:  STA ($99),Y
+L8C86:  STA (CrntChrPtr),Y
 L8C88:  LDY #$2D
 L8C8A:  LDA #$96
-L8C8C:  STA ($99),Y
+L8C8C:  STA (CrntChrPtr),Y
 L8C8E:  INY
 L8C8F:  LDA #$00
-L8C91:  STA ($99),Y
+L8C91:  STA (CrntChrPtr),Y
 L8C93:  JSR $C03F
 L8C96:  LDA #$EC
 L8C98:  STA $30
-L8C9A:  JSR $C00F
+L8C9A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C9D:  LDA #$EB
 L8C9F:  STA $30
-L8CA1:  JSR $C00F
+L8CA1:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8CA4:  LDA #$76
 L8CA6:  JMP L9475
 L8CA9:  LDY #$0B
 L8CAB:  LDA #$04
-L8CAD:  STA ($99),Y
+L8CAD:  STA (CrntChrPtr),Y
 L8CAF:  LDA #$71
 L8CB1:  JMP L9475
 L8CB4:  BCC L8CBB
@@ -1363,20 +1388,20 @@ L8CBB:  LDA #$75
 L8CBD:  JMP L9475
 L8CC0:  LDY #$2D
 L8CC2:  SEC
-L8CC3:  LDA ($99),Y
+L8CC3:  LDA (CrntChrPtr),Y
 L8CC5:  SBC #$64
 L8CC7:  STA $2D
 L8CC9:  INY
-L8CCA:  LDA ($99),Y
+L8CCA:  LDA (CrntChrPtr),Y
 L8CCC:  SBC #$00
 L8CCE:  BCS L8CD5
 L8CD0:  LDA #$72
 L8CD2:  JMP L9475
 L8CD5:  LDY #$2E
-L8CD7:  STA ($99),Y
+L8CD7:  STA (CrntChrPtr),Y
 L8CD9:  DEY
 L8CDA:  LDA $2D
-L8CDC:  STA ($99),Y
+L8CDC:  STA (CrntChrPtr),Y
 L8CDE:  LDA #$1E
 L8CE0:  STA $2D
 L8CE2:  LDA #$00
@@ -1397,7 +1422,7 @@ L8CFD:  .byte $00, $00, $00
 WeaponTalk:
 L8D00:  LDA #$77
 L8D02:  STA $30
-L8D04:  JSR L99E0
+L8D04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8D07:  JSR L98AA
 L8D0A:  BCC L8D0F
 L8D0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1412,17 +1437,17 @@ L8D21:  LDX $70
 L8D23:  LDA $8E56,X
 L8D26:  CLC
 L8D27:  ADC #$AE
-L8D29:  STA $03D4
+L8D29:  STA TextIndex2
 L8D2C:  LDA #$0C
-L8D2E:  STA $03D0
+L8D2E:  STA Wnd2XPos
 L8D31:  LDA #$08
-L8D33:  STA $03D1
+L8D33:  STA Wnd2YPos
 L8D36:  LDA #$12
-L8D38:  STA $03D2
+L8D38:  STA Wnd2Width
 L8D3B:  LDA #$10
-L8D3D:  STA $03D3
+L8D3D:  STA Wnd2Height
 L8D40:  LDA #$07
-L8D42:  STA $9C
+L8D42:  STA NumMenuItems
 L8D44:  LDA #$00
 L8D46:  STA $9D
 L8D48:  JSR $C012
@@ -1443,8 +1468,8 @@ L8D64:  BCC L8D83
 L8D66:  PHA
 L8D67:  LDA #$83
 L8D69:  STA $30
-L8D6B:  JSR L99E0
-L8D6E:  JSR L98F7
+L8D6B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L8D6E:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8D71:  BCC L8D77
 L8D73:  PLA
 L8D74:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1460,7 +1485,7 @@ L8D87:  PLA
 L8D88:  BCC L8D99
 L8D8A:  LDA #$84
 L8D8C:  STA $30
-L8D8E:  JSR $C00F
+L8D8E:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8D91:  BCC L8D96
 L8D93:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D96:  JMP L8DBE
@@ -1476,7 +1501,7 @@ L8DA9:  PLA
 L8DAA:  BCC L8DBB
 L8DAC:  LDA #$68
 L8DAE:  STA $30
-L8DB0:  JSR $C00F
+L8DB0:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8DB3:  BCC L8DB8
 L8DB5:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DB8:  JMP L8DBE
@@ -1484,8 +1509,8 @@ L8DBB:  JSR L9463
 L8DBE:  JSR L9D5E
 L8DC1:  LDA #$85
 L8DC3:  STA $30
-L8DC5:  JSR L99E0
-L8DC8:  JSR L98F7
+L8DC5:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L8DC8:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8DCB:  BCC L8DD0
 L8DCD:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DD0:  CMP #$01
@@ -1506,7 +1531,7 @@ L8DF3:  PLA
 L8DF4:  BCC L8E00
 L8DF6:  LDA #$ED
 L8DF8:  STA $30
-L8DFA:  JSR $C00F
+L8DFA:  JSR ShowDialog1         ;($C00F)Show dialog in lower screen window.
 L8DFD:  JMP L8DBE
 L8E00:  PHA
 L8E01:  JSR L8AA5
@@ -1514,7 +1539,7 @@ L8E04:  PLA
 L8E05:  BCC L8E11
 L8E07:  LDA #$F1
 L8E09:  STA $30
-L8E0B:  JSR $C00F
+L8E0B:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8E0E:  JMP L8DBE
 L8E11:  PHA
 L8E12:  ASL
@@ -1525,8 +1550,8 @@ L8E19:  LDA $8E98,X
 L8E1C:  STA $A1
 L8E1E:  LDA #$D6
 L8E20:  STA $30
-L8E22:  JSR L99E0
-L8E25:  JSR L98F7
+L8E22:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L8E25:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8E28:  BCC L8E2E
 L8E2A:  PLA
 L8E2B:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1547,10 +1572,10 @@ L8E47:  PLA
 L8E48:  CLC
 L8E49:  ADC #$0C
 L8E4B:  TAY
-L8E4C:  LDA ($99),Y
+L8E4C:  LDA (CrntChrPtr),Y
 L8E4E:  SEC
 L8E4F:  SBC #$01
-L8E51:  STA ($99),Y
+L8E51:  STA (CrntChrPtr),Y
 L8E53:  JMP L8DBE
 
 L8E56:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
@@ -1562,7 +1587,7 @@ L8EA6:  .byte $01, $48, $03, $80, $02, $C0, $03, $70, $08, $78, $14, $38, $0E
 
 L8EB3:  PHA
 L8EB4:  LDY #$34
-L8EB6:  LDA ($99),Y
+L8EB6:  LDA (CrntChrPtr),Y
 L8EB8:  SEC
 L8EB9:  SBC #$01
 L8EBB:  STA $30
@@ -1573,7 +1598,7 @@ L8EC2:  BNE L8ECF
 L8EC4:  CLC
 L8EC5:  ADC #$0C
 L8EC7:  TAY
-L8EC8:  LDA ($99),Y
+L8EC8:  LDA (CrntChrPtr),Y
 L8ECA:  TAY
 L8ECB:  CMP #$01
 L8ECD:  BEQ L8ED0
@@ -1587,7 +1612,7 @@ L8EF1:  .byte $33, $33, $33, $33, $33, $33, $30, $00, $00, $00, $00, $00, $00, $
 ArmoryTalk:
 L8F00:  LDA #$78
 L8F02:  STA $30
-L8F04:  JSR L99E0
+L8F04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8F07:  JSR L98AA
 L8F0A:  BCC L8F0F
 L8F0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1599,19 +1624,19 @@ L8F19:  BCC L8F1E
 L8F1B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F1E:  JSR L9D5E
 L8F21:  LDA #$0C
-L8F23:  STA $03D0
+L8F23:  STA Wnd2XPos
 L8F26:  LDA #$08
-L8F28:  STA $03D1
+L8F28:  STA Wnd2YPos
 L8F2B:  LDA #$12
-L8F2D:  STA $03D2
+L8F2D:  STA Wnd2Width
 L8F30:  LDA #$0E
-L8F32:  STA $03D3
+L8F32:  STA Wnd2Height
 L8F35:  LDA #$06
-L8F37:  STA $9C
+L8F37:  STA NumMenuItems
 L8F39:  LDA #$00
 L8F3B:  STA $9D
 L8F3D:  LDA #$AB
-L8F3F:  STA $03D4
+L8F3F:  STA TextIndex2
 L8F42:  JSR $C012
 L8F45:  BCC L8F4A
 L8F47:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1622,8 +1647,8 @@ L8F4F:  BCC L8F6E
 L8F51:  PHA
 L8F52:  LDA #$83
 L8F54:  STA $30
-L8F56:  JSR L99E0
-L8F59:  JSR L98F7
+L8F56:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L8F59:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8F5C:  BCC L8F62
 L8F5E:  PLA
 L8F5F:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1639,7 +1664,7 @@ L8F72:  PLA
 L8F73:  BCC L8F84
 L8F75:  LDA #$84
 L8F77:  STA $30
-L8F79:  JSR $C00F
+L8F79:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8F7C:  BCC L8F81
 L8F7E:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F81:  JMP L8FA9
@@ -1655,7 +1680,7 @@ L8F94:  PLA
 L8F95:  BCC L8FA6
 L8F97:  LDA #$68
 L8F99:  STA $30
-L8F9B:  JSR $C00F
+L8F9B:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8F9E:  BCC L8FA3
 L8FA0:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8FA3:  JMP L8FA9
@@ -1663,8 +1688,8 @@ L8FA6:  JSR L93C0
 L8FA9:  JSR L9D5E
 L8FAC:  LDA #$85
 L8FAE:  STA $30
-L8FB0:  JSR L99E0
-L8FB3:  JSR L98F7
+L8FB0:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L8FB3:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8FB6:  BCC L8FBB
 L8FB8:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8FBB:  CMP #$01
@@ -1674,7 +1699,7 @@ L8FC2:  LDA #$86
 L8FC4:  JMP L9475
 L8FC7:  PHA
 L8FC8:  LDY #$35
-L8FCA:  LDA ($99),Y
+L8FCA:  LDA (CrntChrPtr),Y
 L8FCC:  SEC
 L8FCD:  SBC #$01
 L8FCF:  STA $30
@@ -1685,7 +1710,7 @@ L8FD6:  BNE L8FE2
 L8FD8:  CLC
 L8FD9:  ADC #$1B
 L8FDB:  TAY
-L8FDC:  LDA ($99),Y
+L8FDC:  LDA (CrntChrPtr),Y
 L8FDE:  CMP #$01
 L8FE0:  BEQ L8FE3
 L8FE2:  CLC
@@ -1697,25 +1722,25 @@ L8FF4:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 GroceryTalk:
 L9000:  LDA #$79
 L9002:  STA $30
-L9004:  JSR L99E0
+L9004:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9007:  JSR $C00C
 L900A:  BCC L900F
 L900C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L900F:  JSR L9D5E
 L9012:  LDA #$0A
-L9014:  STA $03D0
+L9014:  STA Wnd2XPos
 L9017:  LDA #$04
-L9019:  STA $03D1
+L9019:  STA Wnd2YPos
 L901C:  LDA #$0C
-L901E:  STA $03D2
+L901E:  STA Wnd2Width
 L9021:  LDA #$0A
-L9023:  STA $03D3
+L9023:  STA Wnd2Height
 L9026:  LDA #$03
-L9028:  STA $9C
+L9028:  STA NumMenuItems
 L902A:  LDA #$00
 L902C:  STA $9D
 L902E:  LDA #$B1
-L9030:  STA $03D4
+L9030:  STA TextIndex2
 L9033:  JSR $C018
 L9036:  BCC L903B
 L9038:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1733,7 +1758,7 @@ L904E:  PLA
 L904F:  BCC L9060
 L9051:  LDA #$68
 L9053:  STA $30
-L9055:  JSR $C00F
+L9055:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9058:  BCC L905D
 L905A:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L905D:  JMP L906D
@@ -1745,8 +1770,8 @@ L9068:  STA $2E
 L906A:  JSR L908B
 L906D:  LDA #$85
 L906F:  STA $30
-L9071:  JSR L99E0
-L9074:  JSR L98F7
+L9071:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L9074:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9077:  BCC L907C
 L9079:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L907C:  CMP #$01
@@ -1758,12 +1783,12 @@ L9085:  JMP L9475
 L9088:  .byte $0A, $32, $64
 
 L908B:  LDY #$2B
-L908D:  LDA ($99),Y
+L908D:  LDA (CrntChrPtr),Y
 L908F:  CLC
 L9090:  ADC $2D
 L9092:  STA $2D
 L9094:  INY
-L9095:  LDA ($99),Y
+L9095:  LDA (CrntChrPtr),Y
 L9097:  ADC $2E
 L9099:  STA $2E
 L909B:  CMP #$27
@@ -1778,10 +1803,10 @@ L90AB:  LDA #$0F
 L90AD:  STA $2D
 L90AF:  LDY #$2B
 L90B1:  LDA $2D
-L90B3:  STA ($99),Y
+L90B3:  STA (CrntChrPtr),Y
 L90B5:  INY
 L90B6:  LDA $2E
-L90B8:  STA ($99),Y
+L90B8:  STA (CrntChrPtr),Y
 L90BA:  RTS
 
 L90BB:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $22, $24, $44, $44, $44, $44, $44, $44
@@ -1797,10 +1822,10 @@ L9104:  LDA #$0A
 L9106:  STA $A0
 L9108:  LDA #$00
 L910A:  STA $A1
-L910C:  JSR L99E0
+L910C:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L910F:  LDA #$00
 L9111:  STA $48
-L9113:  JSR L98F7
+L9113:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9116:  CMP #$01
 L9118:  BEQ L9122
 L911A:  JSR $C00C
@@ -1819,21 +1844,21 @@ L9137:  JMP L9475
 L913A:  JSR L9D5E
 L913D:  LDA #$74
 L913F:  STA $30
-L9141:  JSR $C00F
+L9141:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9144:  INC $48
 L9146:  LDA $48
 L9148:  CMP #$03
 L914A:  BCS L9156
 L914C:  LDA #$82
 L914E:  STA $30
-L9150:  JSR L99E0
+L9150:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9153:  JMP L9113
 L9156:  CMP #$03
 L9158:  BNE L916C
 L915A:  LDX $70
 L915C:  LDA $9193,X
 L915F:  STA $30
-L9161:  JSR $C00F
+L9161:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9164:  BCC L9169
 L9166:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9169:  JMP L914C
@@ -1841,14 +1866,14 @@ L916C:  CMP #$04
 L916E:  BNE L917F
 L9170:  LDA #$7E
 L9172:  STA $30
-L9174:  JSR $C00F
+L9174:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9177:  BCC L917C
 L9179:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L917C:  JMP L914C
 L917F:  LDX $70
 L9181:  LDA $91A7,X
 L9184:  STA $30
-L9186:  JSR $C00F
+L9186:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9189:  BCC L918E
 L918B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L918E:  LDA #$89
@@ -1865,25 +1890,25 @@ L91F3:  .byte $00, $44, $44, $44, $44, $40, $00, $44, $44, $77, $77, $74, $44
 GuildTalk:
 L9200:  LDA #$7A
 L9202:  STA $30
-L9204:  JSR L99E0
+L9204:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9207:  JSR $C00C
 L920A:  BCC L920F
 L920C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L920F:  JSR L9D5E
 L9212:  LDA #$0C
-L9214:  STA $03D0
+L9214:  STA Wnd2XPos
 L9217:  LDA #$08
-L9219:  STA $03D1
+L9219:  STA Wnd2YPos
 L921C:  LDA #$12
-L921E:  STA $03D2
+L921E:  STA Wnd2Width
 L9221:  LDA #$0C
-L9223:  STA $03D3
+L9223:  STA Wnd2Height
 L9226:  LDA #$05
-L9228:  STA $9C
+L9228:  STA NumMenuItems
 L922A:  LDA #$00
 L922C:  STA $9D
 L922E:  LDA #$AC
-L9230:  STA $03D4
+L9230:  STA TextIndex2
 L9233:  JSR $C012
 L9236:  BCC L923B
 L9238:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1895,7 +1920,7 @@ L9243:  PLA
 L9244:  BCC L9255
 L9246:  LDA #$84
 L9248:  STA $30
-L924A:  JSR $C00F
+L924A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L924D:  BCC L9252
 L924F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9252:  JMP L9278
@@ -1910,7 +1935,7 @@ L9263:  PLA
 L9264:  BCC L9275
 L9266:  LDA #$68
 L9268:  STA $30
-L926A:  JSR $C00F
+L926A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L926D:  BCC L9272
 L926F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9272:  JMP L9278
@@ -1918,8 +1943,8 @@ L9275:  JSR L92B3
 L9278:  JSR L9D5E
 L927B:  LDA #$85
 L927D:  STA $30
-L927F:  JSR L99E0
-L9282:  JSR L98F7
+L927F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L9282:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9285:  BCC L928A
 L9287:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L928A:  CMP #$01
@@ -1936,7 +1961,7 @@ L92A4:  RTS
 L92A5:  CLC
 L92A6:  ADC #$22
 L92A8:  TAY
-L92A9:  LDA ($99),Y
+L92A9:  LDA (CrntChrPtr),Y
 L92AB:  CLC
 L92AC:  ADC #$01
 L92AE:  CMP #$64
@@ -1945,7 +1970,7 @@ L92B2:  RTS
 L92B3:  CLC
 L92B4:  ADC #$22
 L92B6:  TAY
-L92B7:  LDA ($99),Y
+L92B7:  LDA (CrntChrPtr),Y
 L92B9:  CLC
 L92BA:  ADC #$01
 L92BC:  CPY #$22
@@ -1955,7 +1980,7 @@ L92C1:  ADC #$04
 L92C3:  CMP #$64
 L92C5:  BCC L92C9
 L92C7:  LDA #$63
-L92C9:  STA ($99),Y
+L92C9:  STA (CrntChrPtr),Y
 L92CB:  RTS
 
 L92CC:  .byte $44, $44, $44, $44, $44, $44, $40, $00, $44, $44, $40, $00, $04, $44, $44, $44
@@ -1966,8 +1991,8 @@ L92FC:  .byte $77, $77, $74, $44
 StableTalk:
 L9300:  LDA #$8B
 L9302:  STA $30
-L9304:  JSR L99E0
-L9307:  JSR L98F7
+L9304:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L9307:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L930A:  CMP #$01
 L930C:  BNE L9313
 L930E:  LDA #$8E
@@ -2009,13 +2034,13 @@ L9360:  PLA
 L9361:  BCC L936D
 L9363:  LDA #$ED
 L9365:  STA $30
-L9367:  JSR $C00F
+L9367:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L936A:  JMP L8FA9
 L936D:  CMP #$06
 L936F:  BCC L937B
 L9371:  LDA #$F1
 L9373:  STA $30
-L9375:  JSR $C00F
+L9375:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9378:  JMP L8FA9
 L937B:  PHA
 L937C:  ASL
@@ -2026,8 +2051,8 @@ L9383:  LDA $97A1,X
 L9386:  STA $A1
 L9388:  LDA #$D6
 L938A:  STA $30
-L938C:  JSR L99E0
-L938F:  JSR L98F7
+L938C:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L938F:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9392:  BCC L9398
 L9394:  PLA
 L9395:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2048,10 +2073,10 @@ L93B1:  PLA
 L93B2:  CLC
 L93B3:  ADC #$1B
 L93B5:  TAY
-L93B6:  LDA ($99),Y
+L93B6:  LDA (CrntChrPtr),Y
 L93B8:  SEC
 L93B9:  SBC #$01
-L93BB:  STA ($99),Y
+L93BB:  STA (CrntChrPtr),Y
 L93BD:  JMP L8FA9
 L93C0:  CMP #$07
 L93C2:  BCC L93C5
@@ -2059,13 +2084,13 @@ L93C4:  RTS
 L93C5:  CLC
 L93C6:  ADC #$1B
 L93C8:  TAY
-L93C9:  LDA ($99),Y
+L93C9:  LDA (CrntChrPtr),Y
 L93CB:  CLC
 L93CC:  ADC #$01
 L93CE:  CMP #$64
 L93D0:  BCC L93D4
 L93D2:  LDA #$63
-L93D4:  STA ($99),Y
+L93D4:  STA (CrntChrPtr),Y
 L93D6:  RTS
 
 L93D7L:  .byte $04, $4C, $BB, $BB, $BB, $BC, $47, $77, $44, $00, $00, $00, $00, $00, $00, $C0
@@ -2075,8 +2100,8 @@ L93F7L:  .byte $00, $08, $99, $99, $99, $9C, $47, $77, $74
 InnTalk:
 L9400:  LDA #$90
 L9402:  STA $30
-L9404:  JSR L99E0
-L9407:  JSR L98F7
+L9404:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L9407:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L940A:  CMP #$01
 L940C:  BNE L9412
 L940E:  SEC
@@ -2099,7 +2124,7 @@ L9438:  ADC #$0C
 L943A:  STA $30
 L943C:  LDX #$00
 L943E:  LDY #$0C
-L9440:  LDA ($99),Y
+L9440:  LDA (CrntChrPtr),Y
 L9442:  BEQ L9449
 L9444:  INX
 L9445:  CPY $30
@@ -2113,7 +2138,7 @@ L9451:  BNE L9440
 L9453:  CLC
 L9454:  LDA $30
 L9456:  TAY
-L9457:  LDA ($99),Y
+L9457:  LDA (CrntChrPtr),Y
 L9459:  CLC
 L945A:  ADC #$01
 L945C:  CMP #$64
@@ -2123,23 +2148,23 @@ L9462:  RTS
 L9463:  CLC
 L9464:  ADC #$0C
 L9466:  TAY
-L9467:  LDA ($99),Y
+L9467:  LDA (CrntChrPtr),Y
 L9469:  CLC
 L946A:  ADC #$01
 L946C:  CMP #$64
 L946E:  BCC L9472
 L9470:  LDA #$63
-L9472:  STA ($99),Y
+L9472:  STA (CrntChrPtr),Y
 L9474:  RTS
 L9475:  STA $30
-L9477:  JMP $C00F
+L9477:  JMP ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L947A:  LDY #$30
-L947C:  LDA ($99),Y
+L947C:  LDA (CrntChrPtr),Y
 L947E:  CLC
 L947F:  ADC $2D
 L9481:  STA $2D
 L9483:  INY
-L9484:  LDA ($99),Y
+L9484:  LDA (CrntChrPtr),Y
 L9486:  ADC $2E
 L9488:  STA $2E
 L948A:  CMP #$27
@@ -2154,43 +2179,43 @@ L949A:  LDA #$0F
 L949C:  STA $2D
 L949E:  LDY #$30
 L94A0:  LDA $2D
-L94A2:  STA ($99),Y
+L94A2:  STA (CrntChrPtr),Y
 L94A4:  INY
 L94A5:  LDA $2E
-L94A7:  STA ($99),Y
+L94A7:  STA (CrntChrPtr),Y
 
 DialogExit:
 L94A9:  RTS
 
 L94AA:  LDY #$2D
-L94AC:  LDA ($99),Y
+L94AC:  LDA (CrntChrPtr),Y
 L94AE:  CLC
 L94AF:  ADC $2D
 L94B1:  STA $2D
 L94B3:  INY
-L94B4:  LDA ($99),Y
+L94B4:  LDA (CrntChrPtr),Y
 L94B6:  ADC $2E
 L94B8:  STA $2E
 L94BA:  LDY #$37
-L94BC:  CMP ($99),Y
+L94BC:  CMP (CrntChrPtr),Y
 L94BE:  BCC L94D4
 L94C0:  BNE L94C9
 L94C2:  LDA $2D
 L94C4:  DEY
-L94C5:  CMP ($99),Y
+L94C5:  CMP (CrntChrPtr),Y
 L94C7:  BCC L94D4
 L94C9:  LDY #$36
-L94CB:  LDA ($99),Y
+L94CB:  LDA (CrntChrPtr),Y
 L94CD:  STA $2D
 L94CF:  INY
-L94D0:  LDA ($99),Y
+L94D0:  LDA (CrntChrPtr),Y
 L94D2:  STA $2E
 L94D4:  LDY #$2D
 L94D6:  LDA $2D
-L94D8:  STA ($99),Y
+L94D8:  STA (CrntChrPtr),Y
 L94DA:  INY
 L94DB:  LDA $2E
-L94DD:  STA ($99),Y
+L94DD:  STA (CrntChrPtr),Y
 L94DF:  RTS
 
 L94E0:  .byte $00, $22, $44, $44, $22, $24, $44, $42, $22, $44, $44, $44, $44, $44, $44, $44
@@ -2199,19 +2224,19 @@ L94F0:  .byte $44, $44, $40, $00, $44, $44, $00, $04, $44, $44, $44, $44, $44, $
 TempleTalk:
 L9500:  LDA #$92
 L9502:  STA $30
-L9504:  JSR L99E0
+L9504:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9507:  LDA #$0A
-L9509:  STA $03D0
+L9509:  STA Wnd2XPos
 L950C:  LDA #$06
-L950E:  STA $03D1
+L950E:  STA Wnd2YPos
 L9511:  LDA #$0E
-L9513:  STA $03D2
+L9513:  STA Wnd2Width
 L9516:  LDA #$02
-L9518:  STA $9C
+L9518:  STA NumMenuItems
 L951A:  LDA #$00
 L951C:  STA $9D
 L951E:  LDA #$93
-L9520:  STA $03D4
+L9520:  STA TextIndex2
 L9523:  JSR $C012
 L9526:  BCC L952B
 L9528:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2221,22 +2246,22 @@ L952F:  LDA #$94
 L9531:  JMP L9475
 L9534:  LDA #$96
 L9536:  STA $30
-L9538:  JSR $C00F
+L9538:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L953B:  LDA #$F9
 L953D:  STA $30
-L953F:  JSR L99E0
+L953F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9542:  JSR $C00C
 L9545:  BCC L954A
 L9547:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L954A:  JSR L9D5E
 L954D:  LDY #$30
 L954F:  INY
-L9550:  LDA ($99),Y
+L9550:  LDA (CrntChrPtr),Y
 L9552:  CMP #$03
 L9554:  BCS L9564
 L9556:  BNE L955F
 L9558:  DEY
-L9559:  LDA ($99),Y
+L9559:  LDA (CrntChrPtr),Y
 L955B:  CMP #$84
 L955D:  BCS L9564
 L955F:  LDA #$68
@@ -2257,7 +2282,7 @@ L9579:  STA $29
 L957B:  BCC L9580
 L957D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9580:  LDY #$0B
-L9582:  LDA ($99),Y
+L9582:  LDA (CrntChrPtr),Y
 L9584:  CMP #$03
 L9586:  BCS L958D
 L9588:  LDA #$75
@@ -2281,29 +2306,29 @@ L95A9:  AND #$07
 L95AB:  BNE L95B8
 L95AD:  LDA #$04
 L95AF:  LDY #$0B
-L95B1:  STA ($99),Y
+L95B1:  STA (CrntChrPtr),Y
 L95B3:  LDA #$97
 L95B5:  JMP L9475
 L95B8:  LDY #$0B
 L95BA:  LDA #$00
-L95BC:  STA ($99),Y
+L95BC:  STA (CrntChrPtr),Y
 L95BE:  LDY #$2D
 L95C0:  LDA #$96
-L95C2:  STA ($99),Y
+L95C2:  STA (CrntChrPtr),Y
 L95C4:  INY
 L95C5:  LDA #$00
-L95C7:  STA ($99),Y
+L95C7:  STA (CrntChrPtr),Y
 L95C9:  JSR $C03F
 L95CC:  LDA #$EA
 L95CE:  STA $30
-L95D0:  JSR $C00F
+L95D0:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L95D3:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L95D6:  JSR L9D5E
 L95D9:  LDA #$9E
 L95DB:  JMP L9475
 L95DE:  LDA #$D8
 L95E0:  STA $30
-L95E2:  JSR $C00F
+L95E2:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L95E5:  BCC L95EA
 L95E7:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L95EA:  JMP L965D
@@ -2314,8 +2339,8 @@ L95FD:  .byte $77, $74, $44
 CasinoTalk:
 L9600:  LDA #$98
 L9602:  STA $30
-L9604:  JSR L99E0
-L9607:  JSR L98F7
+L9604:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L9607:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L960A:  CMP #$01
 L960C:  BNE L9613
 L960E:  LDA #$9A
@@ -2325,19 +2350,19 @@ L9616:  BCC L961B
 L9618:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L961B:  JSR L9D5E
 L961E:  LDA #$0A
-L9620:  STA $03D0
+L9620:  STA Wnd2XPos
 L9623:  LDA #$06
-L9625:  STA $03D1
+L9625:  STA Wnd2YPos
 L9628:  LDA #$0A
-L962A:  STA $03D2
+L962A:  STA Wnd2Width
 L962D:  LDA #$0A
-L962F:  STA $03D3
+L962F:  STA Wnd2Height
 L9632:  LDA #$03
-L9634:  STA $9C
+L9634:  STA NumMenuItems
 L9636:  LDA #$00
 L9638:  STA $9D
 L963A:  LDA #$9B
-L963C:  STA $03D4
+L963C:  STA TextIndex2
 L963F:  JSR $C018
 L9642:  BCC L9647
 L9644:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2352,19 +2377,19 @@ L9656:  BCC L965D
 L9658:  LDA #$68
 L965A:  JMP L9475
 L965D:  LDA #$0A
-L965F:  STA $03D0
+L965F:  STA Wnd2XPos
 L9662:  LDA #$06
-L9664:  STA $03D1
+L9664:  STA Wnd2YPos
 L9667:  LDA #$08
-L9669:  STA $03D2
+L9669:  STA Wnd2Width
 L966C:  LDA #$08
-L966E:  STA $03D3
+L966E:  STA Wnd2Height
 L9671:  LDA #$03
-L9673:  STA $9C
+L9673:  STA NumMenuItems
 L9675:  LDA #$00
 L9677:  STA $9D
 L9679:  LDA #$9C
-L967B:  STA $03D4
+L967B:  STA TextIndex2
 L967E:  JSR $C012
 L9681:  BCC L9686
 L9683:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2435,7 +2460,7 @@ L9703:  SBC #$15
 L9705:  TAX
 L9706:  LDA $9778,X
 L9709:  STA $30
-L970B:  JSR L99E0
+L970B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L970E:  JSR $C00C
 L9711:  BCC L9716
 L9713:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2449,7 +2474,7 @@ L9724:  BCC L972B
 L9726:  LDA #$68
 L9728:  JMP L9475
 L972B:  LDY #$05
-L972D:  LDA ($99),Y
+L972D:  LDA (CrntChrPtr),Y
 L972F:  ASL
 L9730:  ASL
 L9731:  STA $30
@@ -2464,21 +2489,21 @@ L973F:  TAY
 L9740:  PLA
 L9741:  ORA $30
 L9743:  TAX
-L9744:  LDA ($99),Y
+L9744:  LDA (CrntChrPtr),Y
 L9746:  CLC
 L9747:  ADC #$01
 L9749:  CMP $9780,X
 L974C:  BCC L9751
 L974E:  LDA $9780,X
-L9751:  STA ($99),Y
+L9751:  STA (CrntChrPtr),Y
 L9753:  JSR L881C
 L9756:  LDA #$02
 L9758:  JSR $C04E
 L975B:  LDA #$A0
 L975D:  STA $30
-L975F:  JSR L99E0
+L975F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9762:  JSR L9D5E
-L9765:  JSR L98F7
+L9765:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9768:  BCC L976D
 L976A:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L976D:  CMP #$00
@@ -2498,7 +2523,7 @@ L97B0:  CLC
 L97B1:  RTS
 L97B2:  PHA
 L97B3:  LDY #$06
-L97B5:  LDA ($99),Y
+L97B5:  LDA (CrntChrPtr),Y
 L97B7:  TAX
 L97B8:  PLA
 L97B9:  CMP $97BD,X
@@ -2509,7 +2534,7 @@ L97BD:  .byte $07, $03, $01, $02, $04, $02, $01, $02, $01, $01, $06
 L97C8:  CLC
 L97C9:  ADC #$1B
 L97CB:  TAY
-L97CC:  LDA ($99),Y
+L97CC:  LDA (CrntChrPtr),Y
 L97CE:  CLC
 L97CF:  ADC #$01
 L97D1:  CMP #$64
@@ -2527,7 +2552,7 @@ L9805:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9808:  LDA #$8A
 L980A:  STA $C1
 L980C:  LDY #$3B
-L980E:  LDA ($99),Y
+L980E:  LDA (CrntChrPtr),Y
 L9810:  AND #$08
 L9812:  BNE L9843
 L9814:  LDA #$05
@@ -2536,7 +2561,7 @@ L9818:  JSR L9872
 L981B:  BCS L9833
 L981D:  LDA #$CB
 L981F:  STA $30
-L9821:  JSR $C00F
+L9821:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9824:  LDA #$8B
 L9826:  STA $D6
 L9828:  LDA #$01
@@ -2556,7 +2581,7 @@ L9847:  JSR L9872
 L984A:  BCS L9862
 L984C:  LDA #$CB
 L984E:  STA $30
-L9850:  JSR $C00F
+L9850:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9853:  LDA #$8B
 L9855:  STA $D6
 L9857:  LDA #$01
@@ -2571,10 +2596,10 @@ L986A:  JMP L9475
 L986D:  LDA #$CC
 L986F:  JMP L9475
 L9872:  LDY #$39
-L9874:  LDA ($99),Y
+L9874:  LDA (CrntChrPtr),Y
 L9876:  STA $29
 L9878:  INY
-L9879:  LDA ($99),Y
+L9879:  LDA (CrntChrPtr),Y
 L987B:  STA $2A
 L987D:  LDA #$00
 L987F:  LDX #$10
@@ -2595,25 +2620,25 @@ L9899:  BCC L989D
 L989B:  LDA $30
 L989D:  STA $30
 L989F:  LDY #$33
-L98A1:  LDA ($99),Y
+L98A1:  LDA (CrntChrPtr),Y
 L98A3:  CMP $30
 L98A5:  LDA $30
-L98A7:  STA ($99),Y
+L98A7:  STA (CrntChrPtr),Y
 L98A9:  RTS
 L98AA:  LDA #$0A
-L98AC:  STA $03D0
+L98AC:  STA Wnd2XPos
 L98AF:  LDA #$04
-L98B1:  STA $03D1
+L98B1:  STA Wnd2YPos
 L98B4:  LDA #$0A
-L98B6:  STA $03D2
+L98B6:  STA Wnd2Width
 L98B9:  LDA #$06
-L98BB:  STA $03D3
+L98BB:  STA Wnd2Height
 L98BE:  LDA #$02
-L98C0:  STA $9C
+L98C0:  STA NumMenuItems
 L98C2:  LDA #$00
 L98C4:  STA $9D
 L98C6:  LDA #$80
-L98C8:  STA $03D4
+L98C8:  STA TextIndex2
 L98CB:  JSR $C012
 L98CE:  PHP
 L98CF:  PHA
@@ -2626,36 +2651,38 @@ L98D8:  LDA #$01
 L98DA:  RTS
 L98DB:  LDY #$30
 L98DD:  SEC
-L98DE:  LDA ($99),Y
+L98DE:  LDA (CrntChrPtr),Y
 L98E0:  SBC $2D
 L98E2:  STA $2D
 L98E4:  INY
-L98E5:  LDA ($99),Y
+L98E5:  LDA (CrntChrPtr),Y
 L98E7:  SBC $2E
 L98E9:  BCS L98EE
 L98EB:  DEY
 L98EC:  SEC
 L98ED:  RTS
-L98EE:  STA ($99),Y
+L98EE:  STA (CrntChrPtr),Y
 L98F0:  DEY
 L98F1:  LDA $2D
-L98F3:  STA ($99),Y
+L98F3:  STA (CrntChrPtr),Y
 L98F5:  CLC
 L98F6:  RTS
+
+SelectYesNo:
 L98F7:  LDA #$0C
-L98F9:  STA $03D0
+L98F9:  STA Wnd2XPos
 L98FC:  LDA #$08
-L98FE:  STA $03D1
+L98FE:  STA Wnd2YPos
 L9901:  LDA #$06
-L9903:  STA $03D2
+L9903:  STA Wnd2Width
 L9906:  LDA #$06
-L9908:  STA $03D3
+L9908:  STA Wnd2Height
 L990B:  LDA #$02
-L990D:  STA $9C
+L990D:  STA NumMenuItems
 L990F:  LDA #$00
 L9911:  STA $9D
 L9913:  LDA #$65
-L9915:  STA $03D4
+L9915:  STA TextIndex2
 L9918:  JSR $C012
 L991B:  PHP
 L991C:  PHA
@@ -2763,15 +2790,28 @@ L99DD:  TAX
 L99DE:  PLA
 L99DF:  RTS
 
-L99E0:  .byte $A5, $AF, $85, $C8, $A9, $80, $85, $C7, $4C, $0F, $C0, $66, $66, $66, $66, $66
-L99F0:  .byte $60, $00, $00, $00, $00, $01, $1C, $B9, $9B, $B9, $9B, $C1, $00, $33, $33, $33
+;----------------------------------------------------------------------------------------------------
+
+NoWaitDialog:
+L99E0:  LDA HideUprSprites      ;Make a copy of HideUprSprites
+L99E2:  STA HideUprSprites_     ;
+
+L99E4:  LDA #TXT_NO_WAIT        ;Indicate NPC text will immediately move on after done.
+L99E6:  STA TextWait            ;This is because a selection menu will pop up next.
+
+L99E8:  JMP ShowDialog1         ;($C00F)Show dialog in bottom screen window.
+
+;----------------------------------------------------------------------------------------------------
+
+L99EB:  .byte $66, $66, $66, $66, $66, $60, $00, $00, $00, $00, $01, $1C, $B9, $9B, $B9, $9B
+L99FB:  .byte $C1, $00, $33, $33, $33
 
 L9A00:  LDA #$9B
 L9A02:  STA $2A
 L9A04:  LDA #$09
 L9A06:  STA $29
 L9A08:  LDA #$0C
-L9A0A:  STA $03D2
+L9A0A:  STA Wnd2Width
 L9A0D:  LDA #$09
 L9A0F:  STA $2E
 L9A11:  LDA #$22
@@ -2788,7 +2828,7 @@ L9A23:  CMP #$FF
 L9A25:  BNE L9A1E
 L9A27:  LDA #$00
 L9A29:  STA $2D
-L9A2B:  STA $9C
+L9A2B:  STA NumMenuItems
 L9A2D:  STA $9D
 L9A2F:  LDX #$00
 L9A31:  PLA
@@ -2796,9 +2836,9 @@ L9A32:  PHA
 L9A33:  TAY
 L9A34:  TYA
 L9A35:  PHA
-L9A36:  LDA ($99),Y
+L9A36:  LDA (CrntChrPtr),Y
 L9A38:  BEQ L9AAD
-L9A3A:  INC $9C
+L9A3A:  INC NumMenuItems
 L9A3C:  CPY #$0C
 L9A3E:  BCC L9A4D
 L9A40:  CPY #$1B
@@ -2816,7 +2856,7 @@ L9A55:  TYA
 L9A56:  SEC
 L9A57:  SBC #$1A
 L9A59:  LDY #$35
-L9A5B:  CMP ($99),Y
+L9A5B:  CMP (CrntChrPtr),Y
 L9A5D:  BNE L9A6C
 L9A5F:  LDY $2D
 L9A61:  LDA #$09
@@ -2841,7 +2881,7 @@ L9A87:  STY $2D
 L9A89:  PLA
 L9A8A:  PHA
 L9A8B:  TAY
-L9A8C:  LDA ($99),Y
+L9A8C:  LDA (CrntChrPtr),Y
 L9A8E:  STA $A0
 L9A90:  LDA #$00
 L9A92:  STA $A1
@@ -2867,19 +2907,22 @@ L9AB7:  INY
 L9AB8:  DEC $2E
 L9ABA:  BEQ L9ABF
 L9ABC:  JMP L9A34
-L9ABF:  LDA $9C
+L9ABF:  LDA NumMenuItems
 L9AC1:  BEQ L9AFF
+
 L9AC3:  LDA #$0A
-L9AC5:  STA $03D0
+L9AC5:  STA Wnd2XPos
+
 L9AC8:  LDA #$06
-L9ACA:  STA $03D1
-L9ACD:  LDA $9C
+L9ACA:  STA Wnd2YPos
+
+L9ACD:  LDA NumMenuItems
 L9ACF:  CLC
 L9AD0:  ADC #$01
 L9AD2:  ASL
-L9AD3:  STA $03D3
+L9AD3:  STA Wnd2Height
 L9AD6:  LDA #$FF
-L9AD8:  STA $03D4
+L9AD8:  STA TextIndex2
 L9ADB:  JSR $C012
 L9ADE:  STA $30
 L9AE0:  PLA
@@ -2887,7 +2930,7 @@ L9AE1:  TAY
 L9AE2:  BCS L9AFE
 L9AE4:  LDA #$00
 L9AE6:  STA $2E
-L9AE8:  LDA ($99),Y
+L9AE8:  LDA (CrntChrPtr),Y
 L9AEA:  BNE L9AF2
 L9AEC:  INC $2E
 L9AEE:  INY
@@ -2902,7 +2945,7 @@ L9AFE:  RTS
 L9AFF:  PLA
 L9B00:  LDA #$30
 L9B02:  STA $30
-L9B04:  JSR $C00F
+L9B04:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9B07:  SEC
 L9B08:  RTS
 
@@ -2932,7 +2975,7 @@ L9C42:  STA $2A
 L9C44:  LDA #$57
 L9C46:  STA $29
 L9C48:  LDA #$10
-L9C4A:  STA $03D2
+L9C4A:  STA Wnd2Width
 L9C4D:  LDA #$0F
 L9C4F:  STA $2E
 L9C51:  LDA #$0C
@@ -2956,7 +2999,7 @@ L9D02:  STA $2A
 L9D04:  LDA #$17
 L9D06:  STA $29
 L9D08:  LDA #$10
-L9D0A:  STA $03D2
+L9D0A:  STA Wnd2Width
 L9D0D:  LDA #$07
 L9D0F:  STA $2E
 L9D11:  LDA #$1B
@@ -2971,19 +3014,20 @@ L9D57:  .byte $92, $8C, $00, $8A, $43, $FD, $FF
 
 L9D5E:  PHA
 L9D5F:  LDA #$02
-L9D61:  STA $2A
+L9D61:  STA WndXPos
 L9D63:  LDA #$02
-L9D65:  STA $29
+L9D65:  STA WndYPos
 L9D67:  LDA #$08
-L9D69:  STA $2E
+L9D69:  STA WndWidth
 L9D6B:  LDA #$04
-L9D6D:  STA $2D
+L9D6D:  STA WndHeight
 L9D6F:  JSR ShowWindow1         ;($C015)Show a window on the screen.
+
 L9D72:  LDY #$30
-L9D74:  LDA ($99),Y
+L9D74:  LDA (CrntChrPtr),Y
 L9D76:  STA $A0
 L9D78:  INY
-L9D79:  LDA ($99),Y
+L9D79:  LDA (CrntChrPtr),Y
 L9D7B:  STA $A1
 L9D7D:  JSR L9943
 L9D80:  LDY #$00
@@ -3032,7 +3076,7 @@ L9DFC:  .byte $33, $33, $33, $33
 
 L9E00:  LDA #$48
 L9E02:  STA $30
-L9E04:  JSR L99E0
+L9E04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9E07:  LDA #$B4
 L9E09:  JSR L9E64
 L9E0C:  LDX #$00
@@ -3043,19 +3087,19 @@ L9E11:  ADC #$49
 L9E13:  STA $30
 L9E15:  LDA #$D8
 L9E17:  STA HideUprSprites
-L9E19:  JSR L99E0
+L9E19:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9E1C:  LDA #$4D
-L9E1E:  STA $03D4
+L9E1E:  STA TextIndex2
 L9E21:  LDA #$16
-L9E23:  STA $03D0
+L9E23:  STA Wnd2XPos
 L9E26:  LDA #$10
-L9E28:  STA $03D1
+L9E28:  STA Wnd2YPos
 L9E2B:  LDA #$0A
-L9E2D:  STA $03D2
+L9E2D:  STA Wnd2Width
 L9E30:  LDA #$0C
-L9E32:  STA $03D3
+L9E32:  STA Wnd2Height
 L9E35:  LDA #$04
-L9E37:  STA $9C
+L9E37:  STA NumMenuItems
 L9E39:  LDA #$00
 L9E3B:  STA $9D
 L9E3D:  JSR $C018
@@ -3107,17 +3151,17 @@ L9F03:  BCC L9F08
 L9F05:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9F08:  JSR L9D5E
 L9F0B:  LDA #$DD
-L9F0D:  STA $03D4
+L9F0D:  STA TextIndex2
 L9F10:  LDA #$0A
-L9F12:  STA $03D0
+L9F12:  STA Wnd2XPos
 L9F15:  LDA #$06
-L9F17:  STA $03D1
+L9F17:  STA Wnd2YPos
 L9F1A:  LDA #$0A
-L9F1C:  STA $03D2
+L9F1C:  STA Wnd2Width
 L9F1F:  LDA #$0A
-L9F21:  STA $03D3
+L9F21:  STA Wnd2Height
 L9F24:  LDA #$03
-L9F26:  STA $9C
+L9F26:  STA NumMenuItems
 L9F28:  LDA #$00
 L9F2A:  STA $9D
 L9F2C:  JSR $C018
@@ -3131,17 +3175,17 @@ L9F3B:  STA $2B
 L9F3D:  LDA $9FD5,X
 L9F40:  STA $2C
 L9F42:  SEC
-L9F43:  LDA ($99),Y
+L9F43:  LDA (CrntChrPtr),Y
 L9F45:  SBC $2B
 L9F47:  INY
-L9F48:  LDA ($99),Y
+L9F48:  LDA (CrntChrPtr),Y
 L9F4A:  SBC $2C
 L9F4C:  BCS L9F59
 L9F4E:  LDY #$30
-L9F50:  LDA ($99),Y
+L9F50:  LDA (CrntChrPtr),Y
 L9F52:  STA $2B
 L9F54:  INY
-L9F55:  LDA ($99),Y
+L9F55:  LDA (CrntChrPtr),Y
 L9F57:  STA $2C
 L9F59:  LDA $2B
 L9F5B:  PHA
@@ -3164,12 +3208,12 @@ L9F74:  BCC L9F79
 L9F76:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9F79:  LDY #$30
 L9F7B:  CLC
-L9F7C:  LDA ($99),Y
+L9F7C:  LDA (CrntChrPtr),Y
 L9F7E:  STA $2D
 L9F80:  ADC $2B
 L9F82:  STA $2B
 L9F84:  INY
-L9F85:  LDA ($99),Y
+L9F85:  LDA (CrntChrPtr),Y
 L9F87:  STA $2E
 L9F89:  ADC $2C
 L9F8B:  STA $2C
@@ -3192,10 +3236,10 @@ L9FAA:  SBC $2E
 L9FAC:  STA $2E
 L9FAE:  LDY #$30
 L9FB0:  LDA $2B
-L9FB2:  STA ($99),Y
+L9FB2:  STA (CrntChrPtr),Y
 L9FB4:  INY
 L9FB5:  LDA $2C
-L9FB7:  STA ($99),Y
+L9FB7:  STA (CrntChrPtr),Y
 L9FB9:  LDA $29
 L9FBB:  STA $99
 L9FBD:  LDA $2A
@@ -3207,7 +3251,7 @@ L9FC7:  STA $A1
 L9FC9:  JSR L98DB
 L9FCC:  LDA #$DE
 L9FCE:  STA $30
-L9FD0:  JSR $C00F
+L9FD0:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9FD3:  RTS
 
 L9FD4:  .byte $0A, $00, $64, $00, $E8, $03, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33
@@ -3326,32 +3370,32 @@ LA618:  LDA #$FD
 LA61A:  STA $0580,X
 LA61D:  INX
 LA61E:  LDY #$00
-LA620:  LDA ($99),Y
+LA620:  LDA (CrntChrPtr),Y
 LA622:  STA $0580,X
 LA625:  INX
 LA626:  INY
 LA627:  CPY #$05
 LA629:  BNE LA620
 LA62B:  LDY #$0B
-LA62D:  LDA ($99),Y
+LA62D:  LDA (CrntChrPtr),Y
 LA62F:  TAY
 LA630:  LDA $A742,Y
 LA633:  STA $0580,X
 LA636:  INX
 LA637:  LDY #$06
-LA639:  LDA ($99),Y
+LA639:  LDA (CrntChrPtr),Y
 LA63B:  TAY
 LA63C:  LDA $A727,Y
 LA63F:  STA $0580,X
 LA642:  INX
 LA643:  LDY #$05
-LA645:  LDA ($99),Y
+LA645:  LDA (CrntChrPtr),Y
 LA647:  TAY
 LA648:  LDA $A732,Y
 LA64B:  STA $0580,X
 LA64E:  INX
 LA64F:  LDY #$06
-LA651:  LDA ($99),Y
+LA651:  LDA (CrntChrPtr),Y
 LA653:  TAY
 LA654:  LDA $A737,Y
 LA657:  STA $0580,X
@@ -3363,10 +3407,10 @@ LA661:  LDA #$91
 LA663:  STA $0580,X
 LA666:  INX
 LA667:  LDY #$2D
-LA669:  LDA ($99),Y
+LA669:  LDA (CrntChrPtr),Y
 LA66B:  STA $A0
 LA66D:  INY
-LA66E:  LDA ($99),Y
+LA66E:  LDA (CrntChrPtr),Y
 LA670:  STA $A1
 LA672:  JSR L9943
 LA675:  LDY #$04
@@ -3378,7 +3422,7 @@ LA680:  LDA #$96
 LA682:  STA $0580,X
 LA685:  INX
 LA686:  LDY #$2F
-LA688:  LDA ($99),Y
+LA688:  LDA (CrntChrPtr),Y
 LA68A:  STA $A0
 LA68C:  LDA #$00
 LA68E:  STA $A1
@@ -3392,10 +3436,10 @@ LA69E:  LDA #$8F
 LA6A0:  STA $0580,X
 LA6A3:  INX
 LA6A4:  LDY #$2B
-LA6A6:  LDA ($99),Y
+LA6A6:  LDA (CrntChrPtr),Y
 LA6A8:  STA $A0
 LA6AA:  INY
-LA6AB:  LDA ($99),Y
+LA6AB:  LDA (CrntChrPtr),Y
 LA6AD:  STA $A1
 LA6AF:  JSR L9943
 LA6B2:  LDY #$04
@@ -3407,7 +3451,7 @@ LA6BD:  LDA #$95
 LA6BF:  STA $0580,X
 LA6C2:  INX
 LA6C3:  LDY #$33
-LA6C5:  LDA ($99),Y
+LA6C5:  LDA (CrntChrPtr),Y
 LA6C7:  STA $A0
 LA6C9:  LDA #$00
 LA6CB:  STA $A1
@@ -3804,7 +3848,7 @@ LAA9C:  INY
 LAA9D:  JMP LAA93
 LAAA0:  LDA #$FF
 LAAA2:  STA $30
-LAAA4:  JSR $C00F
+LAAA4:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LAAA7:  JSR $C021
 LAAAA:  LDA #$00
 LAAAC:  STA $10
@@ -3825,20 +3869,20 @@ LAAC8:  STA $99
 LAACA:  LDA $92,X
 LAACC:  STA $9A
 LAACE:  LDY #$2B
-LAAD0:  LDA ($99),Y
+LAAD0:  LDA (CrntChrPtr),Y
 LAAD2:  SEC
 LAAD3:  SBC #$64
-LAAD5:  STA ($99),Y
+LAAD5:  STA (CrntChrPtr),Y
 LAAD7:  INY
-LAAD8:  LDA ($99),Y
+LAAD8:  LDA (CrntChrPtr),Y
 LAADA:  SBC #$00
-LAADC:  STA ($99),Y
+LAADC:  STA (CrntChrPtr),Y
 LAADE:  BCS LAAE9
 LAAE0:  LDA #$00
 LAAE2:  LDY #$2B
-LAAE4:  STA ($99),Y
+LAAE4:  STA (CrntChrPtr),Y
 LAAE6:  INY
-LAAE7:  STA ($99),Y
+LAAE7:  STA (CrntChrPtr),Y
 LAAE9:  LDA #$36
 LAAEB:  JMP LAAA2
 LAAEE:  CMP #$0C
@@ -3891,7 +3935,7 @@ LABAE:  PHA
 LABAF:  TAX
 LABB0:  LDA $AD4E,X
 LABB3:  STA $30
-LABB5:  JSR $C00F
+LABB5:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LABB8:  JSR $C00C
 LABBB:  BCS LABD9
 LABBD:  PLA
@@ -3900,12 +3944,12 @@ LABBF:  TAX
 LABC0:  LDA $AD3E,X
 LABC3:  STA $30
 LABC5:  LDY #$3B
-LABC7:  LDA ($99),Y
+LABC7:  LDA (CrntChrPtr),Y
 LABC9:  ORA $30
-LABCB:  STA ($99),Y
+LABCB:  STA (CrntChrPtr),Y
 LABCD:  LDA #$38
 LABCF:  STA $30
-LABD1:  JSR $C00F
+LABD1:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LABD4:  LDA #$32
 LABD6:  JSR LAD0E
 LABD9:  JSR $C021
@@ -3956,7 +4000,7 @@ LAC39:  ORA $C7
 LAC3B:  STA $C7
 LAC3D:  LDA #$39
 LAC3F:  STA $30
-LAC41:  JSR $C00F
+LAC41:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LAC44:  JSR $C00C
 LAC47:  PLA
 LAC48:  BCS LACA1
@@ -3964,33 +4008,33 @@ LAC4A:  PHA
 LAC4B:  TAX
 LAC4C:  LDA $AD4A,X
 LAC4F:  STA $30
-LAC51:  JSR $C00F
+LAC51:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LAC54:  PLA
 LAC55:  CMP #$00
 LAC57:  BNE LAC72
 LAC59:  LDY #$36
-LAC5B:  LDA ($99),Y
+LAC5B:  LDA (CrntChrPtr),Y
 LAC5D:  STA $29
 LAC5F:  INY
-LAC60:  LDA ($99),Y
+LAC60:  LDA (CrntChrPtr),Y
 LAC62:  STA $2A
 LAC64:  LDY #$2D
 LAC66:  LDA $29
-LAC68:  STA ($99),Y
+LAC68:  STA (CrntChrPtr),Y
 LAC6A:  INY
 LAC6B:  LDA $2A
-LAC6D:  STA ($99),Y
+LAC6D:  STA (CrntChrPtr),Y
 LAC6F:  JMP LACA1
 LAC72:  CMP #$01
 LAC74:  BNE LAC89
 LAC76:  LDY #$0B
-LAC78:  LDA ($99),Y
+LAC78:  LDA (CrntChrPtr),Y
 LAC7A:  CMP #$01
 LAC7C:  BEQ LAC82
 LAC7E:  CMP #$02
 LAC80:  BNE LAC86
 LAC82:  LDA #$00
-LAC84:  STA ($99),Y
+LAC84:  STA (CrntChrPtr),Y
 LAC86:  JMP LACA1
 LAC89:  CMP #$02
 LAC8B:  BNE LAC95
@@ -3998,11 +4042,11 @@ LAC8D:  LDA #$32
 LAC8F:  JSR LAD0E
 LAC92:  JMP LACA1
 LAC95:  LDY #$0B
-LAC97:  LDA ($99),Y
+LAC97:  LDA (CrntChrPtr),Y
 LAC99:  CMP #$02
 LAC9B:  BCS LACA1
 LAC9D:  LDA #$01
-LAC9F:  STA ($99),Y
+LAC9F:  STA (CrntChrPtr),Y
 LACA1:  JSR $C021
 LACA4:  LDA #$00
 LACA6:  STA $10
@@ -4030,7 +4074,7 @@ LACD6:  LDA #$1E
 LACD8:  STA $04
 LACDA:  LDA #$59
 LACDC:  STA $30
-LACDE:  JSR $C00F
+LACDE:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LACE1:  JSR $C021
 LACE4:  LDA #$00
 LACE6:  STA $10
@@ -4054,27 +4098,27 @@ LAD0B:  JMP LA943
 LAD0E:  STA $30
 LAD10:  STA $A0
 LAD12:  LDY #$2D
-LAD14:  LDA ($99),Y
+LAD14:  LDA (CrntChrPtr),Y
 LAD16:  SEC
 LAD17:  SBC $30
-LAD19:  STA ($99),Y
+LAD19:  STA (CrntChrPtr),Y
 LAD1B:  INY
-LAD1C:  LDA ($99),Y
+LAD1C:  LDA (CrntChrPtr),Y
 LAD1E:  SBC #$00
-LAD20:  STA ($99),Y
+LAD20:  STA (CrntChrPtr),Y
 LAD22:  BCS LAD36
 LAD24:  LDA #$00
-LAD26:  STA ($99),Y
+LAD26:  STA (CrntChrPtr),Y
 LAD28:  DEY
-LAD29:  STA ($99),Y
+LAD29:  STA (CrntChrPtr),Y
 LAD2B:  LDY #$0B
 LAD2D:  LDA #$03
-LAD2F:  STA ($99),Y
+LAD2F:  STA (CrntChrPtr),Y
 LAD31:  LDA #$29
 LAD33:  JMP LAD38
 LAD36:  LDA #$22
 LAD38:  STA $30
-LAD3A:  JSR $C00F
+LAD3A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LAD3D:  RTS
 
 LAD3E:  .byte $08, $02, $01, $04, $00, $A2, $00, $A3, $00, $A1, $00, $A0, $3A, $3D, $3C, $3B

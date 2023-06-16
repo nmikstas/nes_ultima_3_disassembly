@@ -37,6 +37,7 @@
 .alias  GFXSnakeFront           $B140
 .alias  GFXFlower1              $B180
 .alias  GFXFlower2              $B1C0
+.alias  ShowWhoWnd              $B700
 .alias  ShowIntroText           $B800
 
 ;----------------------------------------------------------------------------------------------------
@@ -54,7 +55,10 @@ LdLgCharTiles1:
 LC009:  JMP LdLgCharTiles2      ;($FB16)Load large character tiles.
 
 LC00C:  JMP LE42F
-LC00F:  JMP ShowText            ;($E675)Show text in window.
+
+ShowDialog1:
+LC00F:  JMP ShowDialog2         ;($E675)Show dialog in lower screen window.
+
 LC012:  JMP LE4FF
 
 ShowWindow1:
@@ -82,7 +86,10 @@ LC045:  JMP LC4EA
 LC048:  JMP LEE23
 LC04B:  JMP LFAF6
 LC04E:  JMP LDB2D
-LC051:  JMP LC6EC
+
+ChkValidNPC1:
+LC051:  JMP ChkValidNPC         ;($C6EC)Check if valid NPC in front of player.
+
 LC054:  JMP LE602
 LC057:  JMP LE62A
 LC05A:  JMP LE616
@@ -204,11 +211,13 @@ LC119:  STA CurPPUConfig1
 LC11B:  LDA #$01
 LC11D:  STA $B0
 LC11F:  LDX #$00
-LC121:  LDA $C132,X
+
+LC121:* LDA $C132,X
 LC124:  STA $77E0,X
 LC127:  INX
 LC128:  CPX #$10
-LC12A:  BNE LC121
+LC12A:  BNE -
+
 LC12C:  JSR LFD93
 LC12F:  JMP LoadNewMap          ;($C175)Load a new map.
 
@@ -372,23 +381,23 @@ LC24A:  JSR LFB06
 LC24D:  LDA #$D4
 LC24F:  STA HideUprSprites
 LC251:  LDA #$16
-LC253:  STA $03D0
+LC253:  STA Wnd2XPos
 LC256:  LDA #$04
-LC258:  STA $03D1
+LC258:  STA Wnd2YPos
 LC25B:  LDA #$0A
-LC25D:  STA $03D2
+LC25D:  STA Wnd2Width
 LC260:  LDA #$12
-LC262:  STA $03D3
+LC262:  STA Wnd2Height
 LC265:  LDA BribePray
 LC267:  AND #CMD_BOTH
 LC269:  ASL
 LC26A:  TAX
 LC26B:  LDA $C4E2,X
-LC26E:  STA $03D4
+LC26E:  STA TextIndex2
 LC271:  LDA $C4E3,X
 LC274:  STA $9D
 LC276:  LDA #$08
-LC278:  STA $9C
+LC278:  STA NumMenuItems
 LC27A:  JSR LE4FF
 LC27D:  BCS FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LC27F:  ASL
@@ -881,19 +890,19 @@ LC629:  .word DoBribeCmd, DoPrayCmd
 ;----------------------------------------------------------------------------------------------------
 
 LC62D:  LDA #$0C
-LC62F:  STA $03D0
+LC62F:  STA Wnd2XPos
 LC632:  LDA #$08
-LC634:  STA $03D1
+LC634:  STA Wnd2YPos
 LC637:  LDA #$06
-LC639:  STA $03D2
+LC639:  STA Wnd2Width
 LC63C:  LDA #$06
-LC63E:  STA $03D3
+LC63E:  STA Wnd2Height
 LC641:  LDA #$02
-LC643:  STA $9C
+LC643:  STA NumMenuItems
 LC645:  LDA #$00
 LC647:  STA $9D
 LC649:  LDA #$65
-LC64B:  STA $03D4
+LC64B:  STA TextIndex2
 LC64E:  JSR LE4FF
 LC651:  PHP
 LC652:  PHA
@@ -910,14 +919,16 @@ LC661:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 DoTalkCmd:
-LC662:  JSR LC6EC
+LC662:  JSR ChkValidNPC         ;($C6EC)Check if valid NPC in front of player.
 LC665:  BCS NoTalk
 
 LC667:  LDA LastTalkedNPC0
 LC669:  STA LastTalkedNPC1
+
 LC66B:  LDA NPCSprIndex,Y
 LC66E:  AND #$7F
 LC670:  CMP #NPC_PLR_BOAT
+
 LC672:  BEQ EndTalk
 
 LC674:  CMP #NPC_WHIRLPOOL
@@ -943,10 +954,10 @@ LC68D:  SBC #$F0
 LC68F:  ASL
 LC690:  TAX
 
-LC691:  LDA $C6CD,X
-LC694:  STA $29
-LC696:  LDA $C6CE,X
-LC699:  STA $2A
+LC691:  LDA TalkFuncTbl,X
+LC694:  STA IndJumpPtrLB
+LC696:  LDA TalkFuncTbl+1,X
+LC699:  STA IndJumpPtrUB
 
 LC69B:  LDA #BANK_HELPERS2
 LC69D:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -962,7 +973,7 @@ LC6AF:  STA TextBasePtrUB
 LC6B1:  LDA #$80
 LC6B3:  STA TextBasePtrLB
 
-LC6B5:  JSR ShowText            ;($E675)Show text in window.
+LC6B5:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 
 LC6B8:  LDA #$80
 LC6BA:  STA TextBasePtrUB
@@ -974,18 +985,20 @@ LC6C0:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game en
 NoTalk:
 LC6C3:  LDA #$02                ;NO ONE IS HERE text.
 LC6C5:  STA TextIndex           ;
-LC6C7:  JSR ShowText            ;($E675)Show text in window.
+LC6C7:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LC6CA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
+TalkFuncTbl:
 LC6CD:  .word FortuneTalk, HealerTalk, WeaponTalk, ArmoryTalk
 LC6D5:  .word GroceryTalk, PubTalk,    GuildTalk,  StableTalk
 LC6DD:  .word InnTalk,     TempleTalk, CasinoTalk, ShrineTalk
 LC6E5:  .word LBTalk,      SherryTalk
 
-LC6E9:  JMP ($0029)
+LC6E9:  JMP (IndJumpPtr)
 
 ;----------------------------------------------------------------------------------------------------
 
+ChkValidNPC:
 LC6EC:  JSR GetTargetNPC        ;($E6EF)Check if valid NPC at target.
 LC6EF:  BCS LC704
 LC6F1:  STA $30
@@ -1000,6 +1013,9 @@ LC6FF:  INY
 LC700:  JMP LC6F5
 LC703:  CLC
 LC704:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LC705:  LDA #$F0
 LC707:  STA $7300,X
 LC70A:  INX
@@ -1445,7 +1461,7 @@ LCA6D:  LDA ChrPtrBaseLB,X
 LCA6F:  STA CrntChrPtrLB
 LCA71:  LDA ChrPtrBaseUB,X
 LCA73:  STA CrntChrPtrUB
-LCA75:  LDY #$0B
+LCA75:  LDY #CHR_COND
 LCA77:  LDA (CrntChrPtr),Y
 LCA79:  CMP #$03
 LCA7B:  BCS LCAD0
@@ -1617,7 +1633,7 @@ LCBCB:  LDA ChrPtrBaseLB,X
 LCBCD:  STA CrntChrPtrLB
 LCBCF:  LDA ChrPtrBaseUB,X
 LCBD1:  STA CrntChrPtrUB
-LCBD3:  LDY #$35
+LCBD3:  LDY #CHR_EQ_ARMOR
 LCBD5:  LDA (CrntChrPtr),Y
 LCBD7:  CLC
 LCBD8:  ADC #$0A
@@ -1635,7 +1651,7 @@ LCBEF:  LSR
 LCBF0:  LSR
 LCBF1:  LSR
 LCBF2:  STA $30
-LCBF4:  LDY #$37
+LCBF4:  LDY #CHR_MAX_HP+1
 LCBF6:  LDA (CrntChrPtr),Y
 LCBF8:  ASL
 LCBF9:  SEC
@@ -1669,7 +1685,7 @@ LCC2C:  ADC $30
 LCC2E:  STA $A0
 LCC30:  LDA #$00
 LCC32:  STA $A1
-LCC34:  LDY #$2D
+LCC34:  LDY #CHR_HIT_PNTS
 LCC36:  LDA (CrntChrPtr),Y
 LCC38:  SEC
 LCC39:  SBC $A0
@@ -1688,7 +1704,7 @@ LCC51:  STA ThisSFX
 LCC53:  LDA $2E
 LCC55:  STA $30
 LCC57:  JSR LD215
-LCC5A:  LDY #$2D
+LCC5A:  LDY #CHR_HIT_PNTS
 LCC5C:  LDA $2B
 LCC5E:  STA (CrntChrPtr),Y
 LCC60:  LDA $2C
@@ -1705,12 +1721,12 @@ LCC74:  LDA #$04
 LCC76:  JSR LE64E
 LCC79:  BEQ LCC7E
 LCC7B:  JMP LCD07
-LCC7E:  LDY #$0B
+LCC7E:  LDY #CHR_COND
 LCC80:  LDA #$01
 LCC82:  STA (CrntChrPtr),Y
 LCC84:  LDA #$2E
 LCC86:  STA TextIndex
-LCC88:  JSR ShowText            ;($E675)Show text in window.
+LCC88:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LCC8B:  JMP LCD07
 LCC8E:  CMP #$01
 LCC90:  BNE LCD07
@@ -1721,7 +1737,7 @@ LCC99:  BCS LCCBF
 LCC9B:  LDA $00
 LCC9D:  AND #$03
 LCC9F:  BNE LCD07
-LCCA1:  LDY #$34
+LCCA1:  LDY #CHR_EQ_WEAPON
 LCCA3:  LDA (CrntChrPtr),Y
 LCCA5:  CLC
 LCCA6:  ADC #$0B
@@ -1740,7 +1756,7 @@ LCCBC:  JMP LCCE0
 LCCBF:  LDA $00
 LCCC1:  AND #$03
 LCCC3:  BNE LCD07
-LCCC5:  LDY #$35
+LCCC5:  LDY #CHR_EQ_ARMOR
 LCCC7:  LDA (CrntChrPtr),Y
 LCCC9:  CLC
 LCCCA:  ADC #$1A
@@ -1774,7 +1790,7 @@ LCCFC:  SBC #$01
 LCCFE:  STA (CrntChrPtr),Y
 LCD00:  LDA #$D7
 LCD02:  STA TextIndex
-LCD04:  JSR ShowText            ;($E675)Show text in window.
+LCD04:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LCD07:  JMP LCAD0
 LCD0A:  STA $30
 LCD0C:  JSR LD2BA
@@ -1783,7 +1799,7 @@ LCD12:  LDA #$00
 LCD14:  STA (CrntChrPtr),Y
 LCD16:  DEY
 LCD17:  STA (CrntChrPtr),Y
-LCD19:  LDY #$0B
+LCD19:  LDY #CHR_COND
 LCD1B:  LDA #$03
 LCD1D:  STA (CrntChrPtr),Y
 LCD1F:  LDX $2E
@@ -2276,17 +2292,17 @@ LD13F:  ADC #$64
 LD141:  CMP $B8
 LD143:  BCS LD148
 LD145:  JMP LD180
-LD148:  LDY #$07
+LD148:  LDY #CHR_STR
 LD14A:  LDA (CrntChrPtr),Y
 LD14C:  JSR LE64E
-LD14F:  LDY #$07
+LD14F:  LDY #CHR_STR
 LD151:  LDA (CrntChrPtr),Y
 LD153:  LSR
 LD154:  SEC
 LD155:  ADC $B8
 LD157:  STA $B8
 LD159:  CLC
-LD15A:  LDY #$34
+LD15A:  LDY #CHR_EQ_WEAPON
 LD15C:  LDA (CrntChrPtr),Y
 LD15E:  ASL
 LD15F:  CLC
@@ -2553,7 +2569,7 @@ LD343:  CMP #$01
 LD345:  BNE LD34A
 LD347:  JMP LoadNewMap          ;($C175)Load a new map.
 LD34A:  JMP LD3E3
-LD34D:  LDY #$06
+LD34D:  LDY #CHR_CLASS
 LD34F:  LDA (CrntChrPtr),Y
 LD351:  TAX
 LD352:  LDA $D455,X
@@ -2574,7 +2590,7 @@ LD371:  CMP #$00
 LD373:  BEQ LD378
 LD375:  JMP LD3AA
 LD378:  LDA #$05
-LD37A:  STA $03D4
+LD37A:  STA TextIndex2
 LD37D:  JSR LD415
 LD380:  BCC LD383
 LD382:  RTS
@@ -2600,7 +2616,7 @@ LD3A2:  JSR LDD6E
 LD3A5:  BCS LD3D9
 LD3A7:  JMP ($008F)
 LD3AA:  LDA #$03
-LD3AC:  STA $03D4
+LD3AC:  STA TextIndex2
 LD3AF:  JSR LD415
 LD3B2:  BCC LD3B5
 LD3B4:  RTS
@@ -2625,7 +2641,7 @@ LD3D4:  BCS LD3D9
 LD3D6:  JMP ($008F)
 LD3D9:  LDA #$17
 LD3DB:  STA TextIndex
-LD3DD:  JSR ShowText            ;($E675)Show text in window.
+LD3DD:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD3E0:  LDA #$00
 LD3E2:  RTS
 LD3E3:  JSR LD3EC
@@ -2636,17 +2652,17 @@ LD3EF:  RTS
 LD3F0:  LDA #$00
 LD3F2:  STA $9D
 LD3F4:  LDA #$02
-LD3F6:  STA $9C
+LD3F6:  STA NumMenuItems
 LD3F8:  LDA #$19
-LD3FA:  STA $03D4
+LD3FA:  STA TextIndex2
 LD3FD:  LDA #$0A
-LD3FF:  STA $03D0
+LD3FF:  STA Wnd2XPos
 LD402:  LDA #$06
-LD404:  STA $03D1
+LD404:  STA Wnd2YPos
 LD407:  LDA #$0A
-LD409:  STA $03D2
+LD409:  STA Wnd2Width
 LD40C:  LDA #$06
-LD40E:  STA $03D3
+LD40E:  STA Wnd2Height
 LD411:  JSR LE4FF
 LD414:  RTS
 LD415:  JSR LD441
@@ -2655,22 +2671,22 @@ LD41A:  CMP #$09
 LD41C:  BCC LD421
 LD41E:  TAX
 LD41F:  LDA #$08
-LD421:  STA $9C
+LD421:  STA NumMenuItems
 LD423:  STX $9D
 LD425:  LDA #$0A
-LD427:  STA $03D0
+LD427:  STA Wnd2XPos
 LD42A:  LDA #$06
-LD42C:  STA $03D1
+LD42C:  STA Wnd2YPos
 LD42F:  LDA #$0A
-LD431:  STA $03D2
-LD434:  LDA $9C
+LD431:  STA Wnd2Width
+LD434:  LDA NumMenuItems
 LD436:  CLC
 LD437:  ADC #$01
 LD439:  ASL
-LD43A:  STA $03D3
+LD43A:  STA Wnd2Height
 LD43D:  JSR LE4FF
 LD440:  RTS
-LD441:  LDY #$2F
+LD441:  LDY #CHR_MAG_PNTS
 LD443:  LDA (CrntChrPtr),Y
 LD445:  LDY #$00
 LD447:  INY
@@ -2727,7 +2743,7 @@ LD4E5:  CMP #$01
 LD4E7:  BEQ LD4F3
 LD4E9:  LDX #$17
 LD4EB:  STX TextIndex
-LD4ED:  JSR ShowText            ;($E675)Show text in window.
+LD4ED:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD4F0:  LDA #$00
 LD4F2:  RTS
 
@@ -2839,7 +2855,7 @@ LD5C3:  LDA #$1B
 LD5C5:  JMP LD5CA
 LD5C8:  LDA #$17
 LD5CA:  STA TextIndex
-LD5CC:  JSR ShowText            ;($E675)Show text in window.
+LD5CC:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD5CF:  LDA #$00
 LD5D1:  RTS
 LD5D2:  LDA #$14
@@ -2853,7 +2869,7 @@ LD5E2:  LDA #$1C
 LD5E4:  JMP LD5EA
 LD5E7:  JMP LD7E9
 LD5EA:  STA TextIndex
-LD5EC:  JSR ShowText            ;($E675)Show text in window.
+LD5EC:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD5EF:  LDA #$00
 LD5F1:  RTS
 LD5F2:  LDX #$19
@@ -2901,7 +2917,7 @@ LD644:  STA MapYPos
 LD646:  LDA #$01
 LD648:  RTS
 LD649:  LDX #$23
-LD64B:  LDY #$09
+LD64B:  LDY #CHR_INT
 LD64D:  LDA (CrntChrPtr),Y
 LD64F:  ASL
 LD650:  JMP LD559
@@ -2917,7 +2933,7 @@ LD664:  STA ThisSFX
 LD666:  JSR LF981
 LD669:  PLA
 LD66A:  STA TextIndex
-LD66C:  JSR ShowText            ;($E675)Show text in window.
+LD66C:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD66F:  JSR LF974
 LD672:  CMP #$09
 LD674:  BNE LD690
@@ -2931,7 +2947,7 @@ LD684:  STA $B1
 LD686:  JSR LF981
 LD689:  LDA #$34
 LD68B:  STA TextIndex
-LD68D:  JSR ShowText            ;($E675)Show text in window.
+LD68D:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD690:  LDA #$00
 LD692:  RTS
 LD693:  LDA #$2D
@@ -2952,12 +2968,12 @@ LD6B5:  LDA #SFX_TIME_STOP+INIT
 LD6B7:  STA ThisSFX
 LD6B9:  LDA #$32
 LD6BB:  STA TextIndex
-LD6BD:  JSR ShowText            ;($E675)Show text in window.
+LD6BD:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD6C0:  LDA #$00
 LD6C2:  RTS
 LD6C3:  LDA #$41
 LD6C5:  JSR LDA62
-LD6C8:  LDY #$09
+LD6C8:  LDY #CHR_INT
 LD6CA:  LDA (CrntChrPtr),Y
 LD6CC:  ASL
 LD6CD:  JMP LD4FD
@@ -3019,7 +3035,7 @@ LD740:  CMP #$03
 LD742:  BEQ LD74E
 LD744:  LDX #$17
 LD746:  STX TextIndex
-LD748:  JSR ShowText            ;($E675)Show text in window.
+LD748:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD74B:  LDA #$00
 LD74D:  RTS
 LD74E:  LDX #$24
@@ -3044,7 +3060,7 @@ LD776:  LDA #$00
 LD778:  RTS
 LD779:  LDA #$F6
 LD77B:  STA TextIndex
-LD77D:  JSR ShowText            ;($E675)Show text in window.
+LD77D:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD780:  JMP LD776
 LD783:  LDA #$0A
 LD785:  JSR LDA2B
@@ -3069,13 +3085,13 @@ LD7AF:  JSR LDA62
 LD7B2:  JSR LDB0E
 LD7B5:  LDA #$1E
 LD7B7:  STA TextIndex
-LD7B9:  JSR ShowText            ;($E675)Show text in window.
+LD7B9:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD7BC:  LDA #$00
 LD7BE:  RTS
 LD7BF:  LDA #$23
 LD7C1:  JSR LDA2B
 LD7C4:  BCS LD7DC
-LD7C6:  LDY #$0B
+LD7C6:  LDY #CHR_COND
 LD7C8:  LDA (CrntChrPtr),Y
 LD7CA:  TAX
 LD7CB:  CMP #$02
@@ -3085,7 +3101,7 @@ LD7D1:  STA (CrntChrPtr),Y
 LD7D3:  TXA
 LD7D4:  LDA $D7DF,X
 LD7D7:  STA TextIndex
-LD7D9:  JSR ShowText            ;($E675)Show text in window.
+LD7D9:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD7DC:  LDA #$00
 LD7DE:  RTS
 
@@ -3095,7 +3111,7 @@ LD7E4:  LDA #$28
 LD7E6:  JSR LDA62
 LD7E9:  LDA #$1F
 LD7EB:  STA TextIndex
-LD7ED:  JSR ShowText            ;($E675)Show text in window.
+LD7ED:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD7F0:  LDA #$00
 LD7F2:  STA CurPPUConfig1
 LD7F4:  STA PPUControl1
@@ -3127,12 +3143,12 @@ LD82A:  CMP #MAP_AMBROSIA
 LD82C:  BEQ LD853
 LD82E:  LDA #$17
 LD830:  STA TextIndex
-LD832:  JSR ShowText            ;($E675)Show text in window.
+LD832:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD835:  LDA #$00
 LD837:  RTS
 LD838:  LDA #$20
 LD83A:  STA TextIndex
-LD83C:  JSR ShowText            ;($E675)Show text in window.
+LD83C:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD83F:  LDA #$A3
 LD841:  STA ThisSFX
 LD843:  LDA DisNPCMovement
@@ -3145,7 +3161,7 @@ LD850:  LDA #$00
 LD852:  RTS
 LD853:  LDA #$20
 LD855:  STA TextIndex
-LD857:  JSR ShowText            ;($E675)Show text in window.
+LD857:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD85A:  LDA #$A3
 LD85C:  STA ThisSFX
 LD85E:  LDA #BANK_GEM
@@ -3279,7 +3295,7 @@ LD967:  JSR LDA2B
 LD96A:  LDA #$00
 LD96C:  STA $E9
 LD96E:  BCS LD9A8
-LD970:  LDY #$0B
+LD970:  LDY #CHR_COND
 LD972:  LDA (CrntChrPtr),Y
 LD974:  TAX
 LD975:  CMP #$03
@@ -3291,10 +3307,10 @@ LD980:  CMP #$4B
 LD982:  BCS LD99C
 LD984:  LDA #$00
 LD986:  STA (CrntChrPtr),Y
-LD988:  LDY #$2D
+LD988:  LDY #CHR_HIT_PNTS
 LD98A:  LDA #$96
 LD98C:  STA (CrntChrPtr),Y
-LD98E:  LDY #$2F
+LD98E:  LDY #CHR_MAG_PNTS
 LD990:  LDA #$00
 LD992:  STA (CrntChrPtr),Y
 LD994:  JSR LEF13
@@ -3304,7 +3320,7 @@ LD99C:  LDA #$04
 LD99E:  STA (CrntChrPtr),Y
 LD9A0:  LDA $D9AB,X
 LD9A3:  STA TextIndex
-LD9A5:  JSR ShowText            ;($E675)Show text in window.
+LD9A5:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LD9A8:  LDA #$00
 LD9AA:  RTS
 
@@ -3328,47 +3344,47 @@ LD9D0:  LDA ($29),Y
 LD9D2:  SEC
 LD9D3:  SBC #$05
 LD9D5:  STA ($29),Y
-LD9D7:  LDY #$0B
+LD9D7:  LDY #CHR_COND
 LD9D9:  LDA (CrntChrPtr),Y
 LD9DB:  LDX #$17
 LD9DD:  CMP #$04
 LD9DF:  BNE LDA23
 LD9E1:  LDA #$00
 LD9E3:  STA (CrntChrPtr),Y
-LD9E5:  LDY #$2D
+LD9E5:  LDY #CHR_HIT_PNTS
 LD9E7:  LDA #$96
 LD9E9:  STA (CrntChrPtr),Y
-LD9EB:  LDY #$2B
+LD9EB:  LDY #CHR_FOOD
 LD9ED:  LDA #$00
 LD9EF:  STA (CrntChrPtr),Y
 LD9F1:  INY
 LD9F2:  STA (CrntChrPtr),Y
-LD9F4:  LDY #$2F
+LD9F4:  LDY #CHR_MAG_PNTS
 LD9F6:  STA (CrntChrPtr),Y
-LD9F8:  LDY #$22
+LD9F8:  LDY #CHR_ITEMS
 LD9FA:  STA (CrntChrPtr),Y
 LD9FC:  INY
 LD9FD:  CPY #$2B
 LD9FF:  BNE LD9FA
-LDA01:  LDY #$0C
+LDA01:  LDY #CHR_WEAPONS
 LDA03:  STA (CrntChrPtr),Y
 LDA05:  INY
 LDA06:  CPY #$1B
 LDA08:  BNE LDA03
-LDA0A:  LDY #$1B
+LDA0A:  LDY #CHR_ARMOR
 LDA0C:  STA (CrntChrPtr),Y
 LDA0E:  INY
 LDA0F:  CPY #$22
 LDA11:  BNE LDA0C
-LDA13:  LDY #$34
+LDA13:  LDY #CHR_EQ_WEAPON
 LDA15:  STA (CrntChrPtr),Y
-LDA17:  LDY #$35
+LDA17:  LDY #CHR_EQ_ARMOR
 LDA19:  STA (CrntChrPtr),Y
 LDA1B:  JSR LEF13
 LDA1E:  LDX #$45
 LDA20:  JMP LDA23
 LDA23:  STX TextIndex
-LDA25:  JSR ShowText            ;($E675)Show text in window.
+LDA25:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDA28:  LDA #$00
 LDA2A:  RTS
 
@@ -3409,7 +3425,7 @@ LDA5F:  PLA
 LDA60:  SEC
 LDA61:  RTS
 LDA62:  STA $30
-LDA64:  LDY #$2F
+LDA64:  LDY #CHR_MAG_PNTS
 LDA66:  LDA (CrntChrPtr),Y
 LDA68:  SEC
 LDA69:  SBC $30
@@ -3440,7 +3456,7 @@ LDA92:  RTS
 
 LDA93:  STA $30
 LDA95:  STA $A0
-LDA97:  LDY #$2D
+LDA97:  LDY #CHR_HIT_PNTS
 LDA99:  LDA (CrntChrPtr),Y
 LDA9B:  SEC
 LDA9C:  SBC $30
@@ -3454,7 +3470,7 @@ LDAA9:  LDA #$00
 LDAAB:  STA (CrntChrPtr),Y
 LDAAD:  DEY
 LDAAE:  STA (CrntChrPtr),Y
-LDAB0:  LDY #$0B
+LDAB0:  LDY #CHR_COND
 LDAB2:  LDA #$03
 LDAB4:  STA (CrntChrPtr),Y
 LDAB6:  LDA #$29
@@ -3463,7 +3479,7 @@ LDAB8:  JMP LDABD
 LDABB:  LDA #$2D
 LDABD:  JMP LDC23
 LDAC0:  STA $30
-LDAC2:  LDY #$2D
+LDAC2:  LDY #CHR_HIT_PNTS
 LDAC4:  LDA (CrntChrPtr),Y
 LDAC6:  CLC
 LDAC7:  ADC $30
@@ -3472,7 +3488,7 @@ LDACB:  INY
 LDACC:  LDA (CrntChrPtr),Y
 LDACE:  ADC #$00
 LDAD0:  STA $2E
-LDAD2:  LDY #$37
+LDAD2:  LDY #CHR_MAX_HP+1
 LDAD4:  CMP (CrntChrPtr),Y
 LDAD6:  BCC LDAEC
 LDAD8:  BNE LDAE1
@@ -3480,13 +3496,13 @@ LDADA:  LDA $2D
 LDADC:  DEY
 LDADD:  CMP (CrntChrPtr),Y
 LDADF:  BCC LDAEC
-LDAE1:  LDY #$36
+LDAE1:  LDY #CHR_MAX_HP
 LDAE3:  LDA (CrntChrPtr),Y
 LDAE5:  STA $2D
 LDAE7:  INY
 LDAE8:  LDA (CrntChrPtr),Y
 LDAEA:  STA $2E
-LDAEC:  LDY #$2D
+LDAEC:  LDY #CHR_HIT_PNTS
 LDAEE:  LDA $2D
 LDAF0:  SEC
 LDAF1:  SBC (CrntChrPtr),Y
@@ -3502,7 +3518,7 @@ LDB02:  LDA CurPPUConfig1
 LDB04:  BEQ LDB0D
 LDB06:  LDA #$5A
 LDB08:  STA TextIndex
-LDB0A:  JSR ShowText            ;($E675)Show text in window.
+LDB0A:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDB0D:  RTS
 LDB0E:  LDY $00
 LDB10:  LDA (MapDatPtr),Y
@@ -3588,15 +3604,16 @@ LDB9A:  STA (CrntChrPtr),Y
 LDB9C:  PLA
 LDB9D:  ASL
 LDB9E:  TAX
-LDB9F:  LDA $DBB1,X
-LDBA2:  STA $29
-LDBA4:  LDA $DBB2,X
-LDBA7:  STA $2A
-LDBA9:  JMP ($0029)
+LDB9F:  LDA UseItmFuncTbl,X
+LDBA2:  STA IndJumpPtrLB
+LDBA4:  LDA UseItmFuncTbl+1,X
+LDBA7:  STA IndJumpPtrUB
+LDBA9:  JMP (IndJumpPtr)
 
 LDBAC:  LDA #$F5
 LDBAE:  JMP LDC23
 
+UseItmFuncTbl:
 LDBB1:  .word UseTorch, UseKey, UseGem, UsePowder, UseTent, UseGldPick, UseSlvrPick, PlayHorn
 LDBC1:  .word UseCompass
 
@@ -3620,7 +3637,7 @@ LDBEA:  LDA ChrPtrBaseUB,X
 LDBEC:  STA CrntChrPtrUB
 LDBEE:  TXA
 LDBEF:  PHA
-LDBF0:  LDY #$0B
+LDBF0:  LDY #CHR_COND
 LDBF2:  LDA (CrntChrPtr),Y
 LDBF4:  CMP #$03
 LDBF6:  BCS LDBFD
@@ -3651,7 +3668,7 @@ LDC1D:  LDA #$0A
 LDC1F:  STA TimeStopTimer
 LDC21:  LDA #$32
 LDC23:  STA TextIndex
-LDC25:  JSR ShowText            ;($E675)Show text in window.
+LDC25:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDC28:  RTS
 
 UseKey:
@@ -3725,7 +3742,7 @@ LDCA6:  RTS
 UseCompass:
 LDCA7:  LDA #$D3
 LDCA9:  STA TextIndex
-LDCAB:  JSR ShowText            ;($E675)Show text in window.
+LDCAB:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDCAE:  LDA #$0C
 LDCB0:  STA MapProperties
 LDCB2:  LDA #MAP_OVERWORLD
@@ -3792,7 +3809,7 @@ LDD23:  JSR LE6D0
 LDD26:  LDA MapProperties
 LDD28:  CMP #$0C
 LDD2A:  BNE LDD66
-LDD2C:  LDY #$3B
+LDD2C:  LDY #CHR_MARKS
 LDD2E:  LDA (CrntChrPtr),Y
 LDD30:  AND #$04
 LDD32:  BEQ LDD66
@@ -3853,7 +3870,7 @@ LDDA4:  CMP #$0B
 LDDA6:  BEQ LDDD9
 LDDA8:  BNE LDDD0
 LDDAA:  LDA #$00
-LDDAC:  STA $9C
+LDDAC:  STA NumMenuItems
 LDDAE:  STA $9D
 LDDB0:  LDA $0777
 LDDB3:  AND #$1F
@@ -3871,7 +3888,7 @@ LDDCB:  JSR LDECF
 LDDCE:  BCC LDDD9
 LDDD0:  LDA #$0F
 LDDD2:  STA TextIndex
-LDDD4:  JSR ShowText            ;($E675)Show text in window.
+LDDD4:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDDD7:  SEC
 LDDD8:  RTS
 LDDD9:  CLC
@@ -3889,7 +3906,7 @@ LDDEC:  CMP $E2
 LDDEE:  BEQ LDDF7
 LDDF0:  LDA #$F7
 LDDF2:  STA TextIndex
-LDDF4:  JSR ShowText            ;($E675)Show text in window.
+LDDF4:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDDF7:  LDA ThisMap
 LDDF9:  CMP #MAP_DAWN
 LDDFB:  BNE LDE27
@@ -3899,7 +3916,7 @@ LDE01:  BNE LDE27
 LDE03:  LDA MapYPos
 LDE05:  CMP #$15
 LDE07:  BNE LDE27
-LDE09:  LDA $9C
+LDE09:  LDA NumMenuItems
 LDE0B:  BEQ LDE27
 LDE0D:  LDY #$27
 LDE0F:  LDA (Pos1ChrPtr),Y
@@ -3911,7 +3928,7 @@ LDE19:  LDX #$D5
 LDE1B:  LDA #$01
 LDE1D:  STA (CrntChrPtr),Y
 LDE1F:  STX TextIndex
-LDE21:  JSR ShowText            ;($E675)Show text in window.
+LDE21:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDE24:  JMP LE00C
 LDE27:  LDA MapProperties
 LDE29:  AND #$01
@@ -3943,7 +3960,7 @@ LDE5C:  ADC #$1E
 LDE5E:  STA $A0
 LDE60:  LDA #$00
 LDE62:  STA $A1
-LDE64:  LDY #$30
+LDE64:  LDY #CHR_GOLD
 LDE66:  LDA (CrntChrPtr),Y
 LDE68:  CLC
 LDE69:  ADC $A0
@@ -3962,7 +3979,7 @@ LDE80:  LDA #$27
 LDE82:  STA $2C
 LDE84:  LDA #$0F
 LDE86:  STA $2B
-LDE88:  LDY #$30
+LDE88:  LDY #CHR_GOLD
 LDE8A:  LDA $2B
 LDE8C:  STA (CrntChrPtr),Y
 LDE8E:  INY
@@ -3970,7 +3987,7 @@ LDE8F:  LDA $2C
 LDE91:  STA (CrntChrPtr),Y
 LDE93:  LDA #$10
 LDE95:  STA TextIndex
-LDE97:  JSR ShowText            ;($E675)Show text in window.
+LDE97:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDE9A:  LDA #$64
 LDE9C:  JSR LE64E
 LDE9F:  CMP #$32
@@ -3984,14 +4001,14 @@ LDEAA:  .byte $00, $00, $00, $80, $00, $40, $00, $40, $00, $40, $40
 LDEB5:  JSR LE42F
 LDEB8:  BCS LDECD
 LDEBA:  LDX #$6D
-LDEBC:  LDY #$3D
+LDEBC:  LDY #CHR_FLOWER
 LDEBE:  LDA (CrntChrPtr),Y
 LDEC0:  BNE LDEC8
 LDEC2:  LDX #$63
 LDEC4:  LDA #$01
 LDEC6:  STA (CrntChrPtr),Y
 LDEC8:  STX TextIndex
-LDECA:  JSR ShowText            ;($E675)Show text in window.
+LDECA:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDECD:  SEC
 LDECE:  RTS
 LDECF:  JSR GetFrontBlock       ;($E739)Get the block in front of character 1.
@@ -4023,7 +4040,7 @@ LDEFD:  LDA DirConvTbl,X
 LDF00:  ASL
 LDF01:  TAX
 LDF02:  LDA $DF10,X
-LDF05:  STA $9C
+LDF05:  STA NumMenuItems
 LDF07:  LDA $DF11,X
 LDF0A:  STA $9D
 LDF0C:  CLC
@@ -4035,12 +4052,12 @@ LDF10:  .byte $40, $00, $C0, $FF, $01, $00, $FF, $FF
 
 LDF18:  LDA $DF
 LDF1A:  BNE LDF37
-LDF1C:  LDY #$06
+LDF1C:  LDY #CHR_CLASS
 LDF1E:  LDA (CrntChrPtr),Y
 LDF20:  TAX
 LDF21:  LDA $DEAA,X
 LDF24:  STA $30
-LDF26:  LDY #$08
+LDF26:  LDY #CHR_DEX
 LDF28:  LDA (CrntChrPtr),Y
 LDF2A:  CLC
 LDF2B:  ADC $30
@@ -4055,7 +4072,7 @@ LDF39:  JSR LDF18
 LDF3C:  BCS LDF48
 LDF3E:  LDA #$2F
 LDF40:  STA TextIndex
-LDF42:  JSR ShowText            ;($E675)Show text in window.
+LDF42:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDF45:  JMP LE00C
 LDF48:  LDA #$64
 LDF4A:  JSR LE64E
@@ -4072,7 +4089,7 @@ LDF60:  JSR LDA93
 LDF63:  JMP LE00C
 LDF66:  CMP #$28
 LDF68:  BCS LDF7B
-LDF6A:  LDY #$0B
+LDF6A:  LDY #CHR_COND
 LDF6C:  LDA (CrntChrPtr),Y
 LDF6E:  CMP #$02
 LDF70:  BCS LDF63
@@ -4082,7 +4099,7 @@ LDF76:  LDA #$2E
 LDF78:  JMP LE007
 LDF7B:  CMP #$3C
 LDF7D:  BCS LDF90
-LDF7F:  LDY #$0B
+LDF7F:  LDY #CHR_COND
 LDF81:  LDA (CrntChrPtr),Y
 LDF83:  CMP #$03
 LDF85:  BCS LDF63
@@ -4113,7 +4130,7 @@ LDFB3:  LDA ChrPtrBaseLB,X
 LDFB5:  STA CrntChrPtrLB
 LDFB7:  LDA ChrPtrBaseUB,X
 LDFB9:  STA CrntChrPtrUB
-LDFBB:  LDY #$0B
+LDFBB:  LDY #CHR_COND
 LDFBD:  LDA (CrntChrPtr),Y
 LDFBF:  CMP #$03
 LDFC1:  BCS LDFD4
@@ -4140,7 +4157,7 @@ LDFE3:  LDA ChrPtrBaseUB,X
 LDFE5:  STA CrntChrPtrUB
 LDFE7:  TXA
 LDFE8:  PHA
-LDFE9:  LDY #$0B
+LDFE9:  LDY #CHR_COND
 LDFEB:  LDA (CrntChrPtr),Y
 LDFED:  CMP #$02
 LDFEF:  BCS LDFFC
@@ -4148,7 +4165,7 @@ LDFF1:  LDA #$01
 LDFF3:  STA (CrntChrPtr),Y
 LDFF5:  LDA #$2E
 LDFF7:  STA TextIndex
-LDFF9:  JSR ShowText            ;($E675)Show text in window.
+LDFF9:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LDFFC:  PLA
 LDFFD:  TAX
 LDFFE:  INX
@@ -4157,11 +4174,11 @@ LE000:  CPX #$08
 LE002:  BNE LDFDF
 LE004:  JMP LE00C
 LE007:  STA TextIndex
-LE009:  JSR ShowText            ;($E675)Show text in window.
+LE009:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE00C:  LDA MapProperties
 LE00E:  AND #$01
 LE010:  BNE LE082
-LE012:  LDA $9C
+LE012:  LDA NumMenuItems
 LE014:  BNE LE047
 LE016:  JSR LE090
 LE019:  PHA
@@ -4198,7 +4215,7 @@ LE04D:  STA $47
 LE04F:  JSR LF5B0
 LE052:  CLC
 LE053:  LDA $43
-LE055:  ADC $9C
+LE055:  ADC NumMenuItems
 LE057:  STA $43
 LE059:  LDA $44
 LE05B:  ADC $9D
@@ -4290,17 +4307,17 @@ LE0F4:  BEQ LE143
 LE0F6:  CMP #$05
 LE0F8:  BNE LE139
 LE0FA:  LDA #$02
-LE0FC:  STA $9C
+LE0FC:  STA NumMenuItems
 LE0FE:  LDA #$35
-LE100:  STA $03D4
+LE100:  STA TextIndex2
 LE103:  LDA #$0A
-LE105:  STA $03D0
+LE105:  STA Wnd2XPos
 LE108:  LDA #$06
-LE10A:  STA $03D1
+LE10A:  STA Wnd2YPos
 LE10D:  LDA #$0A
-LE10F:  STA $03D2
+LE10F:  STA Wnd2Width
 LE112:  LDA #$06
-LE114:  STA $03D3
+LE114:  STA Wnd2Height
 LE117:  JSR LE4FF
 LE11A:  BCS LE140
 LE11C:  CMP #$00
@@ -4319,7 +4336,7 @@ LE136:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game en
 LE139:  LDA #$11
 
 LE13B:  STA TextIndex
-LE13D:  JSR ShowText            ;($E675)Show text in window.
+LE13D:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE140:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE143:  LDA DungeonLevel
 LE145:  CMP #$07
@@ -4366,7 +4383,7 @@ LE188:  PLA
 LE189:  JMP LE18E
 LE18C:  LDA #$13
 LE18E:  STA TextIndex
-LE190:  JSR ShowText            ;($E675)Show text in window.
+LE190:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE193:  LDA $C0
 LE195:  AND #$7C
 LE197:  STA $C0
@@ -4406,7 +4423,7 @@ LE1C8:  STA $2E
 LE1CA:  JSR LEE4E
 LE1CD:  LDA #$16
 LE1CF:  STA TextIndex
-LE1D1:  JSR ShowText            ;($E675)Show text in window.
+LE1D1:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE1D4:  PHA
 LE1D5:  PLA
 LE1D6:  JSR LF4D1
@@ -4484,7 +4501,7 @@ DoBribeCmd:
 LE250:  LDA BribePray
 LE252:  AND #CMD_BRIBE
 LE254:  BEQ LE2BE
-LE256:  JSR LC6EC
+LE256:  JSR ChkValidNPC         ;($C6EC)Check if valid NPC in front of player.
 LE259:  LDX #$02
 LE25B:  BCS LE2B5
 LE25D:  LDA NPCSprIndex,Y
@@ -4501,7 +4518,7 @@ LE272:  TYA
 LE273:  PHA
 LE274:  JSR LE42F
 LE277:  BCS LE2BD
-LE279:  LDY #$30
+LE279:  LDY #CHR_GOLD
 LE27B:  LDA (CrntChrPtr),Y
 LE27D:  SEC
 LE27E:  SBC #$64
@@ -4530,10 +4547,10 @@ LE2A6:  BNE LE2B5
 LE2A8:  LDA #$FF
 LE2AA:  STA NPCSprIndex,Y
 LE2AD:  STX TextIndex
-LE2AF:  JSR ShowText            ;($E675)Show text in window.
+LE2AF:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE2B2:  JMP LoadNewMap          ;($C175)Load a new map.
 LE2B5:  STX TextIndex
-LE2B7:  JSR ShowText            ;($E675)Show text in window.
+LE2B7:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE2BA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE2BD:  PLA
 LE2BE:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
@@ -4625,7 +4642,7 @@ LE34F:  STA ExodusDead          ;
 
 LE351:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
-LE354:  JSR LC6EC
+LE354:  JSR ChkValidNPC         ;($C6EC)Check if valid NPC in front of player.
 LE357:  BCS PrayerNotHeard      ;($E38F)Indicate nothing was found after praying.
 LE359:  LDA ThisMap
 LE35B:  CMP #MAP_SH_INT
@@ -4636,7 +4653,7 @@ LE362:  SBC #$15
 LE364:  TAX
 LE365:  LDA $E3C3,X
 LE368:  STA $30
-LE36A:  LDY #$3C
+LE36A:  LDY #CHR_CARDS
 LE36C:  LDA (CrntChrPtr),Y
 LE36E:  AND $30
 LE370:  BNE PrayerNotHeard      ;($E38F)Indicate nothing was found after praying.
@@ -4648,18 +4665,18 @@ LE378:  CLC
 LE379:  LDA ThisMap
 LE37B:  ADC #$8D
 LE37D:  STA TextIndex
-LE37F:  JSR ShowText            ;($E675)Show text in window.
+LE37F:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE382:  CLC
 LE383:  LDA ThisMap
 LE385:  ADC #$91
 LE387:  STA TextIndex
-LE389:  JSR ShowText            ;($E675)Show text in window.
+LE389:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE38C:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
 PrayerNotHeard:
 LE38F:  LDA #$57                ;YOUR PRAYER WAS NOT HEARD.
 LE391:  STA TextIndex           ;
-LE393:  JSR ShowText            ;($E675)Show text in window.
+LE393:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE396:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
 LE399:  LDX #$00
@@ -4667,13 +4684,13 @@ LE39B:  LDA ChrPtrBaseLB,X
 LE39D:  STA CrntChrPtrLB
 LE39F:  LDA ChrPtrBaseUB,X
 LE3A1:  STA CrntChrPtrUB
-LE3A3:  LDY #$0B
+LE3A3:  LDY #CHR_COND
 LE3A5:  LDA (CrntChrPtr),Y
 LE3A7:  CMP #$03
 LE3A9:  BCS LE3BA
 LE3AB:  LDA #$03
 LE3AD:  STA (CrntChrPtr),Y
-LE3AF:  LDY #$2D
+LE3AF:  LDY #CHR_HIT_PNTS
 LE3B1:  LDA #$00
 LE3B3:  STA (CrntChrPtr),Y
 LE3B5:  INY
@@ -4739,17 +4756,21 @@ LE426:  STA $05FF
 LE429:  JSR UpdateSpriteRAM     ;($9900)Move sprite buffer data into sprite RAM.
 LE42C:  JMP LE42C
 
+;----------------------------------------------------------------------------------------------------
+
 LE42F:  LDA #$02
-LE431:  STA $2A
+LE431:  STA WndXPos
 LE433:  LDA #$04
-LE435:  STA $29
+LE435:  STA WndYPos
+
 LE437:  LDA #$08
-LE439:  STA $2E
+LE439:  STA WndWidth
 LE43B:  LDA #$0C
-LE43D:  STA $2D
+LE43D:  STA WndHeight
+
 LE43F:  JSR ShowWindow          ;($F42A)Show a window on the display.
 
-LE442:  JSR LE770
+LE442:  JSR SelectWho           ;($E770)Player selects a character window.
 LE445:  LDA #$04
 LE447:  STA $2A
 LE449:  LDA #$06
@@ -4782,7 +4803,7 @@ LE47D:  LDA ChrPtrBaseUB,X
 LE47F:  STA CrntChrPtrUB
 LE481:  LDA $E9
 LE483:  BNE LE48D
-LE485:  LDY #$0B
+LE485:  LDY #CHR_COND
 LE487:  LDA (CrntChrPtr),Y
 LE489:  CMP #$03
 LE48B:  BCS LE494
@@ -4795,7 +4816,7 @@ LE493:  RTS
 LE494:  CLC
 LE495:  ADC #$40
 LE497:  STA TextIndex
-LE499:  JSR ShowText            ;($E675)Show text in window.
+LE499:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LE49C:  SEC
 LE49D:  RTS
 
@@ -4816,7 +4837,7 @@ LE4B6:  STA $2E
 LE4B8:  LDA #$0C
 LE4BA:  STA $2D
 LE4BC:  JSR ShowWindow          ;($F42A)Show a window on the display.
-LE4BF:  JSR LE770
+LE4BF:  JSR SelectWho           ;($E770)Player selects a character window.
 LE4C2:  PLA
 LE4C3:  STA $0584
 LE4C6:  PLA
@@ -4845,67 +4866,69 @@ LE4F6:  BCS LE49C
 LE4F8:  CMP #$FF
 LE4FA:  BEQ LE4E1
 LE4FC:  JMP LE477
-LE4FF:  LDA $9C
+
+LE4FF:  LDA NumMenuItems
 LE501:  CLC
 LE502:  ADC #$01
 LE504:  ASL
-LE505:  STA $03D3
+LE505:  STA Wnd2Height
 LE508:  JMP LE50B
 LE50B:  LDA HideUprSprites
 LE50D:  STA $E1
-LE50F:  LDA $03D0
+
+LE50F:  LDA Wnd2XPos
 LE512:  STA $2A
-LE514:  LDA $03D1
+LE514:  LDA Wnd2YPos
 LE517:  STA $29
-LE519:  LDA $03D2
+LE519:  LDA Wnd2Width
 LE51C:  STA $2E
-LE51E:  LDA $03D3
+LE51E:  LDA Wnd2Height
 LE521:  STA $2D
 LE523:  JSR ShowWindow          ;($F42A)Show a window on the display.
-LE526:  LDA $03D4
+LE526:  LDA TextIndex2
 LE529:  STA $30
-LE52B:  LDA $03D0
+LE52B:  LDA Wnd2XPos
 LE52E:  CLC
 LE52F:  ADC #$02
 LE531:  STA $2A
-LE533:  LDA $03D1
+LE533:  LDA Wnd2YPos
 LE536:  CLC
 LE537:  ADC #$02
 LE539:  STA $29
-LE53B:  LDA $03D2
+LE53B:  LDA Wnd2Width
 LE53E:  SEC
 LE53F:  SBC #$03
 LE541:  STA $2E
 LE543:  SEC
-LE544:  LDA $03D3
+LE544:  LDA Wnd2Height
 LE547:  SBC #$02
 LE549:  LSR
 LE54A:  STA $2D
 LE54C:  LDA $E1
 LE54E:  STA HideUprSprites
 LE550:  JSR LF0BE
-LE553:  LDA $9C
+LE553:  LDA NumMenuItems
 LE555:  CLC
 LE556:  ADC #$01
 LE558:  ASL
 LE559:  STA $2E
 LE55B:  LDX #$02
 LE55D:  SEC
-LE55E:  LDA $03D3
+LE55E:  LDA Wnd2Height
 LE561:  SBC $2E
 LE563:  BEQ LE569
 LE565:  CLC
 LE566:  ADC #$02
 LE568:  TAX
 LE569:  STX $2E
-LE56B:  LDA $03D1
+LE56B:  LDA Wnd2YPos
 LE56E:  CLC
 LE56F:  ADC $2E
 LE571:  ASL
 LE572:  ASL
 LE573:  ASL
 LE574:  STA $7300
-LE577:  LDA $03D0
+LE577:  LDA Wnd2XPos
 LE57A:  CLC
 LE57B:  ADC #$01
 LE57D:  ASL
@@ -4914,7 +4937,7 @@ LE57F:  ASL
 LE580:  STA $7303
 LE583:  LDA #$01
 LE585:  STA $2E
-LE587:  LDA $9C
+LE587:  LDA NumMenuItems
 LE589:  STA $2D
 LE58B:  JSR LE685
 LE58E:  BCS LE5FD
@@ -4928,10 +4951,10 @@ LE59C:  LDA $9D
 LE59E:  AND #$7F
 LE5A0:  STA $9D
 LE5A2:  LDA #$08
-LE5A4:  STA $9C
+LE5A4:  STA NumMenuItems
 LE5A6:  LDA #$12
-LE5A8:  STA $03D3
-LE5AB:  LDA $03D4
+LE5A8:  STA Wnd2Height
+LE5AB:  LDA TextIndex2
 LE5AE:  STA $30
 LE5B0:  JMP LE50B
 LE5B3:  LDA $9D
@@ -4940,21 +4963,21 @@ LE5B7:  STA $9D
 LE5B9:  AND #$7F
 LE5BB:  SEC
 LE5BC:  SBC #$08
-LE5BE:  STA $9C
+LE5BE:  STA NumMenuItems
 LE5C0:  CLC
 LE5C1:  ADC #$01
 LE5C3:  ASL
-LE5C4:  STA $03D3
-LE5C7:  LDA $03D0
+LE5C4:  STA Wnd2Height
+LE5C7:  LDA Wnd2XPos
 LE5CA:  STA $2A
-LE5CC:  LDA $03D1
+LE5CC:  LDA Wnd2YPos
 LE5CF:  STA $29
-LE5D1:  LDA $03D2
+LE5D1:  LDA Wnd2Width
 LE5D4:  STA $2E
 LE5D6:  LDA #$12
 LE5D8:  STA $2D
 LE5DA:  JSR ShowWindow          ;($F42A)Show a window on the display.
-LE5DD:  LDA $03D4
+LE5DD:  LDA TextIndex2
 LE5E0:  CLC
 LE5E1:  ADC #$01
 LE5E3:  STA $30
@@ -5050,7 +5073,7 @@ LE673:  STA $C7
 
 ;----------------------------------------------------------------------------------------------------
 
-ShowText:
+ShowDialog2:
 LE675:  LDA CurPRGBank
 LE677:  PHA
 LE678:  LDA #BANK_HELPERS1
@@ -5241,14 +5264,20 @@ LE767:  .byte $00, $02, $01, $00, $08, $00, $00, $00, $04
 
 ;----------------------------------------------------------------------------------------------------
 
-LE770:  LDA CurPRGBank
-LE772:  PHA
-LE773:  LDA #BANK_HELPERS1
+SelectWho:
+LE770:  LDA CurPRGBank          ;Save the current active lower bank.
+LE772:  PHA                     ;
+
+LE773:  LDA #BANK_HELPERS1      ;Load Bank0B.
 LE775:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LE778:  JSR $B700
-LE77B:  PLA
+LE778:  JSR ShowWhoWnd          ;($B700)Show the WHO selection window.
+
+LE77B:  PLA                     ;Restore previous lower bank.
 LE77C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LE77F:  RTS
+LE77F:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
 LE780:  LDA CurPRGBank
 LE782:  PHA
 LE783:  LDA #BANK_HELPERS1
@@ -5317,7 +5346,7 @@ LE800:  LDA #$01
 LE802:  STA $0600
 LE805:  LDA OnBoat
 LE807:  BNE LE81C
-LE809:  JSR LC6EC
+LE809:  JSR ChkValidNPC         ;($C6EC)Check if valid NPC in front of player.
 LE80C:  BCS LE7ED
 LE80E:  LDA NPCSprIndex,Y
 LE811:  CMP #$85
@@ -6197,7 +6226,7 @@ LEE87:  LDA ChrPtrBaseLB,X
 LEE89:  STA CrntChrPtrLB
 LEE8B:  LDA ChrPtrBaseUB,X
 LEE8D:  STA CrntChrPtrUB
-LEE8F:  LDY #$06
+LEE8F:  LDY #CHR_CLASS
 LEE91:  LDA (CrntChrPtr),Y
 LEE93:  ASL
 LEE94:  CLC
@@ -6206,7 +6235,7 @@ LEE97:  STA $2A
 LEE99:  LDA #$00
 LEE9B:  STA $29
 LEE9D:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
-LEEA0:  LDY #$06
+LEEA0:  LDY #CHR_CLASS
 LEEA2:  LDA (CrntChrPtr),Y
 LEEA4:  TAX
 LEEA5:  LDA $EF5A,X
@@ -6543,9 +6572,10 @@ LF0C0:  PHA                     ;
 LF0C1:  LDA #BANK_TEXT          ;Load the text PRG bank ito lower memory.
 LF0C3:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 
-LF0C6:  LDA HideUprSprites
-LF0C8:  STA $25
-LF0CA:  JSR LF41C
+LF0C6:  LDA HideUprSprites      ;Store a copy of the hide upper sprites value.
+LF0C8:  STA GenByte25           ;
+
+LF0CA:  JSR DoHideUprSprites    ;($F41C)Hide upper sprites.
 LF0CD:  LDA TXTXPos
 LF0CF:  STA $AB
 LF0D1:  LDA TXTYPos
@@ -6557,7 +6587,7 @@ LF0DB:  LDA TextIndex
 LF0DD:  CMP #TXT_DBL_SPACE
 LF0DF:  BEQ TxtBufAlreadyFilled
 LF0E1:  CMP #TXT_SNGL_SPACE
-LF0E3:  BNE LF0F0
+LF0E3:  BNE ShowTextString
 
 TxtBufAlreadyFilled:
 LF0E5:  LDA #>TextBuffer
@@ -6597,12 +6627,15 @@ LF11C:  LSR
 LF11D:  LSR
 LF11E:  LSR
 LF11F:  CLC
-LF120:  ADC $29
+LF120:  ADC TXTYPos
 LF122:  CMP #$1E
 LF124:  BCC LF129
+
 LF126:  SEC
 LF127:  SBC #$1E
+
 LF129:  STA $18
+
 LF12B:  LDA NTXPosUB
 LF12D:  LSR
 LF12E:  LDA NTXPosLB
@@ -6610,13 +6643,17 @@ LF130:  ROR
 LF131:  LSR
 LF132:  LSR
 LF133:  CLC
-LF134:  ADC $2A
+LF134:  ADC TXTXPos
 LF136:  AND #$3F
+
 LF138:  STA $19
+
 LF13A:  LDX #$20
 LF13C:  CMP #$20
 LF13E:  BCC LF142
+
 LF140:  LDX #$24
+
 LF142:  TXA
 LF143:  PHA
 LF144:  LDA $18
@@ -6635,6 +6672,7 @@ LF15B:  AND #$1F
 LF15D:  ADC $29
 LF15F:  STA $29
 LF161:  STA $26
+
 LF163:  PLA
 LF164:  ADC $2A
 LF166:  STA $2A
@@ -6656,6 +6694,7 @@ LF185:  STA PPUBufBase,X
 LF188:  INX
 LF189:  LDA $29
 LF18B:  STA PPUBufBase,X
+
 LF18E:  LDA $17
 LF190:  BEQ LF195
 LF192:  JMP LF2BE
@@ -6787,9 +6826,11 @@ LF299:  LDA $26
 LF29B:  STA $29
 LF29D:  LDA $20
 LF29F:  STA $18
-LF2A1:  LDA $25
-LF2A3:  STA HideUprSprites
-LF2A5:  JSR LF41C
+
+LF2A1:  LDA GenByte25           ;Restore the hide upper sprites value.
+LF2A3:  STA HideUprSprites      ;
+
+LF2A5:  JSR DoHideUprSprites    ;($F41C)Hide upper sprites.
 LF2A8:  LDA #$00
 LF2AA:  STA $AD
 LF2AC:  STA $AE
@@ -6799,6 +6840,8 @@ LF2B4:  PLA
 LF2B5:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF2B8:  CLC
 LF2B9:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LF2BA:  LDA #$01
 LF2BC:  STA $17
@@ -6999,15 +7042,20 @@ LF410:  RTS
 
 LF411:  .byte $02, $01, $02, $02, $01, $02, $01, $01, $02, $02, $02    
 
-LF41C:  LDX HideUprSprites
-LF41E:  LDA #$F0
-LF420:  STA $7300,X
-LF423:  INX
-LF424:  INX
-LF425:  INX
-LF426:  INX
-LF427:  BNE LF420
-LF429:  RTS
+;----------------------------------------------------------------------------------------------------
+
+DoHideUprSprites:
+LF41C:  LDX HideUprSprites      ;Start at given index.
+LF41E:  LDA #$F0                ;Prepare to set Y value of sprite off the screen.
+
+LF420:* STA SpriteBuffer,X      ;Hide given sprite.
+
+LF423:  INX                     ;
+LF424:  INX                     ;Increment by 4. 4 bytes per sprite.
+LF425:  INX                     ;
+LF426:  INX                     ;All upper sprites hidden?
+LF427:  BNE -                   ;If not, branch to hide another one.
+LF429:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -7055,6 +7103,7 @@ LF469:  JMP LF46E
 LF46C:  LDA $2E
 LF46E:  JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
 LF471:  RTS
+
 LF472:  INC $19
 LF474:  LDA $19
 LF476:  AND #$1F
@@ -7094,6 +7143,7 @@ LF4B5:  STA $29
 LF4B7:  PLA
 LF4B8:  STA $2A
 LF4BA:  RTS
+
 LF4BB:  INC $18
 LF4BD:  LDA $18
 LF4BF:  CMP #$1E
@@ -7544,7 +7594,7 @@ LF80B:  JSR LF981
 LF80E:  JSR LF8F7
 LF811:  LDA #$33
 LF813:  STA TextIndex
-LF815:  JSR ShowText            ;($E675)Show text in window.
+LF815:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
 LF818:  JSR LF4D1
 LF81B:  JMP LF86C
 LF81E:  CMP #$0D

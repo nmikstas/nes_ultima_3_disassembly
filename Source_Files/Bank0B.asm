@@ -7,6 +7,7 @@
 ;Forward declarations.
 
 .alias  Reset1                  $C000
+.alias  DisplayText1            $C003
 .alias  ShowWindow1             $C015
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
@@ -1748,13 +1749,13 @@ L9380:  LDA $91
 L9382:  STA $99
 L9384:  LDA $92
 L9386:  STA $9A
-L9388:  LDY #$0B
+L9388:  LDY #CHR_COND
 L938A:  LDA #$00
-L938C:  STA ($99),Y
-L938E:  LDY #$36
-L9390:  LDA ($99),Y
-L9392:  LDY #$2D
-L9394:  STA ($99),Y
+L938C:  STA (CrntChrPtr),Y
+L938E:  LDY #CHR_MAX_HP
+L9390:  LDA (CrntChrPtr),Y
+L9392:  LDY #CHR_HIT_PNTS
+L9394:  STA (CrntChrPtr),Y
 L9396:  LDA #$08
 L9398:  STA MapProperties
 L939A:  LDA #MAP_LB_CSTL
@@ -3442,17 +3443,17 @@ LA80D:  LDA $0400,Y
 LA810:  CMP #$9D
 LA812:  BNE LA836
 LA814:  LDX #$CE
-LA816:  LDY #$3D
-LA818:  LDA ($99),Y
+LA816:  LDY #CHR_FLOWER
+LA818:  LDA (CrntChrPtr),Y
 LA81A:  BEQ LA82E
 LA81C:  LDA #$00
-LA81E:  STA ($99),Y
+LA81E:  STA (CrntChrPtr),Y
 LA820:  LDX #$8A
-LA822:  LDY #$2A
-LA824:  LDA ($99),Y
+LA822:  LDY #CHR_COMPASS
+LA824:  LDA (CrntChrPtr),Y
 LA826:  BNE LA82E
 LA828:  LDA #$01
-LA82A:  STA ($99),Y
+LA82A:  STA (CrntChrPtr),Y
 LA82C:  LDX #$6E
 LA82E:  STX $30
 LA830:  JSR LAA00
@@ -3460,15 +3461,15 @@ LA833:  JMP LA96A
 LA836:  LDA #$03
 LA838:  STA $9C
 LA83A:  LDA #$5B
-LA83C:  STA $03D4
+LA83C:  STA TextIndex2
 LA83F:  LDA #$0A
-LA841:  STA $03D0
+LA841:  STA Wnd2XPos
 LA844:  LDA #$04
-LA846:  STA $03D1
+LA846:  STA Wnd2YPos
 LA849:  LDA #$0A
-LA84B:  STA $03D2
+LA84B:  STA Wnd2Width
 LA84E:  LDA #$08
-LA850:  STA $03D3
+LA850:  STA Wnd2Height
 LA853:  JSR $C012
 LA856:  BCC LA85B
 LA858:  JMP LA96A
@@ -3512,8 +3513,8 @@ LA8A0:  JSR $C05A
 LA8A3:  BCC LA8A8
 LA8A5:  JMP LA96A
 LA8A8:  STA $30
-LA8AA:  LDY #$34
-LA8AC:  LDA ($99),Y
+LA8AA:  LDY #CHR_EQ_WEAPON
+LA8AC:  LDA (CrntChrPtr),Y
 LA8AE:  SEC
 LA8AF:  SBC #$01
 LA8B1:  CMP $30
@@ -3521,7 +3522,7 @@ LA8B3:  BNE LA8C9
 LA8B5:  CLC
 LA8B6:  ADC #$0C
 LA8B8:  TAY
-LA8B9:  LDA ($99),Y
+LA8B9:  LDA (CrntChrPtr),Y
 LA8BB:  CMP #$01
 LA8BD:  BNE LA8C9
 LA8BF:  LDA #$F4
@@ -3563,8 +3564,8 @@ LA905:  JSR $C057
 LA908:  BCC LA90D
 LA90A:  JMP LA96A
 LA90D:  STA $30
-LA90F:  LDY #$35
-LA911:  LDA ($99),Y
+LA90F:  LDY #CHR_EQ_ARMOR
+LA911:  LDA (CrntChrPtr),Y
 LA913:  SEC
 LA914:  SBC #$01
 LA916:  CMP $30
@@ -3572,7 +3573,7 @@ LA918:  BNE LA92E
 LA91A:  CLC
 LA91B:  ADC #$1B
 LA91D:  TAY
-LA91E:  LDA ($99),Y
+LA91E:  LDA (CrntChrPtr),Y
 LA920:  CMP #$01
 LA922:  BNE LA92E
 LA924:  LDA #$F4
@@ -3616,20 +3617,20 @@ LA96E:  RTS
 LA96F:  CLC
 LA970:  ADC #$22
 LA972:  TAY
-LA973:  LDA ($99),Y
+LA973:  LDA (CrntChrPtr),Y
 LA975:  CLC
 LA976:  ADC #$01
 LA978:  CMP #$64
 LA97A:  BCC LA97E
 LA97C:  LDA #$63
-LA97E:  STA ($99),Y
+LA97E:  STA (CrntChrPtr),Y
 LA980:  RTS
 LA981:  CLC
 LA982:  ADC #$0C
 LA984:  STA $30
 LA986:  LDX #$00
-LA988:  LDY #$0C
-LA98A:  LDA ($99),Y
+LA988:  LDY #CHR_WEAPONS
+LA98A:  LDA (CrntChrPtr),Y
 LA98C:  BEQ LA993
 LA98E:  INX
 LA98F:  CPY $30
@@ -3642,24 +3643,24 @@ LA999:  CPY #$1B
 LA99B:  BNE LA98A
 LA99D:  CLC
 LA99E:  LDY $30
-LA9A0:  LDA ($99),Y
+LA9A0:  LDA (CrntChrPtr),Y
 LA9A2:  CLC
 LA9A3:  ADC #$01
 LA9A5:  CMP #$64
 LA9A7:  BCC LA9AB
 LA9A9:  LDA #$63
-LA9AB:  STA ($99),Y
+LA9AB:  STA (CrntChrPtr),Y
 LA9AD:  RTS
 LA9AE:  CLC
 LA9AF:  ADC #$1B
 LA9B1:  TAY
-LA9B2:  LDA ($99),Y
+LA9B2:  LDA (CrntChrPtr),Y
 LA9B4:  CLC
 LA9B5:  ADC #$01
 LA9B7:  CMP #$64
 LA9B9:  BCC LA9BD
 LA9BB:  LDA #$63
-LA9BD:  STA ($99),Y
+LA9BD:  STA (CrntChrPtr),Y
 LA9BF:  RTS
 
 LA9C0:  .byte $42, $44, $41, $11, $11, $11, $11, $44, $44, $22, $44, $33, $34, $44, $44, $44
@@ -3667,40 +3668,49 @@ LA9D0:  .byte $33, $33, $44, $44, $44, $44, $44, $44, $00, $00, $04, $42, $22, $
 LA9E0:  .byte $42, $24, $44, $11, $11, $11, $14, $44, $42, $22, $24, $33, $44, $44, $44, $44
 LA9F0:  .byte $43, $33, $44, $41, $11, $44, $44, $41, $00, $00, $44, $44, $42, $22, $22, $24
 
-LAA00:  LDA $30
-LAA02:  PHA
+;----------------------------------------------------------------------------------------------------
+
+DoDialog:
+LAA00:  LDA TextIndex           ;Save text index while drawing the window on the screen.
+LAA02:  PHA                     ;
 
 LAA03:  LDA MapProperties       ;Is the current map a combat map?
 LAA05:  AND #$02                ;
 LAA07:  BEQ +                   ;If not, branch.
 
-LAA09:  JMP LAA7E
+LAA09:  JMP DoCombatDialog      ;($AA7E)Show dialog text in a combat map.
 
-LAA0C:* LDA #$06
-LAA0E:  STA $2A
-LAA10:  LDA #$12
-LAA12:  STA $29
-LAA14:  LDA #$10
-LAA16:  STA $2E
-LAA18:  LDA #$08
-LAA1A:  STA $2D
+LAA0C:* LDA #$06                ;
+LAA0E:  STA WndXPos             ;Prepare to put a window at tile coords X,Y=6,18.
+LAA10:  LDA #$12                ;
+LAA12:  STA WndYPos             ;
+
+LAA14:  LDA #$10                ;
+LAA16:  STA WndWidth            ;Window will be 16 tiles wide and 8 tiles high.
+LAA18:  LDA #$08                ;
+LAA1A:  STA WndHeight           ;
+
 LAA1C:  JSR ShowWindow1         ;($C015)Show a window on the screen.
-LAA1F:  PLA
-LAA20:  STA $30
+
+LAA1F:  PLA                     ;Restore the text index from the stack.
+LAA20:  STA TextIndex           ;
+
 LAA22:  LDA #$08
-LAA24:  STA $2A
+LAA24:  STA TXTXPos
 LAA26:  LDA #$13
-LAA28:  STA $29
+LAA28:  STA TXTYPos
 LAA2A:  LDA #$0C
-LAA2C:  STA $2E
+LAA2C:  STA TXTClrCols
 LAA2E:  LDA #$06
-LAA30:  STA $2D
+LAA30:  STA TXTClrRows
 LAA32:  LDA #$01
-LAA34:  STA $EF
+LAA34:  STA ActiveMessage
+
 LAA36:  LDA $C7
 LAA38:  ORA #$01
 LAA3A:  STA $C7
-LAA3C:  JSR $C003
+LAA3C:  JSR DisplayText1        ;($C003)Display text on the screen.
+
 LAA3F:  LDA #$00
 LAA41:  STA $EF
 LAA43:  BCC LAA6E
@@ -3734,15 +3744,17 @@ LAA79:  LDA #$00
 LAA7B:  STA $C7
 LAA7D:  RTS
 
+DoCombatDialog:
 LAA7E:  LDA #$06
-LAA80:  STA $2A
+LAA80:  STA WndXPos
 LAA82:  LDA #$12
-LAA84:  STA $29
+LAA84:  STA WndYPos
 LAA86:  LDA #$0E
-LAA88:  STA $2E
+LAA88:  STA WndWidth
 LAA8A:  LDA #$08
-LAA8C:  STA $2D
+LAA8C:  STA WndHeight
 LAA8E:  JSR ShowWindow1         ;($C015)Show a window on the screen.
+
 LAA91:  PLA
 LAA92:  STA $30
 LAA94:  LDA #$07
@@ -3765,6 +3777,8 @@ LAAB5:  STA $9B
 LAAB7:  JSR LB5E8
 LAABA:  JSR $C021
 LAABD:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LAABE:  .byte $24, $44, $42, $22, $24, $44, $44, $11, $11, $11, $11, $11, $11, $11, $11, $11
 LAACE:  .byte $11, $14, $44, $44, $40, $00, $00, $00, $01, $12, $24, $44, $22, $22, $22, $22
@@ -4232,15 +4246,15 @@ LAFA6:  LDA $91,X
 LAFA8:  STA $99
 LAFAA:  LDA $92,X
 LAFAC:  STA $9A
-LAFAE:  LDY #$0B
-LAFB0:  LDA ($99),Y
+LAFAE:  LDY #CHR_COND
+LAFB0:  LDA (CrntChrPtr),Y
 LAFB2:  BEQ LAFB8
 LAFB4:  CMP #$03
 LAFB6:  BCC LAFC8
-LAFB8:  LDY #$2B
-LAFBA:  LDA ($99),Y
+LAFB8:  LDY #CHR_FOOD
+LAFBA:  LDA (CrntChrPtr),Y
 LAFBC:  INY
-LAFBD:  ORA ($99),Y
+LAFBD:  ORA (CrntChrPtr),Y
 LAFBF:  BEQ LAFC8
 LAFC1:  INX
 LAFC2:  INX
@@ -4351,12 +4365,12 @@ LB0BE:  .byte $76, $B1, $8A, $B1, $9E, $B1, $B2, $B1, $C6, $B1, $DA, $B1
 
 LB0CA:  LDX #$00
 LB0CC:  STX $30
-LB0CE:  LDY #$33
+LB0CE:  LDY #CHR_LEVEL
 LB0D0:  LDA $91,X
 LB0D2:  STA $99
 LB0D4:  LDA $92,X
 LB0D6:  STA $9A
-LB0D8:  LDA ($99),Y
+LB0D8:  LDA (CrntChrPtr),Y
 LB0DA:  CMP $30
 LB0DC:  BCC LB0E0
 LB0DE:  STA $30
@@ -5018,10 +5032,13 @@ LB6FC:  RTS
 
 LB6FD:  .byte $33, $33, $33
 
+;----------------------------------------------------------------------------------------------------
+
+ShowWhoWnd:
 LB700:  LDY #$00
 LB702:  LDX #$00
 LB704:  LDA $B759,X
-LB707:  STA $0580,X
+LB707:  STA TextBuffer,X
 LB70A:  INX
 LB70B:  CPX #$06
 LB70D:  BNE LB704
@@ -5065,6 +5082,7 @@ LB753:  LDA #$FF
 LB755:  STA $0580,X
 LB758:  RTS
 
+;              W    H    O    _    _    \n
 LB759:  .byte $A0, $91, $98, $00, $00, $FD
 
 LB75F:  LDA #$F0
@@ -5124,14 +5142,15 @@ LB804:  BNE LB863
 LB806:  LDA $CE
 LB808:  PHA
 LB809:  LDA #$04
-LB80B:  STA $2A
+LB80B:  STA WndXPos
 LB80D:  LDA #$02
-LB80F:  STA $29
+LB80F:  STA WndYPos
 LB811:  LDA #$06
-LB813:  STA $2E
+LB813:  STA WndWidth
 LB815:  LDA #$04
-LB817:  STA $2D
+LB817:  STA WndHeight
 LB819:  JSR ShowWindow1         ;($C015)Show a window on the screen.
+
 LB81C:  LDA $D3
 LB81E:  LSR
 LB81F:  LSR
@@ -5240,15 +5259,15 @@ LB939:  CLC
 LB93A:  RTS
 LB93B:  LDA #$00
 LB93D:  STA $03F1,Y
-LB940:  LDY #$39
-LB942:  LDA ($99),Y
+LB940:  LDY #CHR_EXP
+LB942:  LDA (CrntChrPtr),Y
 LB944:  CLC
 LB945:  ADC $CA
-LB947:  STA ($99),Y
+LB947:  STA (CrntChrPtr),Y
 LB949:  INY
-LB94A:  LDA ($99),Y
+LB94A:  LDA (CrntChrPtr),Y
 LB94C:  ADC #$00
-LB94E:  STA ($99),Y
+LB94E:  STA (CrntChrPtr),Y
 LB950:  LDA $30
 LB952:  ASL
 LB953:  ASL
@@ -5657,14 +5676,14 @@ LBD3C:  CLC
 LBD3D:  BNE LBD40
 LBD3F:  SEC
 LBD40:  RTS
-LBD41:  LDY #$0B
+LBD41:  LDY #CHR_COND
 LBD43:  LDA $91,X
 LBD45:  STA $99
 LBD47:  LDA $92,X
 LBD49:  STA $9A
 LBD4B:  CPX #$08
 LBD4D:  BEQ LBD59
-LBD4F:  LDA ($99),Y
+LBD4F:  LDA (CrntChrPtr),Y
 LBD51:  CMP #$03
 LBD53:  BCS LBD59
 LBD55:  INX

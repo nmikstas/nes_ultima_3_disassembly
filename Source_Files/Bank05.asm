@@ -2978,6 +2978,7 @@ L9D7F:  .byte $FF
 
 ;------------------------------------------------------------------------------------------------------------------------------------
 
+DialogPtrTbl2:
 L9D80:  .word TB2E00, TB2E01, TB2E02, TB2E03, TB2E04, TB2E05, TB2E06, TB2E07
 L9D90:  .word TB2E08, TB2E09, TB2E0A, TB2E0B, TB2E0C, TB2E0D, TB2E0E, TB2E0F
 L9DA0:  .word TB2E10, TB2E11, TB2E12, TB2E13, TB2E14, TB2E15, TB2E16, TB2E17

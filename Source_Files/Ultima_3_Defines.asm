@@ -87,6 +87,10 @@
 .alias PPUPyLdPtrLB     $29     ;PPU buffer payload pointer, lower byte.
 .alias PPUPyLdPtrUB     $2A     ;PPU buffer payload pointer, upper byte.
 
+.alias IndJumpPtr       $29     ;Pointer used for indirect jumps.
+.alias IndJumpPtrLB     $29     ;Pointer used for indirect jumps, lower byte.
+.alias IndJumpPtrUB     $2A     ;Pointer used for indirect jumps, upper byte.
+
 ;Text buffer registers.
 .alias TXTYPos          $29     ;Text string, Y position on screen in tiles.
 .alias TXTXPos          $2A     ;Text string, X position on screen in tiles.
@@ -183,6 +187,8 @@
 .alias SGCharPtrLB      $99     ;Pointer to character data in current save game, lower byte.
 .alias SGCharPtrUB      $9A     ;Pointer to character data in current save game, upper byte.
 
+.alias NumMenuItems     $9C     ;The number of items in a given menu.
+
 .alias DisSpriteAnim    $9E     ;Non-zero value disables sprite animations.
 .alias DisNPCMovement   $9F     ;Non-zero value stops NPCs from moving and disables water animation.
 
@@ -222,6 +228,10 @@
 .alias SGDatPtr         $C5     ;Save game data pointer.
 .alias SGDatPtrLB       $C5     ;Save game data pointer, lower byte.
 .alias SGDatPtrUB       $C6     ;Save game data pointer, upper byte.
+
+.alias TextWait         $C7     ;MSB set=do not wait after last page of dialog to move on.
+                                ;MSB clear=player must push button after NPC dialog finishes.
+.alias HideUprSprites_  $C8     ;Temprary storage for HideUprSprites.                                
 
 .alias LastDirMoved     $CB     ;Last direction player moved. $00=none, $01=r, $02=l, $04=d, $08=u.
 .alias LastTalkedNPC0   $CC     ;Last NPC player talked to. Keeps track of one time messages.
@@ -290,6 +300,12 @@
 .alias PPUBuffer        $0300   ;Contains strings of data to write to the PPU.
 
 ;----------------------------------------------------------------------------------------------------
+
+.alias Wnd2XPos         $03D0   ;X tile coords of selection window.
+.alias Wnd2YPos         $03D1   ;Y tile coords of selection window.
+.alias Wnd2Width        $03D2   ;Width in tiles of selection window.
+.alias Wnd2Height       $03D3   ;Height in tiles of selection window.
+.alias TextIndex2       $03D4   ;Index to text in the selection window.
 
 .alias BoatXPos         $03D5   ;X position of player's boat on the overworld map.
 .alias BoatYPos         $03D6   ;Y position of player's boat on the overworld map.
@@ -853,9 +869,17 @@
 .alias CHR_DEX          $08     ;Index to character's dexterity.
 .alias CHR_INT          $09     ;Index to character's intelligence.
 .alias CHR_WIS          $0A     ;Index to character's wisdom.
+.alias CHR_COND         $0B     ;Index to character's condition.
 .alias CHR_WEAPONS      $0C     ;Index to character's weapons.
 .alias CHR_ARMOR        $1B     ;Index to character's Armor.
+.alias CHR_ITEMS        $22     ;Index to character's items.
+.alias CHR_COMPASS      $2A     ;Index to character's compass heart.
+.alias CHR_FOOD         $2B     ;Index to character's food.
+.alias CHR_HIT_PNTS     $2D     ;Index to character's hit points.
+.alias CHR_MAG_PNTS     $2F     ;Index to character's magic points.
 .alias CHR_GOLD         $30     ;Index to character's gold.
+.alias CHR_UNUSED32     $32     ;Index to an unused variable in character data.
+.alias CHR_LEVEL        $33     ;Index to character's level.
 .alias CHR_EQ_WEAPON    $34     ;Index to character's equipped weapon.
 .alias CHR_EQ_ARMOR     $35     ;Index to character's equipped armor.
 .alias CHR_MAX_HP       $36     ;Index to character's max hit points.
@@ -925,6 +949,7 @@
 .alias TXT_END          $FF     ;Marks the end of a text string.
 .alias TXT_SNGL_SPACE   $FE     ;Indicates text buffer already filles and should be single spaced.
 .alias TXT_DBL_SPACE    $FF     ;Indicates text buffer already filles and should be double spaced.
+.alias TXT_NO_WAIT      $80     ;Indicate NPC text will end without player pressing a button.
 
 .alias CMD_PRAY         $01     ;LSB set allowas party to pray.
 .alias CMD_BRIBE        $02     ;Second bit set allows party to bribe.
@@ -949,3 +974,6 @@
 .alias CLS_UNCHOSEN     $FF     ;Unchosen class.
 
 .alias TP_ZERO          $38     ;Index into tile patterns for the number 0.
+
+.alias WND_YES          $00     ;YES selected in dialog box.
+.alias WND_NO           $01     ;NO selected in dialog box.
