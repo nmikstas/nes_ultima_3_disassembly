@@ -87,7 +87,7 @@
 .alias PPUPyLdPtrLB     $29     ;PPU buffer payload pointer, lower byte.
 .alias PPUPyLdPtrUB     $2A     ;PPU buffer payload pointer, upper byte.
 
-.alias IndJumpPtr       $29     ;Pointer used for indirect jumps.
+.alias IndJumpPtr       $0029   ;Pointer used for indirect jumps.
 .alias IndJumpPtrLB     $29     ;Pointer used for indirect jumps, lower byte.
 .alias IndJumpPtrUB     $2A     ;Pointer used for indirect jumps, upper byte.
 
@@ -360,17 +360,17 @@
 .alias Ch1Data          $7200   ;Base address of character 1's data.
 .alias ChName           $7200   ;Through $7204. Character name, pattern table indexes.
 .alias ChRace           $7205   ;Character race. Unlisted values are invalid:
-                                ;#$00=Human, #$01=Elf, #$02=Dwarf, #$03=Bobit, #$04=Fuzzy.
+                                ;$00=Human, $01=Elf, $02=Dwarf, $03=Bobit, $04=Fuzzy.
 .alias ChClass          $7206   ;Character class. Unlisted values are invalid:
-                                ;#$00=Fighter, #$01=Cleric,    #$02=Wizard, #$03=Thief,
-                                ;#$04=Paladin, #$05=Barbarian, #$06=Lark,   #$07=Illusionist,
-								;#$08=Druid,   #$09=Alchemist, #$0A=Ranger.
+                                ;$00=Fighter, $01=Cleric,    $02=Wizard, $03=Thief,
+                                ;$04=Paladin, $05=Barbarian, $06=Lark,   $07=Illusionist,
+								;$08=Druid,   $09=Alchemist, $0A=Ranger.
 .alias ChStr            $7207   ;Character Strength stat.
 .alias ChDex            $7208   ;Character Dexterity stat.
 .alias ChInt            $7209   ;Character Intelligence stat.
 .alias ChWis            $720A   ;Character Wisdom stat.
 .alias ChCond           $720B   ;Character condition. Unlisted values are invalid:
-                                ;#$00=Good, #$01=Poisoned, #$02=Cold, #$03=Dead, #$04=Ash.
+                                ;$00=Good, $01=Poisoned, $02=Cold, $03=Dead, $04=Ash.
 .alias ChDagger         $720C   ;Number of daggers in the character's inventory.
 .alias ChMace           $720D   ;Number of Maces in the character's inventory.
 .alias ChSling          $720E   ;Number of slings in the Character's inventory.
@@ -843,6 +843,12 @@
 .alias MAP_SH_WIS       $16     ;Shrine of Wisdom.
 .alias MAP_SH_STR       $17     ;Shrine of Strength.
 .alias MAP_SH_DEX       $18     ;Shrine of Dexterity.
+.alias MAP_DUNGEON      $01     ;NPCs not shown. Dungeon map.
+.alias MAP_TURN         $02     ;Turn based map. Fight map.
+.alias MAP_MOON_PH      $04     ;Show moon phases.
+.alias MAP_NPC_PRES     $08     ;NPCs present on map, except overworld.
+.alias MAP_PROP_FIGHT   $0A     ;Combo of other 2 properties, fight map.
+.alias MAP_PROP_OV      $0C     ;Combo of other 2 properties, overworld map.
 
 .alias SG_VALID1_IDX    $00     ;Valid save game byte 1 index.
 .alias SG_VALID2_IDX    $01     ;Valid save game byte 2 index.
@@ -888,6 +894,13 @@
 .alias CHR_MARKS        $3B     ;Index to character's marks.
 .alias CHR_CARDS        $3C     ;Index to character's cards.
 .alias CHR_FLOWER       $3D     ;Index to character's flower status.
+
+;$00=Good, $01=Poisoned, $02=Cold, $03=Dead, $04=Ash.
+.alias COND_GOOD        $00     ;Character has no status conditions.
+.alias COND_POIS        $01     ;Character is poisoned.
+.alias COND_COLD        $02     ;Character has a cold.
+.alias COND_DEAD        $03     ;Character is dead.
+.alias COND_ASH         $04     ;Character is ash.
 
 .alias BLK_GRASS        $00     ;Grass GFX block.
 .alias BLK_SHRUB        $01     ;Shrubs GFX block.

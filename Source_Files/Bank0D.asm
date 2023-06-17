@@ -7,8 +7,10 @@
 ;Forward declarations.
 
 .alias  Reset1                  $C000
+.alias  ChooseChar1             $C00C
 .alias  ShowDialog1             $C00F
 .alias  ShowWindow1             $C015
+.alias  _ShowSelectWnd1         $C018
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
 .alias  NMI                     $FFF0
@@ -1089,7 +1091,7 @@ L8A0F:  CMP #$01
 L8A11:  BNE L8A18
 L8A13:  LDA #$66
 L8A15:  JMP L9475
-L8A18:  JSR $C00C
+L8A18:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8A1B:  BCC L8A20
 L8A1D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8A20:  JSR L9D5E
@@ -1107,7 +1109,7 @@ L8A3C:  LDA #$05
 L8A3E:  STA NumMenuItems
 L8A40:  LDA #$00
 L8A42:  STA $9D
-L8A44:  JSR $C018
+L8A44:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L8A47:  BCC L8A4C
 L8A49:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8A4C:  ASL
@@ -1194,7 +1196,7 @@ L8B2F:  ADC $8ABF,X
 L8B32:  STA NumMenuItems
 L8B34:  LDA #$00
 L8B36:  STA $9D
-L8B38:  JSR $C018
+L8B38:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L8B3B:  BCC L8B40
 L8B3D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8B40:  PHA
@@ -1214,7 +1216,7 @@ L8B55:  BEQ L8B5E
 L8B57:  LDA #$F9
 L8B59:  STA $30
 L8B5B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
-L8B5E:  JSR $C00C
+L8B5E:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8B61:  PLA
 L8B62:  BCC L8B67
 L8B64:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1429,7 +1431,7 @@ L8D0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D0F:  CMP #$01
 L8D11:  BNE L8D16
 L8D13:  JMP L8DDC
-L8D16:  JSR $C00C
+L8D16:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8D19:  BCC L8D1E
 L8D1B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D1E:  JSR L9D5E
@@ -1518,7 +1520,7 @@ L8DD2:  BEQ L8DD7
 L8DD4:  JMP L8D07
 L8DD7:  LDA #$86
 L8DD9:  JMP L9475
-L8DDC:  JSR $C00C
+L8DDC:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8DDF:  BCC L8DE4
 L8DE1:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DE4:  JSR L9D5E
@@ -1619,7 +1621,7 @@ L8F0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F0F:  CMP #$01
 L8F11:  BNE L8F16
 L8F13:  JMP L9349
-L8F16:  JSR $C00C
+L8F16:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8F19:  BCC L8F1E
 L8F1B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F1E:  JSR L9D5E
@@ -1723,7 +1725,7 @@ GroceryTalk:
 L9000:  LDA #$79
 L9002:  STA $30
 L9004:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
-L9007:  JSR $C00C
+L9007:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L900A:  BCC L900F
 L900C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L900F:  JSR L9D5E
@@ -1741,7 +1743,7 @@ L902A:  LDA #$00
 L902C:  STA $9D
 L902E:  LDA #$B1
 L9030:  STA TextIndex2
-L9033:  JSR $C018
+L9033:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L9036:  BCC L903B
 L9038:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L903B:  PHA
@@ -1828,7 +1830,7 @@ L9111:  STA $48
 L9113:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9116:  CMP #$01
 L9118:  BEQ L9122
-L911A:  JSR $C00C
+L911A:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L911D:  BCC L9125
 L911F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9122:  JMP L918E
@@ -1891,7 +1893,7 @@ GuildTalk:
 L9200:  LDA #$7A
 L9202:  STA $30
 L9204:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
-L9207:  JSR $C00C
+L9207:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L920A:  BCC L920F
 L920C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L920F:  JSR L9D5E
@@ -2001,7 +2003,7 @@ L9313:  LDA OnHorse
 L9315:  BEQ L931C
 L9317:  LDA #$8D
 L9319:  JMP L9475
-L931C:  JSR $C00C
+L931C:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L931F:  BCC L9324
 L9321:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9324:  JSR L9D5E
@@ -2021,7 +2023,7 @@ L9342:  LDA #$8F
 L9344:  STA $30
 L9346:  JMP L9475
 
-L9349:  JSR $C00C
+L9349:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L934C:  BCC L9351
 L934E:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9351:  JSR L9D5E
@@ -2250,7 +2252,7 @@ L9538:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L953B:  LDA #$F9
 L953D:  STA $30
 L953F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
-L9542:  JSR $C00C
+L9542:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9545:  BCC L954A
 L9547:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L954A:  JSR L9D5E
@@ -2345,7 +2347,7 @@ L960A:  CMP #$01
 L960C:  BNE L9613
 L960E:  LDA #$9A
 L9610:  JMP L9475
-L9613:  JSR $C00C
+L9613:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9616:  BCC L961B
 L9618:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L961B:  JSR L9D5E
@@ -2363,7 +2365,7 @@ L9636:  LDA #$00
 L9638:  STA $9D
 L963A:  LDA #$9B
 L963C:  STA TextIndex2
-L963F:  JSR $C018
+L963F:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L9642:  BCC L9647
 L9644:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9647:  STA $48
@@ -2461,7 +2463,7 @@ L9705:  TAX
 L9706:  LDA $9778,X
 L9709:  STA $30
 L970B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
-L970E:  JSR $C00C
+L970E:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9711:  BCC L9716
 L9713:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9716:  JSR L9D5E
@@ -2546,7 +2548,7 @@ L97E6:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $44, $
 L97F6:  .byte $44, $44, $44, $44, $44, $44, $44, $44, $44, $44
 
 LBTalk:
-L9800:  JSR $C00C
+L9800:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9803:  BCC L9808
 L9805:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9808:  LDA #$8A
@@ -3102,7 +3104,7 @@ L9E35:  LDA #$04
 L9E37:  STA NumMenuItems
 L9E39:  LDA #$00
 L9E3B:  STA $9D
-L9E3D:  JSR $C018
+L9E3D:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L9E40:  BCS L9E1C
 L9E42:  TAY
 L9E43:  PLA
@@ -3146,7 +3148,7 @@ L9EDC:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $
 L9EEC:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $30, $00, $08, $88, $88, $88, $00, $03
 L9EFC:  .byte $33, $33, $33, $33
 
-L9F00:  JSR $C00C
+L9F00:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9F03:  BCC L9F08
 L9F05:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9F08:  JSR L9D5E
@@ -3164,7 +3166,7 @@ L9F24:  LDA #$03
 L9F26:  STA NumMenuItems
 L9F28:  LDA #$00
 L9F2A:  STA $9D
-L9F2C:  JSR $C018
+L9F2C:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L9F2F:  BCC L9F34
 L9F31:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9F34:  ASL
@@ -3936,7 +3938,7 @@ LABAF:  TAX
 LABB0:  LDA $AD4E,X
 LABB3:  STA $30
 LABB5:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-LABB8:  JSR $C00C
+LABB8:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 LABBB:  BCS LABD9
 LABBD:  PLA
 LABBE:  PHA
@@ -4001,7 +4003,7 @@ LAC3B:  STA $C7
 LAC3D:  LDA #$39
 LAC3F:  STA $30
 LAC41:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-LAC44:  JSR $C00C
+LAC44:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 LAC47:  PLA
 LAC48:  BCS LACA1
 LAC4A:  PHA

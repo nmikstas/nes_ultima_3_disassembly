@@ -4675,63 +4675,80 @@ LB3DA:  .byte $0F, $30, $30, $30, $0F, $30, $30, $30, $0F, $32, $30, $37, $0F, $
 LB3EA:  .byte $0F, $30, $30, $00, $0F, $18, $08, $08, $0F, $30, $02, $36, $0F, $30, $30, $00
 LB3FA:  .byte $B7, $77, $C7, $7C
 
-LB400:  PHA
-LB401:  LDA #$38
-LB403:  STA $A2
-LB405:  STA $A3
-LB407:  STA $A4
-LB409:  STA $A5
-LB40B:  SEC
-LB40C:  LDA $A0
-LB40E:  SBC #$E8
-LB410:  STA $A0
-LB412:  LDA $A1
-LB414:  SBC #$03
-LB416:  STA $A1
-LB418:  BCC LB41F
-LB41A:  INC $A2
-LB41C:  JMP LB40B
-LB41F:  CLC
-LB420:  LDA $A0
-LB422:  ADC #$E8
-LB424:  STA $A0
-LB426:  LDA $A1
-LB428:  ADC #$03
-LB42A:  STA $A1
-LB42C:  SEC
-LB42D:  LDA $A0
-LB42F:  SBC #$64
-LB431:  STA $A0
-LB433:  LDA $A1
-LB435:  SBC #$00
-LB437:  STA $A1
-LB439:  BCC LB440
-LB43B:  INC $A3
-LB43D:  JMP LB42C
-LB440:  CLC
-LB441:  LDA $A0
-LB443:  ADC #$64
-LB445:  STA $A0
-LB447:  LDA $A1
-LB449:  ADC #$00
-LB44B:  STA $A1
-LB44D:  SEC
-LB44E:  LDA $A0
-LB450:  SBC #$0A
-LB452:  STA $A0
-LB454:  BCC LB45B
-LB456:  INC $A4
-LB458:  JMP LB44D
-LB45B:  CLC
-LB45C:  LDA $A0
-LB45E:  ADC #$0A
-LB460:  STA $A0
-LB462:  CLC
-LB463:  LDA $A5
-LB465:  ADC $A0
-LB467:  STA $A5
-LB469:  PLA
-LB46A:  RTS
+;----------------------------------------------------------------------------------------------------
+
+DoBinToBCD:
+LB400:  PHA                     ;Save A on the stack before beginning.
+
+LB401:  LDA #TP_ZERO            ;
+LB403:  STA BCDOutput0          ;
+LB405:  STA BCDOutput1          ;Set all the output digits to zero.
+LB407:  STA BCDOutput2          ;
+LB409:  STA BCDOutput3          ;
+
+LB40B:* SEC                     ;
+LB40C:  LDA BinInputLB          ;
+LB40E:  SBC #$E8                ;
+LB410:  STA BinInputLB          ;Keep subtracting 1,000 until number goes negative.
+LB412:  LDA BinInputUB          ;
+LB414:  SBC #$03                ;
+LB416:  STA BinInputUB          ;
+LB418:  BCC +                   ;
+
+LB41A:  INC BCDOutput0          ;Increment thousands digit for each subtrct loop.
+LB41C:  JMP -                   ;
+
+LB41F:* CLC                     ;
+LB420:  LDA BinInputLB          ;
+LB422:  ADC #$E8                ;
+LB424:  STA BinInputLB          ;Undo last 1,000 subtract to put number positive again.
+LB426:  LDA BinInputUB          ;
+LB428:  ADC #$03                ;
+LB42A:  STA BinInputUB          ;
+
+LB42C:* SEC                     ;
+LB42D:  LDA BinInputLB          ;
+LB42F:  SBC #$64                ;
+LB431:  STA BinInputLB          ;Keep subtracting 100 until number goes negative.
+LB433:  LDA BinInputUB          ;
+LB435:  SBC #$00                ;
+LB437:  STA BinInputUB          ;
+LB439:  BCC +                   ;
+
+LB43B:  INC BCDOutput1          ;Increment hundreds digit for each subtrct loop.
+LB43D:  JMP -                   ;
+
+LB440:* CLC                     ;
+LB441:  LDA BinInputLB          ;
+LB443:  ADC #$64                ;
+LB445:  STA BinInputLB          ;Undo last 100 subtract to put number positive again.
+LB447:  LDA BinInputUB          ;
+LB449:  ADC #$00                ;
+LB44B:  STA BinInputUB          ;
+
+LB44D:* SEC                     ;
+LB44E:  LDA BinInputLB          ;
+LB450:  SBC #$0A                ;Keep subtracting 100 until number goes negative.
+LB452:  STA BinInputLB          ;
+LB454:  BCC +                   ;
+
+LB456:  INC BCDOutput2          ;Increment tens digit for each subtrct loop.
+LB458:  JMP -                   ;
+
+LB45B:* CLC                     ;
+LB45C:  LDA BinInputLB          ;Undo last 10 subtract to put number positive again.
+LB45E:  ADC #$0A                ;
+LB460:  STA BinInputLB          ;
+
+LB462:  CLC                     ;
+LB463:  LDA BCDOutput3          ;Add remainng value to the ones digit.
+LB465:  ADC BinInputLB          ;
+LB467:  STA BCDOutput3          ;
+
+LB469:  PLA                     ;Restore A from the stack and return.
+LB46A:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 LB46B:  .byte $0F, $30, $30, $00, $0F, $30, $30, $30, $0F, $28, $18, $08, $0F, $28, $18, $08
 LB47B:  .byte $0F, $30, $30, $00, $0F, $28, $18, $08, $0F, $30, $02, $36, $0F, $30, $30, $00

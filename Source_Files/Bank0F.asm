@@ -11,6 +11,7 @@
 .alias  DoCreateMenus           $8000
 .alias  _DrawWindow             $8000
 .alias  UpdateMusic             $8100
+.alias  DoBinToBCD              $8400
 .alias  SherryTalk              $8900
 .alias  FortuneTalk             $8A00
 .alias  HealerTalk              $8B00
@@ -43,34 +44,40 @@
 ;----------------------------------------------------------------------------------------------------
 
 Reset1:
-LC000:  JMP Reset2              ;($C06C)Reset game.
+LC000:  JMP ResetGame           ;($C06C)Reset game.
 
 DisplayText1:
-LC003:  JMP DisplayText2        ;($F0BE)Display text on the screen.
+LC003:  JMP DisplayText         ;($F0BE)Display text on the screen.
 
 LoadPPU1:
-LC006:  JMP LoadPPU2            ;($EFE3)Load values into PPU.
+LC006:  JMP LoadPPU             ;($EFE3)Load values into PPU.
 
 LdLgCharTiles1:
-LC009:  JMP LdLgCharTiles2      ;($FB16)Load large character tiles.
+LC009:  JMP LdLgCharTiles       ;($FB16)Load large character tiles.
 
-LC00C:  JMP LE42F
+ChooseChar1:
+LC00C:  JMP ChooseChar          ;($E42F)Select a character from a list.
 
 ShowDialog1:
-LC00F:  JMP ShowDialog2         ;($E675)Show dialog in lower screen window.
+LC00F:  JMP ShowDialog          ;($E675)Show dialog in lower screen window.
 
-LC012:  JMP LE4FF
+ShowSelectWnd1:
+LC012:  JMP ShowSelectWnd       ;($E4FF)Show a window where player makes a selection.
 
 ShowWindow1:
 LC015:  JMP ShowWindow          ;($F42A)Show a window on the display.
 
-LC018:  JMP LE50B
+_ShowSelectWnd1:
+LC018:  JMP _ShowSelectWnd      ;($E50B)Show a window where player makes a selection, variant.
+
 LC01B:  JMP LE4A5
 
 LoadnAlphaNumMaps1:
 LC01E:  JMP LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 
-LC021:  JMP LF4D1
+BinToBCD1:
+LC021:  JMP BinToBCD            ;($F4D1)Convert binary number to BCD.
+
 LC024:  JMP LF90B
 LC027:  JMP LF981
 LC02A:  JMP LE780
@@ -82,7 +89,10 @@ LC039:  JMP LED0D
 LC03C:  JMP LC56F
 LC03F:  JMP LEF13
 LC042:  JMP LE49E
-LC045:  JMP LC4EA
+
+SetMapDatNPtrs1:
+LC045:  JMP SetMapDatNPtrs      ;($C4EA)Load map data and pointers.
+
 LC048:  JMP LEE23
 LC04B:  JMP LFAF6
 LC04E:  JMP LDB2D
@@ -101,7 +111,7 @@ LC069:  JMP LF5A0
 
 ;----------------------------------------------------------------------------------------------------
 
-Reset2:
+ResetGame:
 LC06C:  SEI                     ;Disable maskable interrupts
 LC06D:  CLD                     ;Set processor to binary mode.
 LC06E:  LDX #$FF                ;
@@ -221,23 +231,29 @@ LC12A:  BNE -
 LC12C:  JSR LFD93
 LC12F:  JMP LoadNewMap          ;($C175)Load a new map.
 
-LC132:  .byte $00, $A1, $00, $A3, $00, $A5, $00, $A7, $00, $A1, $00, $A3, $00, $A5, $00, $A7
+LC132:  .word $A100, $A300, $A500, $A700, $A100, $A300, $A500, $A700
 
-LC142:  LDA #$0C
+;----------------------------------------------------------------------------------------------------
+
+PrepLoadOvrwld:
+LC142:  LDA #MAP_PROP_OV
 LC144:  STA MapProperties
 
+PrepLoadMap:
 LC146:  LDA #$00
 LC148:  STA $30
 LC14A:  LDA MapProperties
-LC14C:  AND #$01
-LC14E:  BEQ LC153
-LC150:  JMP LF6CC
+LC14C:  AND #MAP_DUNGEON
+LC14E:  BEQ +
 
-LC153:  JSR LC4EA
+LC150:  JMP PrepLoadDungeon     ;($F6CC)Prepare to load dungeon map.
+
+LC153:* JSR SetMapDatNPtrs      ;($C4EA)Load map data and pointers.
 LC156:  LDA $30
 LC158:  BNE LC15E
 LC15A:  LDA ThisMap
 LC15C:  BNE LC169
+
 LC15E:  LDA ReturnXPos
 LC160:  STA MapXPos
 LC162:  LDA ReturnYPos
@@ -284,7 +300,7 @@ LC19F:  LDA #ANIM_ENABLE        ;Enable sprite animations.
 LC1A1:  STA DoAnimations        ;
 
 LC1A3:  LDA #$10
-LC1A5:  JSR LE6D0
+LC1A5:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 
 LC1A8:  LDA #$00
 LC1AA:  STA $C9
@@ -348,7 +364,7 @@ LC1FF:  BEQ LC211
 LC201:  JSR LFC55
 LC204:  JMP LC1E3
 LC207:  PHA
-LC208:  JSR LF4D1
+LC208:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC20B:  PLA
 LC20C:  STA Pad1Input
 LC20E:  JMP LC1C9
@@ -359,7 +375,7 @@ LC217:  JSR LFAE3
 LC21A:  LDA #$FF
 LC21C:  STA $9B
 LC21E:  JSR LE6D8
-LC221:  JSR LF4D1
+LC221:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC224:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 LC227:  LDA $01
 LC229:  CMP #$10
@@ -367,7 +383,7 @@ LC22B:  BNE LC237
 LC22D:  LDA #$00
 LC22F:  STA $01
 LC231:  JSR LFDA3
-LC234:  JSR LF4D1
+LC234:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC237:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 LC23A:  LDA #$01
@@ -398,7 +414,7 @@ LC271:  LDA $C4E3,X
 LC274:  STA $9D
 LC276:  LDA #$08
 LC278:  STA NumMenuItems
-LC27A:  JSR LE4FF
+LC27A:  JSR ShowSelectWnd       ;($E4FF)Show a window where player makes a selection.
 LC27D:  BCS FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LC27F:  ASL
 LC280:  TAX
@@ -419,7 +435,7 @@ LC299:  STA $7300
 LC29C:  STA $73C4
 LC29F:  STA $73C8
 LC2A2:  STA $73CC
-LC2A5:  JSR LF4D1
+LC2A5:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC2A8:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 ;----------------------------------------------------------------------------------------------------
@@ -553,7 +569,7 @@ LC3C2:  LDA ExodusDead
 LC3C4:  BEQ LC3E5
 LC3C6:  JSR BlockAlign          ;($FD1C)Update block aligned position of character 1.
 LC3C9:  JSR LFDA3
-LC3CC:  JSR LF4D1
+LC3CC:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC3CF:  LDA MapYPos
 LC3D1:  CMP #$31
 LC3D3:  BNE LC3E5
@@ -578,31 +594,33 @@ LC3FA:  JMP ChkEnterMoongate    ;($C491)Check if player entered a moongate.
 
 ChkFloorFight:
 LC3FD:  LDA MapProperties
-LC3FF:  CMP #$08
-LC401:  BNE LC424
+LC3FF:  CMP #MAP_NPC_PRES
+LC401:  BNE NoFloorFight
 
 LC403:  LDA ExodusDead
-LC405:  BNE LC424
+LC405:  BNE NoFloorFight
 
 LC407:  LDA ThisMap
 LC409:  CMP #MAP_EXODUS
-LC40B:  BNE LC424
+LC40B:  BNE NoFloorFight
 
 LC40D:  LDA MapYPos
 LC40F:  CMP #$0C
 LC411:  BEQ LC417
 
 LC413:  CMP #$0D
-LC415:  BNE LC424
+LC415:  BNE NoFloorFight
 
 LC417:  LDA MapXPos
 LC419:  CMP #$1E
-LC41B:  BCC LC424
+LC41B:  BCC NoFloorFight
 
 LC41D:  CMP #$22
-LC41F:  BCS LC424
+LC41F:  BCS NoFloorFight
 
-LC421:  JMP LC712
+LC421:  JMP DoFloorFight        ;($C712)Initiate floor fight.
+
+NoFloorFight:
 LC424:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 GetNextMap:
@@ -645,7 +663,7 @@ LC45D:  LDY #$09
 LC45F:  STY MapProperties
 LC461:  AND #$7F
 LC463:  STA $D1
-LC465:  JMP LC146
+LC465:  JMP PrepLoadMap         ;($C146)Prepare to load a new map.
 
 EnterShrine:
 LC468:  LDY #$00
@@ -713,6 +731,9 @@ LC4D2:  .byte $08, $08, $3B, $2E, $0F, $1B, $24, $3A, $0F, $1D, $0C, $37, $1F, $
 
 LC4E2:  .byte $00, $0C, $DF, $0E, $00, $0D, $00, $0E
 
+;----------------------------------------------------------------------------------------------------
+
+SetMapDatNPtrs:
 LC4EA:  LDA ThisMap
 LC4EC:  ASL
 LC4ED:  ASL
@@ -735,6 +756,8 @@ LC50B:  INX
 LC50C:  LDA MapDatTbl,X
 LC50F:  STA NPCSrcPtrUB
 LC511:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LC512:  LDA $004F,Y
 LC515:  AND #$F0
@@ -775,7 +798,7 @@ LC547:  PLA
 LC548:  LDA #$00
 LC54A:  STA $C9
 LC54C:  LDA #$10
-LC54E:  JSR LE6D0
+LC54E:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LC551:  LDA $30
 LC553:  JMP LC764
 
@@ -869,7 +892,7 @@ LC600: INX
 LC601: CPY #$80
 LC603: BNE LC5FA
 LC605: LDA #$01
-LC607: JSR LE6D0
+LC607: JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LC60A: PLA
 LC60B: TAX
 LC60C: PLA
@@ -903,7 +926,7 @@ LC645:  LDA #$00
 LC647:  STA $9D
 LC649:  LDA #$65
 LC64B:  STA TextIndex2
-LC64E:  JSR LE4FF
+LC64E:  JSR ShowSelectWnd       ;($E4FF)Show a window where player makes a selection.
 LC651:  PHP
 LC652:  PHA
 LC653:  JSR LE699
@@ -973,7 +996,7 @@ LC6AF:  STA TextBasePtrUB
 LC6B1:  LDA #$80
 LC6B3:  STA TextBasePtrLB
 
-LC6B5:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LC6B5:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 
 LC6B8:  LDA #$80
 LC6BA:  STA TextBasePtrUB
@@ -985,7 +1008,7 @@ LC6C0:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game en
 NoTalk:
 LC6C3:  LDA #$02                ;NO ONE IS HERE text.
 LC6C5:  STA TextIndex           ;
-LC6C7:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LC6C7:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LC6CA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
 TalkFuncTbl:
@@ -1025,6 +1048,10 @@ LC70D:  INX
 LC70E:  DEY
 LC70F:  BNE LC707
 LC711:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+DoFloorFight:
 LC712:  LDX #$00
 LC714:  LDA #$00
 LC716:  STA $0600,X
@@ -1054,7 +1081,7 @@ LC748:  LDA #BANK_ENEMIES
 LC74A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC74D:  LDA MapProperties
 LC74F:  STA PrevMapProp
-LC751:  LDA #$0A
+LC751:  LDA #MAP_PROP_FIGHT
 LC753:  STA MapProperties
 LC755:  PLA
 LC756:  PHA
@@ -1156,7 +1183,7 @@ LC7FF:  STA ScreenBlocks,Y
 LC802:  INY
 LC803:  BNE LC7FD
 LC805:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
-LC808:  JSR LF4D1
+LC808:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC80B:  PLA
 LC80C:  CMP #$1D
 LC80E:  BEQ LC814
@@ -1299,13 +1326,13 @@ LC921:  PLA
 LC922:  STA $29
 LC924:  LDA #$00
 LC926:  PHA
-LC927:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LC927:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LC92A:  CLC
 LC92B:  LDA $2C
 LC92D:  PHA
 LC92E:  ADC #$02
 LC930:  STA $2C
-LC932:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LC932:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LC935:  PLA
 LC936:  STA $2C
 LC938:  LDA $C9
@@ -1446,7 +1473,7 @@ LCA4E:  LDA #$F2
 LCA50:  JSR LD227
 LCA53:  LDA DelayConst
 LCA55:  ASL
-LCA56:  JSR LE6D0
+LCA56:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LCA59:  LDA #$D4
 LCA5B:  STA HideUprSprites
 LCA5D:  LDA #$FF
@@ -1499,7 +1526,7 @@ LCAC3:  CMP #$01
 LCAC5:  BNE LCACA
 LCAC7:  JMP LD199
 LCACA:  JMP LD1A7
-LCACD:  JSR LF4D1
+LCACD:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LCAD0:  LDA #$08
 LCAD2:  JSR LEFD8
 LCAD5:  LDA #$F0
@@ -1726,7 +1753,7 @@ LCC80:  LDA #$01
 LCC82:  STA (CrntChrPtr),Y
 LCC84:  LDA #$2E
 LCC86:  STA TextIndex
-LCC88:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LCC88:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LCC8B:  JMP LCD07
 LCC8E:  CMP #$01
 LCC90:  BNE LCD07
@@ -1790,7 +1817,7 @@ LCCFC:  SBC #$01
 LCCFE:  STA (CrntChrPtr),Y
 LCD00:  LDA #$D7
 LCD02:  STA TextIndex
-LCD04:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LCD04:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LCD07:  JMP LCAD0
 LCD0A:  STA $30
 LCD0C:  JSR LD2BA
@@ -2317,7 +2344,7 @@ LD170:  JMP LCD67
 LD173:  STA $30
 LD175:  JSR LD2BA
 LD178:  LDA DelayConst
-LD17A:  JSR LE6D0
+LD17A:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD17D:  JMP LCAD0
 LD180:  LDA #SFX_PLYR_MISS+INIT
 LD182:  STA ThisSFX
@@ -2412,7 +2439,7 @@ LD225:  LDA $2A
 LD227:  STA $30
 LD229:  JSR LD2BA
 LD22C:  LDA DelayConst
-LD22E:  JSR LE6D0
+LD22E:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD231:  RTS
 LD232:  LDA FightTurnIndex
 LD234:  ASL
@@ -2481,7 +2508,7 @@ LD2A4:  TXA
 LD2A5:  LDX FightTurnIndex
 LD2A7:  STA Ch1Dir,X
 LD2A9:  LDA #$10
-LD2AB:  JSR LE6D0
+LD2AB:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD2AE:  CLC
 LD2AF:  RTS
 LD2B0:  CMP #$40
@@ -2503,7 +2530,7 @@ LD2CA:  LDA #$09
 LD2CC:  STA $2E
 LD2CE:  LDA #$03
 LD2D0:  STA $2D
-LD2D2:  JSR LF0BE
+LD2D2:  JSR DisplayText         ;($F0BE)Display text on the screen.
 LD2D5:  RTS
 LD2D6:  LDA $30
 LD2D8:  ASL
@@ -2561,9 +2588,10 @@ LD335:  JMP LoadNewMap          ;($C175)Load a new map.
 ;----------------------------------------------------------------------------------------------------
 
 DoMagicCmd:
-LD338:  JSR LE42F
+LD338:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LD33B:  BCC LD340
 LD33D:  JMP LD3E3
+
 LD340:  JSR LD34D
 LD343:  CMP #$01
 LD345:  BNE LD34A
@@ -2641,14 +2669,24 @@ LD3D4:  BCS LD3D9
 LD3D6:  JMP ($008F)
 LD3D9:  LDA #$17
 LD3DB:  STA TextIndex
-LD3DD:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD3DD:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD3E0:  LDA #$00
 LD3E2:  RTS
-LD3E3:  JSR LD3EC
-LD3E6:  JSR LF4D1
+
+;----------------------------------------------------------------------------------------------------
+
+LD3E3:  JSR GetBCDNum           ;($D3EC)Convert binary number to BCD.
+LD3E6:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LD3E9:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
-LD3EC:  JSR LF4D1
-LD3EF:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+GetBCDNum:
+LD3EC:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
+LD3EF:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
 LD3F0:  LDA #$00
 LD3F2:  STA $9D
 LD3F4:  LDA #$02
@@ -2663,7 +2701,7 @@ LD407:  LDA #$0A
 LD409:  STA Wnd2Width
 LD40C:  LDA #$06
 LD40E:  STA Wnd2Height
-LD411:  JSR LE4FF
+LD411:  JSR ShowSelectWnd       ;($E4FF)Show a window where player makes a selection.
 LD414:  RTS
 LD415:  JSR LD441
 LD418:  LDX #$00
@@ -2684,7 +2722,7 @@ LD436:  CLC
 LD437:  ADC #$01
 LD439:  ASL
 LD43A:  STA Wnd2Height
-LD43D:  JSR LE4FF
+LD43D:  JSR ShowSelectWnd       ;($E4FF)Show a window where player makes a selection.
 LD440:  RTS
 LD441:  LDY #CHR_MAG_PNTS
 LD443:  LDA (CrntChrPtr),Y
@@ -2743,7 +2781,7 @@ LD4E5:  CMP #$01
 LD4E7:  BEQ LD4F3
 LD4E9:  LDX #$17
 LD4EB:  STX TextIndex
-LD4ED:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD4ED:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD4F0:  LDA #$00
 LD4F2:  RTS
 
@@ -2755,7 +2793,7 @@ LD4FB:  LDA #$FF
 LD4FD:  PHA
 LD4FE:  JSR LD3EC
 LD501:  LDA #$0A
-LD503:  JSR LE6D0
+LD503:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD506:  LDA #SFX_SPELL_B+INIT
 LD508:  STA ThisSFX
 LD50A:  JSR LDB36
@@ -2813,7 +2851,7 @@ LD568:  RTS
 LD569:  PLA
 LD56A:  JSR LDA62
 LD56D:  LDA #$05
-LD56F:  JSR LE6D0
+LD56F:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD572:  PLA
 LD573:  STA $2E
 LD575:  JSR LD303
@@ -2855,7 +2893,7 @@ LD5C3:  LDA #$1B
 LD5C5:  JMP LD5CA
 LD5C8:  LDA #$17
 LD5CA:  STA TextIndex
-LD5CC:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD5CC:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD5CF:  LDA #$00
 LD5D1:  RTS
 LD5D2:  LDA #$14
@@ -2869,7 +2907,7 @@ LD5E2:  LDA #$1C
 LD5E4:  JMP LD5EA
 LD5E7:  JMP LD7E9
 LD5EA:  STA TextIndex
-LD5EC:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD5EC:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD5EF:  LDA #$00
 LD5F1:  RTS
 LD5F2:  LDX #$19
@@ -2933,21 +2971,21 @@ LD664:  STA ThisSFX
 LD666:  JSR LF981
 LD669:  PLA
 LD66A:  STA TextIndex
-LD66C:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
-LD66F:  JSR LF974
+LD66C:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
+LD66F:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LD672:  CMP #$09
 LD674:  BNE LD690
 LD676:  LDA #$01
 LD678:  STA $B1
 LD67A:  JSR LF981
 LD67D:  LDA #$14
-LD67F:  JSR LE6D0
+LD67F:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD682:  LDA #$00
 LD684:  STA $B1
 LD686:  JSR LF981
 LD689:  LDA #$34
 LD68B:  STA TextIndex
-LD68D:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD68D:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD690:  LDA #$00
 LD692:  RTS
 LD693:  LDA #$2D
@@ -2968,7 +3006,7 @@ LD6B5:  LDA #SFX_TIME_STOP+INIT
 LD6B7:  STA ThisSFX
 LD6B9:  LDA #$32
 LD6BB:  STA TextIndex
-LD6BD:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD6BD:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD6C0:  LDA #$00
 LD6C2:  RTS
 LD6C3:  LDA #$41
@@ -2981,7 +3019,7 @@ LD6D0:  LDA #$46
 LD6D2:  JSR LDA62
 LD6D5:  JSR LD3EC
 LD6D8:  LDA #$0A
-LD6DA:  JSR LE6D0
+LD6DA:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD6DD:  LDA #SFX_SPELL_B+INIT
 LD6DF:  STA ThisSFX
 LD6E1:  LDX #$00
@@ -3035,7 +3073,7 @@ LD740:  CMP #$03
 LD742:  BEQ LD74E
 LD744:  LDX #$17
 LD746:  STX TextIndex
-LD748:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD748:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD74B:  LDA #$00
 LD74D:  RTS
 LD74E:  LDX #$24
@@ -3060,7 +3098,7 @@ LD776:  LDA #$00
 LD778:  RTS
 LD779:  LDA #$F6
 LD77B:  STA TextIndex
-LD77D:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD77D:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD780:  JMP LD776
 LD783:  LDA #$0A
 LD785:  JSR LDA2B
@@ -3085,7 +3123,7 @@ LD7AF:  JSR LDA62
 LD7B2:  JSR LDB0E
 LD7B5:  LDA #$1E
 LD7B7:  STA TextIndex
-LD7B9:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD7B9:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD7BC:  LDA #$00
 LD7BE:  RTS
 LD7BF:  LDA #$23
@@ -3101,7 +3139,7 @@ LD7D1:  STA (CrntChrPtr),Y
 LD7D3:  TXA
 LD7D4:  LDA $D7DF,X
 LD7D7:  STA TextIndex
-LD7D9:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD7D9:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD7DC:  LDA #$00
 LD7DE:  RTS
 
@@ -3111,7 +3149,7 @@ LD7E4:  LDA #$28
 LD7E6:  JSR LDA62
 LD7E9:  LDA #$1F
 LD7EB:  STA TextIndex
-LD7ED:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD7ED:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD7F0:  LDA #$00
 LD7F2:  STA CurPPUConfig1
 LD7F4:  STA PPUControl1
@@ -3143,12 +3181,12 @@ LD82A:  CMP #MAP_AMBROSIA
 LD82C:  BEQ LD853
 LD82E:  LDA #$17
 LD830:  STA TextIndex
-LD832:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD832:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD835:  LDA #$00
 LD837:  RTS
 LD838:  LDA #$20
 LD83A:  STA TextIndex
-LD83C:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD83C:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD83F:  LDA #$A3
 LD841:  STA ThisSFX
 LD843:  LDA DisNPCMovement
@@ -3161,7 +3199,7 @@ LD850:  LDA #$00
 LD852:  RTS
 LD853:  LDA #$20
 LD855:  STA TextIndex
-LD857:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD857:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD85A:  LDA #$A3
 LD85C:  STA ThisSFX
 LD85E:  LDA #BANK_GEM
@@ -3196,7 +3234,7 @@ LD89A:  LDA #$10
 LD89C:  STA $2E
 LD89E:  LDA #$00
 LD8A0:  STA $2D
-LD8A2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LD8A2:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LD8A5:  LDX #$00
 LD8A7:  LDY #$40
 LD8A9:  JSR LC705
@@ -3217,24 +3255,24 @@ LD8C7:  LDA #$01
 LD8C9:  STA $2E
 LD8CB:  LDA #$00
 LD8CD:  STA $2D
-LD8CF:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LD8CF:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LD8D2:  LDA #$00
 LD8D4:  STA $30
 LD8D6:  JSR LD92B
 LD8D9:  INC $2C
-LD8DB:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LD8DB:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LD8DE:  LDA #$80
 LD8E0:  STA $30
 LD8E2:  JSR LD92B
 LD8E5:  INC $2C
-LD8E7:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LD8E7:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LD8EA:  LDX #$00
 LD8EC:  LDA $0600
 LD8EF:  STA ScreenBlocks,X
 LD8F2:  INX
 LD8F3:  BNE LD8EC
 LD8F5:  INC $2C
-LD8F7:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LD8F7:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LD8FA:  LDA #$FF
 LD8FC:  STA $2A
 LD8FE:  LDA #$D0
@@ -3320,7 +3358,7 @@ LD99C:  LDA #$04
 LD99E:  STA (CrntChrPtr),Y
 LD9A0:  LDA $D9AB,X
 LD9A3:  STA TextIndex
-LD9A5:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LD9A5:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD9A8:  LDA #$00
 LD9AA:  RTS
 
@@ -3384,7 +3422,7 @@ LDA1B:  JSR LEF13
 LDA1E:  LDX #$45
 LDA20:  JMP LDA23
 LDA23:  STX TextIndex
-LDA25:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDA25:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDA28:  LDA #$00
 LDA2A:  RTS
 
@@ -3441,7 +3479,7 @@ LDA79:  PHA
 LDA7A:  LDA MapProperties
 LDA7C:  AND #$01
 LDA7E:  BNE LDA83
-LDA80:  JSR LF4D1
+LDA80:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LDA83:  PLA
 LDA84:  STA $18
 LDA86:  PLA
@@ -3518,7 +3556,7 @@ LDB02:  LDA CurPPUConfig1
 LDB04:  BEQ LDB0D
 LDB06:  LDA #$5A
 LDB08:  STA TextIndex
-LDB0A:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDB0A:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDB0D:  RTS
 LDB0E:  LDY $00
 LDB10:  LDA (MapDatPtr),Y
@@ -3554,32 +3592,32 @@ LDB3E:  LDA #$7E
 LDB40:  STA $29
 LDB42:  JSR LED3F
 LDB45:  LDA #$02
-LDB47:  JSR LE6D0
+LDB47:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LDB4A:  LDA #$75
 LDB4C:  STA $2A
 LDB4E:  LDA #$00
 LDB50:  STA $29
 LDB52:  JSR LED3F
 LDB55:  LDA #$02
-LDB57:  JSR LE6D0
+LDB57:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LDB5A:  DEC $30
 LDB5C:  BNE LDB3A
 LDB5E:  RTS
 LDB5F:  JSR LE602
 LDB62:  BCS LDB67
 LDB64:  JSR LDB7E
-LDB67:  JSR LF4D1
+LDB67:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LDB6A:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
 DoToolsCmd:
-LDB6B:  JSR LE42F
+LDB6B:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LDB6E:  BCS LDB7B
 LDB70:  JSR LE602
 LDB73:  BCS LDB7B
 LDB75:  JSR LDB7E
-LDB78:  JSR LF4D1
+LDB78:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LDB7B:  JMP LD3E6
 
 LDB7E:  PHA
@@ -3622,12 +3660,12 @@ LDBC2:  .byte $FF, $FF, $FF, $FF, $FF, $00, $00, $00, $FF
 UseTent:
 LDBCC:  JSR LFD2D
 LDBCF:  LDA #$1E
-LDBD1:  JSR LE6D0
+LDBD1:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LDBD4:  LDA #$31
 LDBD6:  STA $30
 LDBD8:  JSR LE66D
 LDBDB:  LDA #$B4
-LDBDD:  JSR LE6D0
+LDBDD:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LDBE0:  LDA #$00
 LDBE2:  STA CurPPUConfig1
 LDBE4:  LDX #$00
@@ -3668,7 +3706,7 @@ LDC1D:  LDA #$0A
 LDC1F:  STA TimeStopTimer
 LDC21:  LDA #$32
 LDC23:  STA TextIndex
-LDC25:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDC25:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDC28:  RTS
 
 UseKey:
@@ -3742,7 +3780,7 @@ LDCA6:  RTS
 UseCompass:
 LDCA7:  LDA #$D3
 LDCA9:  STA TextIndex
-LDCAB:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDCAB:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDCAE:  LDA #$0C
 LDCB0:  STA MapProperties
 LDCB2:  LDA #MAP_OVERWORLD
@@ -3763,7 +3801,7 @@ LDCCF:  LDA #$11
 LDCD1:  STA BoatYPos
 LDCD4:  PLA
 LDCD5:  PLA
-LDCD6:  JMP LC146
+LDCD6:  JMP PrepLoadMap         ;($C146)Prepare to load a new map.
 
 UseGldPick:
 LDCD9:  LDA MapProperties
@@ -3805,7 +3843,7 @@ PlayHorn:
 LDD1D:  LDA #MUS_HORN+INIT
 LDD1F:  STA InitNewMusic
 LDD21:  LDA #$FF
-LDD23:  JSR LE6D0
+LDD23:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LDD26:  LDA MapProperties
 LDD28:  CMP #$0C
 LDD2A:  BNE LDD66
@@ -3828,7 +3866,7 @@ LDD4B:  LDA #$F8
 LDD4D:  STA $30
 LDD4F:  JSR LE66D
 LDD52:  LDA #$B4
-LDD54:  JSR LE6D0
+LDD54:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LDD57:  LDA #$34
 LDD59:  STA $7F25
 LDD5C:  LDA #$30
@@ -3856,16 +3894,18 @@ DoGetCmd:
 LDD82:  JSR LDD9B
 LDD85:  BCC LDD8A
 LDD87:  JMP LDD95
-LDD8A:  JSR LE42F
+LDD8A:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LDD8D:  BCC LDD92
 LDD8F:  JMP LD3E6
 LDD92:  JSR LDDDB
-LDD95:  JSR LF4D1
+LDD95:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LDD98:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
 LDD9B:  LDA MapProperties
-LDD9D:  AND #$01
+LDD9D:  AND #MAP_DUNGEON
 LDD9F:  BEQ LDDAA
-LDDA1:  JSR LF974
+
+LDDA1:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LDDA4:  CMP #$0B
 LDDA6:  BEQ LDDD9
 LDDA8:  BNE LDDD0
@@ -3888,7 +3928,7 @@ LDDCB:  JSR LDECF
 LDDCE:  BCC LDDD9
 LDDD0:  LDA #$0F
 LDDD2:  STA TextIndex
-LDDD4:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDDD4:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDDD7:  SEC
 LDDD8:  RTS
 LDDD9:  CLC
@@ -3906,7 +3946,7 @@ LDDEC:  CMP $E2
 LDDEE:  BEQ LDDF7
 LDDF0:  LDA #$F7
 LDDF2:  STA TextIndex
-LDDF4:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDDF4:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDDF7:  LDA ThisMap
 LDDF9:  CMP #MAP_DAWN
 LDDFB:  BNE LDE27
@@ -3928,7 +3968,7 @@ LDE19:  LDX #$D5
 LDE1B:  LDA #$01
 LDE1D:  STA (CrntChrPtr),Y
 LDE1F:  STX TextIndex
-LDE21:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDE21:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDE24:  JMP LE00C
 LDE27:  LDA MapProperties
 LDE29:  AND #$01
@@ -3987,7 +4027,7 @@ LDE8F:  LDA $2C
 LDE91:  STA (CrntChrPtr),Y
 LDE93:  LDA #$10
 LDE95:  STA TextIndex
-LDE97:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDE97:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDE9A:  LDA #$64
 LDE9C:  JSR LE64E
 LDE9F:  CMP #$32
@@ -3998,7 +4038,7 @@ LDEA9:  RTS
 
 LDEAA:  .byte $00, $00, $00, $80, $00, $40, $00, $40, $00, $40, $40
 
-LDEB5:  JSR LE42F
+LDEB5:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LDEB8:  BCS LDECD
 LDEBA:  LDX #$6D
 LDEBC:  LDY #CHR_FLOWER
@@ -4008,7 +4048,7 @@ LDEC2:  LDX #$63
 LDEC4:  LDA #$01
 LDEC6:  STA (CrntChrPtr),Y
 LDEC8:  STX TextIndex
-LDECA:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDECA:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDECD:  SEC
 LDECE:  RTS
 LDECF:  JSR GetFrontBlock       ;($E739)Get the block in front of character 1.
@@ -4072,7 +4112,7 @@ LDF39:  JSR LDF18
 LDF3C:  BCS LDF48
 LDF3E:  LDA #$2F
 LDF40:  STA TextIndex
-LDF42:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDF42:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDF45:  JMP LE00C
 LDF48:  LDA #$64
 LDF4A:  JSR LE64E
@@ -4165,7 +4205,7 @@ LDFF1:  LDA #$01
 LDFF3:  STA (CrntChrPtr),Y
 LDFF5:  LDA #$2E
 LDFF7:  STA TextIndex
-LDFF9:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LDFF9:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDFFC:  PLA
 LDFFD:  TAX
 LDFFE:  INX
@@ -4174,7 +4214,7 @@ LE000:  CPX #$08
 LE002:  BNE LDFDF
 LE004:  JMP LE00C
 LE007:  STA TextIndex
-LE009:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE009:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE00C:  LDA MapProperties
 LE00E:  AND #$01
 LE010:  BNE LE082
@@ -4237,7 +4277,7 @@ LE07A:  LDY $EB
 LE07C:  LDA #$8B
 LE07E:  STA ScreenBlocks,Y
 LE081:  RTS
-LE082:  JSR LF974
+LE082:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LE085:  LDA #$0D
 LE087:  STA (MapDatPtr),Y
 LE089:  LDA DisNPCMovement
@@ -4299,7 +4339,7 @@ LE0E6:  RTS
 DoClimbCmd:
 LE0E7:  LDA DisNPCMovement
 LE0E9:  BEQ LE139
-LE0EB:  JSR LF974
+LE0EB:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LE0EE:  CMP #$03
 LE0F0:  BEQ LE120
 LE0F2:  CMP #$04
@@ -4318,7 +4358,7 @@ LE10D:  LDA #$0A
 LE10F:  STA Wnd2Width
 LE112:  LDA #$06
 LE114:  STA Wnd2Height
-LE117:  JSR LE4FF
+LE117:  JSR ShowSelectWnd       ;($E4FF)Show a window where player makes a selection.
 LE11A:  BCS LE140
 LE11C:  CMP #$00
 LE11E:  BNE LE143
@@ -4336,7 +4376,7 @@ LE136:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game en
 LE139:  LDA #$11
 
 LE13B:  STA TextIndex
-LE13D:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE13D:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE140:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE143:  LDA DungeonLevel
 LE145:  CMP #$07
@@ -4383,7 +4423,7 @@ LE188:  PLA
 LE189:  JMP LE18E
 LE18C:  LDA #$13
 LE18E:  STA TextIndex
-LE190:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE190:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE193:  LDA $C0
 LE195:  AND #$7C
 LE197:  STA $C0
@@ -4408,7 +4448,7 @@ LE1AF:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game en
 ;----------------------------------------------------------------------------------------------------
 
 DoOrderCmd:
-LE1B2:  JSR LE42F
+LE1B2:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LE1B5:  PHA
 LE1B6:  BCS LE1D5
 LE1B8:  JSR LE49E
@@ -4423,10 +4463,10 @@ LE1C8:  STA $2E
 LE1CA:  JSR LEE4E
 LE1CD:  LDA #$16
 LE1CF:  STA TextIndex
-LE1D1:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE1D1:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE1D4:  PHA
 LE1D5:  PLA
-LE1D6:  JSR LF4D1
+LE1D6:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LE1D9:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE1DC:  LDA CurPRGBank
 LE1DE:  PHA
@@ -4516,7 +4556,7 @@ LE26E:  CMP #$1D
 LE270:  BCC LE2BE
 LE272:  TYA
 LE273:  PHA
-LE274:  JSR LE42F
+LE274:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LE277:  BCS LE2BD
 LE279:  LDY #CHR_GOLD
 LE27B:  LDA (CrntChrPtr),Y
@@ -4547,10 +4587,10 @@ LE2A6:  BNE LE2B5
 LE2A8:  LDA #$FF
 LE2AA:  STA NPCSprIndex,Y
 LE2AD:  STX TextIndex
-LE2AF:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE2AF:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE2B2:  JMP LoadNewMap          ;($C175)Load a new map.
 LE2B5:  STX TextIndex
-LE2B7:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE2B7:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE2BA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 LE2BD:  PLA
 LE2BE:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
@@ -4562,7 +4602,7 @@ LE2C1:  LDA ThisMap             ;Is the player praying in Exodus castle?
 LE2C3:  CMP #MAP_EXODUS         ;If so, branch to check if they are praying
 LE2C5:  BEQ ChkEndPray          ;in th right place to start the end game.
 
-LE2C7:  JSR LE42F
+LE2C7:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LE2CA:  BCC +
 
 LE2CC:  JMP PrayerNotHeard      ;($E38F)Indicate nothing was found after praying.
@@ -4621,6 +4661,7 @@ LE327:  JSR LE3C7
 LE32A:  LDA #BANK_HELPERS2
 LE32C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE32F:  JSR $9E00
+
 LE332:  BCS LE399
 LE334:  JSR DisplayEndText      ;($E3D7)Exodus defeated. Display end text.
 LE337:  LDA #$FF
@@ -4665,19 +4706,21 @@ LE378:  CLC
 LE379:  LDA ThisMap
 LE37B:  ADC #$8D
 LE37D:  STA TextIndex
-LE37F:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE37F:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE382:  CLC
 LE383:  LDA ThisMap
 LE385:  ADC #$91
 LE387:  STA TextIndex
-LE389:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE389:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE38C:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
 PrayerNotHeard:
-LE38F:  LDA #$57                ;YOUR PRAYER WAS NOT HEARD.
+LE38F:  LDA #$57                ;YOUR PRAYER WAS NOT HEARD text.
 LE391:  STA TextIndex           ;
-LE393:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE393:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE396:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
+
+;----------------------------------------------------------------------------------------------------
 
 LE399:  LDX #$00
 LE39B:  LDA ChrPtrBaseLB,X
@@ -4728,7 +4771,7 @@ LE3E9:  STA ExodusDead
 LE3EB:  LDA #$00
 LE3ED:  STA CurPPUConfig1
 LE3EF:  LDA #$78
-LE3F1:  JSR LE6D0
+LE3F1:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LE3F4:  LDA #$1E
 LE3F6:  STA CurPPUConfig1
 LE3F8:  LDA #MUS_END+INIT
@@ -4747,7 +4790,7 @@ LE411:  LDA #$02
 LE413:  STA $2E
 LE415:  LDA #$00
 LE417:  STA $2D
-LE419:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LE419:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LE41C:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
 LE41F:  LDA #BANK_GEM
 LE421:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -4758,6 +4801,7 @@ LE42C:  JMP LE42C
 
 ;----------------------------------------------------------------------------------------------------
 
+ChooseChar:
 LE42F:  LDA #$02
 LE431:  STA WndXPos
 LE433:  LDA #$04
@@ -4781,7 +4825,7 @@ LE451:  LDA #$05
 LE453:  STA $2D
 LE455:  LDA #$FF
 LE457:  STA $30
-LE459:  JSR LF0BE
+LE459:  JSR DisplayText         ;($F0BE)Display text on the screen.
 
 LE45C:  LDA #$40
 LE45E:  STA $7300
@@ -4803,10 +4847,12 @@ LE47D:  LDA ChrPtrBaseUB,X
 LE47F:  STA CrntChrPtrUB
 LE481:  LDA $E9
 LE483:  BNE LE48D
+
 LE485:  LDY #CHR_COND
 LE487:  LDA (CrntChrPtr),Y
-LE489:  CMP #$03
+LE489:  CMP #COND_DEAD
 LE48B:  BCS LE494
+
 LE48D:  JSR LE699
 LE490:  TXA
 LE491:  LSR
@@ -4816,13 +4862,16 @@ LE493:  RTS
 LE494:  CLC
 LE495:  ADC #$40
 LE497:  STA TextIndex
-LE499:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
+LE499:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE49C:  SEC
 LE49D:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LE49E:  LDA #$96
 LE4A0:  LDX #$00
 LE4A2:  JMP LE4A9
+
 LE4A5:  LDA #$9C
 LE4A7:  LDX #$8E
 LE4A9:  PHA
@@ -4839,9 +4888,9 @@ LE4BA:  STA $2D
 LE4BC:  JSR ShowWindow          ;($F42A)Show a window on the display.
 LE4BF:  JSR SelectWho           ;($E770)Player selects a character window.
 LE4C2:  PLA
-LE4C3:  STA $0584
+LE4C3:  STA TextBuffer+4
 LE4C6:  PLA
-LE4C7:  STA $0583
+LE4C7:  STA TextBuffer+3
 LE4CA:  LDA #$04
 LE4CC:  STA $2A
 LE4CE:  LDA #$12
@@ -4852,7 +4901,7 @@ LE4D6:  LDA #$05
 LE4D8:  STA $2D
 LE4DA:  LDA #$FF
 LE4DC:  STA $30
-LE4DE:  JSR LF0BE
+LE4DE:  JSR DisplayText         ;($F0BE)Display text on the screen.
 LE4E1:  LDA #$A0
 LE4E3:  STA $7300
 LE4E6:  LDA #$18
@@ -4867,12 +4916,17 @@ LE4F8:  CMP #$FF
 LE4FA:  BEQ LE4E1
 LE4FC:  JMP LE477
 
+;----------------------------------------------------------------------------------------------------
+
+ShowSelectWnd:
 LE4FF:  LDA NumMenuItems
 LE501:  CLC
 LE502:  ADC #$01
 LE504:  ASL
 LE505:  STA Wnd2Height
-LE508:  JMP LE50B
+LE508:  JMP _ShowSelectWnd      ;($E50B)Show a window where player makes a selection, variant.
+
+_ShowSelectWnd:
 LE50B:  LDA HideUprSprites
 LE50D:  STA $E1
 
@@ -4906,7 +4960,7 @@ LE549:  LSR
 LE54A:  STA $2D
 LE54C:  LDA $E1
 LE54E:  STA HideUprSprites
-LE550:  JSR LF0BE
+LE550:  JSR DisplayText         ;($F0BE)Display text on the screen.
 LE553:  LDA NumMenuItems
 LE555:  CLC
 LE556:  ADC #$01
@@ -4956,7 +5010,7 @@ LE5A6:  LDA #$12
 LE5A8:  STA Wnd2Height
 LE5AB:  LDA TextIndex2
 LE5AE:  STA $30
-LE5B0:  JMP LE50B
+LE5B0:  JMP _ShowSelectWnd      ;($E50B)Show a window where player makes a selection, variant.
 LE5B3:  LDA $9D
 LE5B5:  ORA #$80
 LE5B7:  STA $9D
@@ -4996,7 +5050,7 @@ LE5FA:  PLA
 LE5FB:  CLC
 LE5FC:  RTS
 
-LE5FD:  JSR LF4D1
+LE5FD:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LE600:  SEC
 LE601:  RTS
 
@@ -5073,7 +5127,7 @@ LE673:  STA $C7
 
 ;----------------------------------------------------------------------------------------------------
 
-ShowDialog2:
+ShowDialog:
 LE675:  LDA CurPRGBank
 LE677:  PHA
 LE678:  LDA #BANK_HELPERS1
@@ -5298,7 +5352,7 @@ LE79F:  LDA $0777
 LE7A2:  ASL
 LE7A3:  ASL
 LE7A4:  ASL
-LE7A5:  JSR LE6D0
+LE7A5:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LE7A8:  LDA #$00
 LE7AA:  STA $0600
 LE7AD:  LDA ScreenBlocks,X
@@ -5334,7 +5388,7 @@ LE7EA:  JMP LE94F
 LE7ED:  LDA #SFX_BLOCKED+INIT
 LE7EF:  STA ThisSFX
 LE7F1:  LDA #$08
-LE7F3:  JSR LE6D0
+LE7F3:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LE7F6:  LDA Pad1Input
 LE7F8:  AND #D_PAD
 LE7FA:  STA Ch1Dir
@@ -5367,7 +5421,7 @@ LE82B:  ADC $30
 LE82D:  TAX
 LE82E:  LDA $EA20,X
 LE831:  BEQ LE836
-LE833:  JSR LE6D0
+LE833:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LE836:  JMP LE7D5
 LE839:  CMP #$3F
 LE83B:  BNE LE846
@@ -5423,13 +5477,13 @@ LE8A6:  PHA
 LE8A7:  STA $30
 LE8A9:  JSR LE66D
 LE8AC:  LDA #$B4
-LE8AE:  JSR LE6D0
+LE8AE:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LE8B1:  PLA
 LE8B2:  CLC
 LE8B3:  ADC #$01
 LE8B5:  CMP #$F1
 LE8B7:  BNE LE8A6
-LE8B9:  JMP LC146
+LE8B9:  JMP PrepLoadMap         ;($C146)Prepare to load a new map.
 LE8BC:  PLA
 LE8BD:  PLA
 LE8BE:  LDA #$0C
@@ -5441,7 +5495,7 @@ LE8CA:  STA ReturnYPos
 LE8CC:  LDA #MAP_OVERWORLD
 LE8CE:  STA ThisMap
 LE8D0:  JSR LE9C2
-LE8D3:  JMP LC146
+LE8D3:  JMP PrepLoadMap         ;($C146)Prepare to load a new map.
 LE8D6:  JMP LE8D9
 LE8D9:  LDA $0600
 LE8DC:  BNE LE920
@@ -5501,6 +5555,7 @@ LE94E:  RTS
 LE94F:  LDA ThisMap
 LE951:  CMP #MAP_SH_INT
 LE953:  BCC LE96F
+
 LE955:  SEC
 LE956:  SBC #$15
 LE958:  ASL
@@ -5515,6 +5570,7 @@ LE966:  LDA #MAP_AMBROSIA
 LE968:  STA ThisMap
 LE96A:  STA $30
 LE96C:  JMP LC153
+
 LE96F:  PLA
 LE970:  PLA
 LE971:  LDA #MAP_OVERWORLD
@@ -5524,7 +5580,7 @@ LE977:  BEQ LE97C
 LE979:  JMP LE3E7
 LE97C:  LDA #$00
 LE97E:  STA $E2
-LE980:  JMP LC142
+LE980:  JMP PrepLoadOvrwld      ;($C142)Prepare to load overworld map.
 
 LE983:  LDA Pad1Input
 LE985:  TAY
@@ -5573,7 +5629,7 @@ LE9D1:  LDA #$00
 LE9D3:  STA $30
 LE9D5:  LDY #$20
 LE9D7:  LDA #$08
-LE9D9:  JSR LE6D0
+LE9D9:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LE9DC:  LDX $30
 LE9DE:  LDA $EA07,X
 LE9E1:  TAX
@@ -6074,7 +6130,7 @@ LED90:  STA PPUByteCntUB        ;Prepare to load 4096 bytes.
 LED92:  LDA #$00                ;The entire pattern table 1.
 LED94:  STA PPUByteCntLB        ;
 
-LED96:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LED96:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 ;Load unique tiles for overworld map.
 LED99:  LDA ThisMap             ;Is this the overworld map?
@@ -6095,14 +6151,14 @@ LEDAF:  STA PPUByteCntUB        ;Copy 64 bytes to the PPU.
 LEDB1:  LDA #$40                ;
 LEDB3:  STA PPUByteCntLB        ;
 
-LEDB5:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEDB5:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 LEDB8:  LDA #$40                ;
 LEDBA:  STA PPUSrcPtrLB         ;Copy the snake back tiles to the PPU.
 LEDBC:  LDA #$1D                ;
 LEDBE:  STA PPUDstPtrUB         ;
 
-LEDC0:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEDC0:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEDC3:  JMP EndLoadMap          ;($EE1E)Finish loading map GFX.
 
 ;Load unique tiles for Ambrosia map.
@@ -6125,7 +6181,7 @@ LEDDC:  STA PPUByteCntUB
 LEDDE:  LDA #$40
 LEDE0:  STA PPUByteCntLB
 
-LEDE2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEDE2:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 LEDE5:  LDA #$B1
 LEDE7:  STA PPUSrcPtrUB
@@ -6137,7 +6193,7 @@ LEDEF:  STA PPUDstPtrUB
 LEDF1:  LDA #$80
 LEDF3:  STA PPUDstPtrLB
 
-LEDF5:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEDF5:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEDF8:  JMP EndLoadMap          ;($EE1E)Finish loading map GFX.
 
 ;Load unique tiles for Lord British and Exodus castles.
@@ -6163,7 +6219,7 @@ LEE15:  STA PPUByteCntUB
 LEE17:  LDA #$40
 LEE19:  STA PPUByteCntLB
 
-LEE1B:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEE1B:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 EndLoadMap:
 LEE1E:  PLA                     ;Restore A from stack before exiting.
@@ -6193,7 +6249,7 @@ LEE43:  LDA #$10
 LEE45:  STA $2E
 LEE47:  LDA #$00
 LEE49:  STA $2D
-LEE4B:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEE4B:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEE4E:  LDA MapProperties
 LEE50:  AND #$02
 LEE52:  BNE LEE6A
@@ -6234,7 +6290,7 @@ LEE95:  ADC #$80
 LEE97:  STA $2A
 LEE99:  LDA #$00
 LEE9B:  STA $29
-LEE9D:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEE9D:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEEA0:  LDY #CHR_CLASS
 LEEA2:  LDA (CrntChrPtr),Y
 LEEA4:  TAX
@@ -6295,7 +6351,7 @@ LEF05:  LDA #$02
 LEF07:  STA $2E
 LEF09:  LDA #$00
 LEF0B:  STA $2D
-LEF0D:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEF0D:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEF10:  JMP LEECF
 LEF13:  LDA CurPRGBank
 LEF15:  PHA
@@ -6323,7 +6379,7 @@ LEF41:  LDA #$00
 LEF43:  STA $29
 LEF45:  LDA #$04
 LEF47:  STA $30
-LEF49:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEF49:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEF4C:  INC $2C
 LEF4E:  INC $2C
 LEF50:  DEC $30
@@ -6348,7 +6404,7 @@ LEF7A:  LDA #$08
 LEF7C:  STA $2E
 LEF7E:  LDA #$00
 LEF80:  STA $2D
-LEF82:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEF82:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEF85:  LDA #$88
 LEF87:  STA $2A
 LEF89:  LDA #$09
@@ -6359,7 +6415,7 @@ LEF91:  LDA #$80
 LEF93:  STA $2D
 LEF95:  LDA #$07
 LEF97:  PHA
-LEF98:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEF98:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEF9B:  CLC
 LEF9C:  LDA $2A
 LEF9E:  ADC #$02
@@ -6381,8 +6437,9 @@ LEFBA:  LDA #$80
 LEFBC:  STA $2A
 LEFBE:  LDA #$00
 LEFC0:  STA $29
-LEFC2:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LEFC2:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEFC5:  RTS
+
 LEFC6:  LDA CurPRGBank
 LEFC8:  PHA
 LEFC9:  LDA #BANK_HELPERS1
@@ -6410,7 +6467,7 @@ LEFE2:  RTS                     ;
 ;Pointer $2B-Destination address in the PPU.
 ;16-bit counter $2D-Number of bytes to load into the PPU.
 
-LoadPPU2:
+LoadPPU:
 LEFE3:  LDA DisSpriteAnim
 LEFE5:  PHA
 LEFE6:  LDA TextIndex
@@ -6437,7 +6494,7 @@ LF003:  PHA
 LF004:  LDA #$00
 LF006:  STA CurPPUConfig1
 LF008:  LDA #$02
-LF00A:  JSR LE6D0
+LF00A:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 
 LF00D:  LDA #$01
 LF00F:  STA DisSpriteAnim
@@ -6565,7 +6622,7 @@ LF0BD:* RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-DisplayText2:
+DisplayText:
 LF0BE:  LDA CurPRGBank          ;Save current PRG bank on the stack.
 LF0C0:  PHA                     ;
 
@@ -7156,11 +7213,15 @@ LF4CA:  LDA $2A
 LF4CC:  AND #$FC
 LF4CE:  STA $2A
 LF4D0:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+BinToBCD:
 LF4D1:  LDA CurPRGBank
 LF4D3:  PHA
 LF4D4:  LDA #BANK_HELPERS1
 LF4D6:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LF4D9:  JSR $8400
+LF4D9:  JSR DoBinToBCD          ;($8400)Convert binary number to BCD.
 LF4DC:  PLA
 LF4DD:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF4E0:  LDA TimeStopTimer
@@ -7179,7 +7240,7 @@ LF4F0:  STA DisSpriteAnim
 LF4F2:  LDA #$00
 LF4F4:  STA CurPPUConfig1
 LF4F6:  LDA #$01
-LF4F8:  JSR LE6D0
+LF4F8:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LF4FB:  LDA MapBank
 LF4FD:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF500:  LDY #$00
@@ -7425,6 +7486,10 @@ LF6C8:  CLC
 LF6C9:  RTS
 LF6CA:  SEC
 LF6CB:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+PrepLoadDungeon:
 LF6CC:  LDA #$00
 LF6CE:  STA IgnoreInput
 LF6D0:  STA DisSpriteAnim
@@ -7535,7 +7600,7 @@ LF79D:  CLC
 LF79E:  ADC MapYPos
 LF7A0:  AND #$0F
 LF7A2:  STA MapYPos
-LF7A4:  JSR LF974
+LF7A4:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LF7A7:  CMP #$00
 LF7A9:  BNE LF7E9
 LF7AB:  PLA
@@ -7564,7 +7629,7 @@ LF7D2:  CLC
 LF7D3:  ADC MapYPos
 LF7D5:  AND #$0F
 LF7D7:  STA MapYPos
-LF7D9:  JSR LF974
+LF7D9:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LF7DC:  CMP #$00
 LF7DE:  BNE LF7E9
 LF7E0:  PLA
@@ -7585,7 +7650,7 @@ LF7F8:  CMP #$08
 LF7FA:  BEQ LF800
 LF7FC:  CMP #$04
 LF7FE:  BNE LF869
-LF800:  JSR LF974
+LF800:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LF803:  CMP #$09
 LF805:  BNE LF81E
 LF807:  LDA #$00
@@ -7594,8 +7659,8 @@ LF80B:  JSR LF981
 LF80E:  JSR LF8F7
 LF811:  LDA #$33
 LF813:  STA TextIndex
-LF815:  JSR ShowDialog2         ;($E675)Show dialog in lower screen window.
-LF818:  JSR LF4D1
+LF815:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
+LF818:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LF81B:  JMP LF86C
 LF81E:  CMP #$0D
 LF820:  BNE LF835
@@ -7603,7 +7668,7 @@ LF822:  LDA #$63
 LF824:  JSR LE64E
 LF827:  CMP #$03
 LF829:  BCS LF869
-LF82B:  JSR LF974
+LF82B:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LF82E:  LDA #$0B
 LF830:  STA (MapDatPtr),Y
 LF832:  JMP LC723
@@ -7615,17 +7680,17 @@ LF83E:  STA CrntChrPtrLB
 LF840:  LDA Pos1ChrPtrUB
 LF842:  STA CrntChrPtrUB
 LF844:  JSR LDF39
-LF847:  JSR LF4D1
+LF847:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LF84A:  JMP LF86C
 LF84D:  CMP #$0A
 LF84F:  BNE LF85B
-LF851:  JSR LF974
+LF851:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LF854:  LDA #$0D
 LF856:  STA (MapDatPtr),Y
 LF858:  JMP LF869
 LF85B:  CMP #$08
 LF85D:  BNE LF869
-LF85F:  JSR LF974
+LF85F:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LF862:  LDA #$0D
 LF864:  STA (MapDatPtr),Y
 LF866:  JMP LF86C
@@ -7682,7 +7747,7 @@ LF8DA:  JSR LED33
 LF8DD:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LF8E0:  LDA #$00
 LF8E2:  STA DisNPCMovement
-LF8E4:  JMP LC142
+LF8E4:  JMP PrepLoadOvrwld      ;($C142)Prepare to load overworld map.
 
 LF8E7:  .byte $00, $FF, $01, $00, $00, $01, $FF, $00, $00, $01, $FF, $00, $00, $FF, $01, $00
 
@@ -7703,7 +7768,7 @@ LF90E:  LDA #$00
 LF910:  STA CurPPUConfig1
 LF912:  LDA #BANK_MISC_GFX
 LF914:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LF917:  JSR LF974
+LF917:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
 LF91A:  LDX #$00
 LF91C:  CMP #$06
 LF91E:  BEQ LF929
@@ -7742,7 +7807,7 @@ LF95D:  LDA #$05
 LF95F:  STA $2E
 LF961:  LDA #$00
 LF963:  STA $2D
-LF965:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LF965:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LF968:  JSR LF981
 LF96B:  PLA
 LF96C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -7750,16 +7815,23 @@ LF96F:  LDA #$1E
 LF971:  STA CurPPUConfig1
 LF973:  RTS
 
-LF974:  LDA MapYPos
-LF976:  ASL
-LF977:  ASL
-LF978:  ASL
-LF979:  ASL
-LF97A:  CLC
-LF97B:  ADC MapXPos
-LF97D:  TAY
-LF97E:  LDA (MapDatPtr),Y
-LF980:  RTS
+;----------------------------------------------------------------------------------------------------
+
+GetDngnXYData:
+LF974:  LDA MapYPos             ;
+LF976:  ASL                     ;
+LF977:  ASL                     ;/16. 16 columns per dungeon map row.
+LF978:  ASL                     ;
+LF979:  ASL                     ;
+
+LF97A:  CLC                     ;
+LF97B:  ADC MapXPos             ;Add in X position to get final index.
+LF97D:  TAY                     ;
+
+LF97E:  LDA (MapDatPtr),Y       ;Save dungeon map data byte into A.
+LF980:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 LF981:  LDA CurPRGBank
 LF983:  PHA
@@ -7797,7 +7869,7 @@ LF9BF:  LDA #$00
 LF9C1:  STA $2D
 LF9C3:  LDA #$08
 LF9C5:  STA $30
-LF9C7:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LF9C7:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LF9CA:  INC $2C
 LF9CC:  DEC $30
 LF9CE:  BNE LF9C7
@@ -7818,12 +7890,12 @@ LF9EC:  LDA #$00
 LF9EE:  STA $2E
 LF9F0:  LDA #$40
 LF9F2:  STA $2D
-LF9F4:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LF9F4:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LF9F7:  LDA #$27
 LF9F9:  STA $2C
 LF9FB:  LDA #$C0
 LF9FD:  STA $2B
-LF9FF:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LF9FF:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LFA02:  LDA #$20
 LFA04:  STA $2C
 LFA06:  LDA #$64
@@ -7836,10 +7908,10 @@ LFA12:  LDA #$00
 LFA14:  STA $2E
 LFA16:  LDA #$0F
 LFA18:  STA $2D
-LFA1A:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LFA1A:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LFA1D:  LDA #$24
 LFA1F:  STA $2C
-LFA21:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LFA21:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LFA24:  JSR LF981
 LFA27:  LDA #BANK_MISC_GFX
 LFA29:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -7855,7 +7927,7 @@ LFA3C:  LDA #$05
 LFA3E:  STA $2E
 LFA40:  LDA #$C0
 LFA42:  STA $2D
-LFA44:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LFA44:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LFA47:  LDA #$B0
 LFA49:  STA $2A
 LFA4B:  LDA #$00
@@ -7867,7 +7939,7 @@ LFA55:  STA $2B
 LFA57:  STA $2E
 LFA59:  LDA #$B0
 LFA5B:  STA $2D
-LFA5D:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LFA5D:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LFA60:  LDA MapBank
 LFA62:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFA65:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
@@ -7958,7 +8030,7 @@ LFB15:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-LdLgCharTiles2:
+LdLgCharTiles:
 LFB16:  LDA CurPRGBank          ;Save current lower PRG bank on the stack.
 LFB18:  PHA                     ;
 
@@ -7989,7 +8061,7 @@ LFB3C:  STA PPUByteCntUB        ;Prepare to load 576 bytes into the PPU.
 LFB3E:  LDA #$40                ;
 LFB40:  STA PPUByteCntLB        ;
 
-LFB42:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LFB42:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 LFB45:  PLA                     ;
 LFB46:  STA Ch4StClass          ;
@@ -8021,7 +8093,7 @@ LFB69:  STA PPUByteCntUB        ;Prepare to load 576 bytes into the PPU.
 LFB6B:  LDA #$40                ;
 LFB6D:  STA PPUByteCntLB        ;
 
-LFB6F:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LFB6F:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 LFB72:  PLA                     ;
 LFB73:  STA Ch4StClass          ;Restore character classes from the stack.
@@ -8049,7 +8121,7 @@ LFB90:  STA PPUByteCntUB        ;Prepare to load 576 bytes into the PPU.
 LFB92:  LDA #$40                ;
 LFB94:  STA PPUByteCntLB        ;
 
-LFB96:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LFB96:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 LFB99:  PLA                     ;Restore character class from the stack.
 LFB9A:  STA Ch4StClass          ;
@@ -8072,7 +8144,7 @@ LFBB1:  STA PPUByteCntUB        ;Prepare to load 576 bytes into the PPU.
 LFBB3:  LDA #$40                ;
 LFBB5:  STA PPUByteCntLB        ;
 
-LFBB7:  JSR LoadPPU2            ;($EFE3)Load values into PPU.
+LFBB7:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 EndChrTilesLoad:
 LFBBA:  PLA                     ;Restore original lower bank.
@@ -8324,7 +8396,7 @@ LFD38:  ORA #$C0
 LFD3A:  STA ScreenBlocks,X
 LFD3D:  INX
 LFD3E:  BNE LFD35
-LFD40:  JSR LF4D1
+LFD40:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LFD43:  RTS
 
 LFD44:  LDA $B1
@@ -8339,7 +8411,7 @@ LFD51:  RTS
 LFD52:  LDA MapProperties
 LFD54:  AND #$01
 LFD56:  BNE LFD68
-LFD58:  JSR LF4D1
+LFD58:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LFD5B:  JSR LFC45
 LFD5E:  LDA #$00
 LFD60:  STA $19
@@ -8349,27 +8421,38 @@ LFD67:  RTS
 LFD68:  JSR LF981
 LFD6B:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 StartMusic:
-LFD6C:  LDX #MUS_BOAT+INIT
-LFD6E:  LDA OnBoat
-LFD70:  BNE LFD90
-LFD72:  LDX #MUS_WORLD+INIT
-LFD74:  LDA MapProperties
-LFD76:  AND #$04
-LFD78:  BNE LFD90
-LFD7A:  LDX #MUS_AMBROSIA+INIT
-LFD7C:  LDA ThisMap
-LFD7E:  CMP #MAP_AMBROSIA
-LFD80:  BEQ LFD90
-LFD82:  LDX #MUS_EXODUS+INIT
-LFD84:  CMP #MAP_EXODUS
-LFD86:  BEQ LFD90
-LFD88:  LDX #MUS_CASTLE+INIT
-LFD8A:  CMP #MAP_LB_CSTL
-LFD8C:  BEQ LFD90
-LFD8E:  LDX #MUS_TOWN+INIT
-LFD90:  STX InitNewMusic
-LFD92:  RTS
+LFD6C:  LDX #MUS_BOAT+INIT      ;Prepare to start boat music.
+LFD6E:  LDA OnBoat              ;Is the player on a boat?
+LFD70:  BNE SetMusicInit        ;If so, branch to start boat music.
+
+LFD72:  LDX #MUS_WORLD+INIT     ;Prepare to start Sosaria overworld music.
+LFD74:  LDA MapProperties       ;
+LFD76:  AND #MAP_MOON_PH        ;Are the moon phases currently be shown?
+LFD78:  BNE SetMusicInit        ;If so, branch to start Sosaria overworld music.
+
+LFD7A:  LDX #MUS_AMBROSIA+INIT  ;Prepare to start Ambrosia music.
+LFD7C:  LDA ThisMap             ;
+LFD7E:  CMP #MAP_AMBROSIA       ;Is player on the Ambrosia map?
+LFD80:  BEQ SetMusicInit        ;If so, branch to start Ambrosia music.
+
+LFD82:  LDX #MUS_EXODUS+INIT    ;Prepare to start castle Exodus music.
+LFD84:  CMP #MAP_EXODUS         ;Is the player on the castle Exodus map?
+LFD86:  BEQ SetMusicInit        ;If so, branch to start castle Exodus music.
+
+LFD88:  LDX #MUS_CASTLE+INIT    ;Prepare to start Lord British castle music.
+LFD8A:  CMP #MAP_LB_CSTL        ;Is the player on the Lord British castle map?
+LFD8C:  BEQ SetMusicInit        ;If so, branch to start Lord British castle music.
+
+LFD8E:  LDX #MUS_TOWN+INIT      ;Prepare to start town music.
+
+SetMusicInit:
+LFD90:  STX InitNewMusic        ;Set init music flag with selected music.
+LFD92:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 LFD93:  LDA CurPRGBank
 LFD95:  PHA
@@ -8379,6 +8462,8 @@ LFD9B:  JSR $8800
 LFD9E:  PLA
 LFD9F:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFDA2:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LFDA3:  LDA CurPRGBank
 LFDA5:  PHA
