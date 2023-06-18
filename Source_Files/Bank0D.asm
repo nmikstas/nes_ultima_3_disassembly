@@ -9,6 +9,7 @@
 .alias  Reset1                  $C000
 .alias  ChooseChar1             $C00C
 .alias  ShowDialog1             $C00F
+.alias  ShowSelectWnd1          $C012
 .alias  ShowWindow1             $C015
 .alias  _ShowSelectWnd1         $C018
 .alias  RESET                   $FFA0
@@ -23,7 +24,7 @@ L8002:  LDA $0700,X
 L8005:  AND #$1F
 L8007:  STA $0700,X
 L800A:  INX
-L800B:  CPX #$F0
+L800B:  CPX #SPRT_HIDE
 L800D:  BNE L8002
 L800F:  JSR L809F
 L8012:  JSR L8134
@@ -668,9 +669,9 @@ L8669:  STA $2E
 L866B:  LDA #$CE
 L866D:  LDY #$2D
 L866F:  JSR L8793
-L8672:  LDA #$94
-L8674:  STA $D6
-L8676:  LDA $70
+L8672:  LDA #SFX_MARK_DMG+INIT
+L8674:  STA ThisSFX
+L8676:  LDA ThisMap
 L8678:  CMP #$14
 L867A:  BEQ L8683
 L867C:  CMP #$06
@@ -689,8 +690,8 @@ L8696:  LDA #$00
 L8698:  STA (CrntChrPtr),Y
 L869A:  INY
 L869B:  STA (CrntChrPtr),Y
-L869D:  LDA #$94
-L869F:  STA $D6
+L869D:  LDA #SFX_MARK_DMG+INIT
+L869F:  STA ThisSFX
 L86A1:  LDY #CHR_HIT_PNTS+1
 L86A3:  LDA (CrntChrPtr),Y
 L86A5:  BNE L86E4
@@ -711,7 +712,7 @@ L86C0:  STA $15
 L86C2:  LDA $12
 L86C4:  STA $16
 L86C6:  LDA #$29
-L86C8:  STA $30
+L86C8:  STA TextIndex
 L86CA:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L86CD:  JSR $C021
 L86D0:  PLA
@@ -720,7 +721,7 @@ L86D2:  ASL
 L86D3:  ASL
 L86D4:  ASL
 L86D5:  TAX
-L86D6:  LDA #$F0
+L86D6:  LDA #SPRT_HIDE
 L86D8:  STA $7304,X
 L86DB:  STA $7308,X
 L86DE:  STA $730C,X
@@ -1082,7 +1083,7 @@ L89F9:  .byte $33, $33, $30, $00, $00, $00, $00
 
 FortuneTalk:
 L8A00:  LDA #$64
-L8A02:  STA $30
+L8A02:  STA TextIndex
 L8A04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8A07:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8A0A:  BCC L8A0F
@@ -1142,7 +1143,7 @@ L8A7B:  PLA
 L8A7C:  LDX $70
 L8A7E:  ADC $8A90,X
 L8A81:  ADC #$C0
-L8A83:  STA $30
+L8A83:  STA TextIndex
 L8A85:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8A88:  LDA #$69
 L8A8A:  JMP L9475
@@ -1173,7 +1174,7 @@ L8AFB:  .byte $33, $00, $00, $00, $00
 
 HealerTalk:
 L8B00:  LDA #$6A
-L8B02:  STA $30
+L8B02:  STA TextIndex
 L8B04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8B07:  LDX $70
 L8B09:  LDA $8ABF,X
@@ -1214,7 +1215,7 @@ L8B52:  PHA
 L8B53:  CMP #$04
 L8B55:  BEQ L8B5E
 L8B57:  LDA #$F9
-L8B59:  STA $30
+L8B59:  STA TextIndex
 L8B5B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8B5E:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8B61:  PLA
@@ -1253,23 +1254,23 @@ L8B9B:  TXA
 L8B9C:  PHA
 L8B9D:  CMP #$03
 L8B9F:  BNE L8BA5
-L8BA1:  LDA #$01
-L8BA3:  STA $E9
+L8BA1:  LDA #CHR_NO_CHK_DEAD
+L8BA3:  STA ChkCharDead
 L8BA5:  JSR $C042
 L8BA8:  PLA
 L8BA9:  STA $30
 L8BAB:  BCC L8BBA
 L8BAD:  CMP #$03
 L8BAF:  BNE L8BB5
-L8BB1:  LDA #$00
-L8BB3:  STA $E9
+L8BB1:  LDA #CHR_CHK_DEAD
+L8BB3:  STA ChkCharDead
 L8BB5:  PLA
 L8BB6:  PLA
 L8BB7:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8BBA:  CMP #$03
 L8BBC:  BNE L8BC2
-L8BBE:  LDA #$00
-L8BC0:  STA $E9
+L8BBE:  LDA #CHR_CHK_DEAD
+L8BC0:  STA ChkCharDead
 L8BC2:  PLA
 L8BC3:  STA $2A
 L8BC5:  PLA
@@ -1289,7 +1290,7 @@ L8BDE:  STA $2E
 L8BE0:  JSR L8CF1
 L8BE3:  JSR L9D5E
 L8BE6:  LDA #$EB
-L8BE8:  STA $30
+L8BE8:  STA TextIndex
 L8BEA:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8BED:  LDA #$76
 L8BEF:  JMP L9475
@@ -1310,7 +1311,7 @@ L8C0D:  STA $2E
 L8C0F:  JSR L8CF1
 L8C12:  JSR L9D5E
 L8C15:  LDA #$EB
-L8C17:  STA $30
+L8C17:  STA TextIndex
 L8C19:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C1C:  LDA #$76
 L8C1E:  JMP L9475
@@ -1332,7 +1333,7 @@ L8C3E:  STA $2E
 L8C40:  JSR L8CF1
 L8C43:  JSR L9D5E
 L8C46:  LDA #$EB
-L8C48:  STA $30
+L8C48:  STA TextIndex
 L8C4A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C4D:  LDA #$76
 L8C4F:  JMP L9475
@@ -1355,7 +1356,7 @@ L8C6F:  STA $9A
 L8C71:  PLA
 L8C72:  STA $99
 L8C74:  LDA #$70
-L8C76:  STA $30
+L8C76:  STA TextIndex
 L8C78:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C7B:  LDA #$02
 L8C7D:  JSR L992C
@@ -1371,10 +1372,10 @@ L8C8F:  LDA #$00
 L8C91:  STA (CrntChrPtr),Y
 L8C93:  JSR $C03F
 L8C96:  LDA #$EC
-L8C98:  STA $30
+L8C98:  STA TextIndex
 L8C9A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C9D:  LDA #$EB
-L8C9F:  STA $30
+L8C9F:  STA TextIndex
 L8CA1:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8CA4:  LDA #$76
 L8CA6:  JMP L9475
@@ -1423,7 +1424,7 @@ L8CFD:  .byte $00, $00, $00
 
 WeaponTalk:
 L8D00:  LDA #$77
-L8D02:  STA $30
+L8D02:  STA TextIndex
 L8D04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8D07:  JSR L98AA
 L8D0A:  BCC L8D0F
@@ -1452,7 +1453,7 @@ L8D40:  LDA #$07
 L8D42:  STA NumMenuItems
 L8D44:  LDA #$00
 L8D46:  STA $9D
-L8D48:  JSR $C012
+L8D48:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
 L8D4B:  BCC L8D50
 L8D4D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D50:  STA $30
@@ -1469,7 +1470,7 @@ L8D63:  PLA
 L8D64:  BCC L8D83
 L8D66:  PHA
 L8D67:  LDA #$83
-L8D69:  STA $30
+L8D69:  STA TextIndex
 L8D6B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8D6E:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8D71:  BCC L8D77
@@ -1486,7 +1487,7 @@ L8D84:  JSR L9437
 L8D87:  PLA
 L8D88:  BCC L8D99
 L8D8A:  LDA #$84
-L8D8C:  STA $30
+L8D8C:  STA TextIndex
 L8D8E:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8D91:  BCC L8D96
 L8D93:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1502,7 +1503,7 @@ L8DA6:  JSR L98DB
 L8DA9:  PLA
 L8DAA:  BCC L8DBB
 L8DAC:  LDA #$68
-L8DAE:  STA $30
+L8DAE:  STA TextIndex
 L8DB0:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8DB3:  BCC L8DB8
 L8DB5:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1510,7 +1511,7 @@ L8DB8:  JMP L8DBE
 L8DBB:  JSR L9463
 L8DBE:  JSR L9D5E
 L8DC1:  LDA #$85
-L8DC3:  STA $30
+L8DC3:  STA TextIndex
 L8DC5:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8DC8:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8DCB:  BCC L8DD0
@@ -1532,7 +1533,7 @@ L8DF0:  JSR L8EB3
 L8DF3:  PLA
 L8DF4:  BCC L8E00
 L8DF6:  LDA #$ED
-L8DF8:  STA $30
+L8DF8:  STA TextIndex
 L8DFA:  JSR ShowDialog1         ;($C00F)Show dialog in lower screen window.
 L8DFD:  JMP L8DBE
 L8E00:  PHA
@@ -1540,7 +1541,7 @@ L8E01:  JSR L8AA5
 L8E04:  PLA
 L8E05:  BCC L8E11
 L8E07:  LDA #$F1
-L8E09:  STA $30
+L8E09:  STA TextIndex
 L8E0B:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8E0E:  JMP L8DBE
 L8E11:  PHA
@@ -1551,7 +1552,7 @@ L8E17:  STA $A0
 L8E19:  LDA $8E98,X
 L8E1C:  STA $A1
 L8E1E:  LDA #$D6
-L8E20:  STA $30
+L8E20:  STA TextIndex
 L8E22:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8E25:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8E28:  BCC L8E2E
@@ -1613,7 +1614,7 @@ L8EF1:  .byte $33, $33, $33, $33, $33, $33, $30, $00, $00, $00, $00, $00, $00, $
 
 ArmoryTalk:
 L8F00:  LDA #$78
-L8F02:  STA $30
+L8F02:  STA TextIndex
 L8F04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8F07:  JSR L98AA
 L8F0A:  BCC L8F0F
@@ -1639,7 +1640,7 @@ L8F39:  LDA #$00
 L8F3B:  STA $9D
 L8F3D:  LDA #$AB
 L8F3F:  STA TextIndex2
-L8F42:  JSR $C012
+L8F42:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
 L8F45:  BCC L8F4A
 L8F47:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8F4A:  PHA
@@ -1648,7 +1649,7 @@ L8F4E:  PLA
 L8F4F:  BCC L8F6E
 L8F51:  PHA
 L8F52:  LDA #$83
-L8F54:  STA $30
+L8F54:  STA TextIndex
 L8F56:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8F59:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8F5C:  BCC L8F62
@@ -1665,7 +1666,7 @@ L8F6F:  JSR L97C8
 L8F72:  PLA
 L8F73:  BCC L8F84
 L8F75:  LDA #$84
-L8F77:  STA $30
+L8F77:  STA TextIndex
 L8F79:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8F7C:  BCC L8F81
 L8F7E:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1681,7 +1682,7 @@ L8F91:  JSR L98DB
 L8F94:  PLA
 L8F95:  BCC L8FA6
 L8F97:  LDA #$68
-L8F99:  STA $30
+L8F99:  STA TextIndex
 L8F9B:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8F9E:  BCC L8FA3
 L8FA0:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1689,7 +1690,7 @@ L8FA3:  JMP L8FA9
 L8FA6:  JSR L93C0
 L8FA9:  JSR L9D5E
 L8FAC:  LDA #$85
-L8FAE:  STA $30
+L8FAE:  STA TextIndex
 L8FB0:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L8FB3:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L8FB6:  BCC L8FBB
@@ -1723,7 +1724,7 @@ L8FF4:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 
 GroceryTalk:
 L9000:  LDA #$79
-L9002:  STA $30
+L9002:  STA TextIndex
 L9004:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9007:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L900A:  BCC L900F
@@ -1759,7 +1760,7 @@ L904D:  PLP
 L904E:  PLA
 L904F:  BCC L9060
 L9051:  LDA #$68
-L9053:  STA $30
+L9053:  STA TextIndex
 L9055:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9058:  BCC L905D
 L905A:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1771,7 +1772,7 @@ L9066:  LDA #$00
 L9068:  STA $2E
 L906A:  JSR L908B
 L906D:  LDA #$85
-L906F:  STA $30
+L906F:  STA TextIndex
 L9071:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9074:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9077:  BCC L907C
@@ -1819,7 +1820,7 @@ L90FB:  .byte $04, $00, $00, $04, $44
 
 PubTalk:
 L9100:  LDA #$88
-L9102:  STA $30
+L9102:  STA TextIndex
 L9104:  LDA #$0A
 L9106:  STA $A0
 L9108:  LDA #$00
@@ -1845,21 +1846,21 @@ L9135:  LDA #$68
 L9137:  JMP L9475
 L913A:  JSR L9D5E
 L913D:  LDA #$74
-L913F:  STA $30
+L913F:  STA TextIndex
 L9141:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9144:  INC $48
 L9146:  LDA $48
 L9148:  CMP #$03
 L914A:  BCS L9156
 L914C:  LDA #$82
-L914E:  STA $30
+L914E:  STA TextIndex
 L9150:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9153:  JMP L9113
 L9156:  CMP #$03
 L9158:  BNE L916C
 L915A:  LDX $70
 L915C:  LDA $9193,X
-L915F:  STA $30
+L915F:  STA TextIndex
 L9161:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9164:  BCC L9169
 L9166:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1867,14 +1868,14 @@ L9169:  JMP L914C
 L916C:  CMP #$04
 L916E:  BNE L917F
 L9170:  LDA #$7E
-L9172:  STA $30
+L9172:  STA TextIndex
 L9174:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9177:  BCC L917C
 L9179:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L917C:  JMP L914C
 L917F:  LDX $70
 L9181:  LDA $91A7,X
-L9184:  STA $30
+L9184:  STA TextIndex
 L9186:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9189:  BCC L918E
 L918B:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1891,7 +1892,7 @@ L91F3:  .byte $00, $44, $44, $44, $44, $40, $00, $44, $44, $77, $77, $74, $44
 
 GuildTalk:
 L9200:  LDA #$7A
-L9202:  STA $30
+L9202:  STA TextIndex
 L9204:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9207:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L920A:  BCC L920F
@@ -1911,7 +1912,7 @@ L922A:  LDA #$00
 L922C:  STA $9D
 L922E:  LDA #$AC
 L9230:  STA TextIndex2
-L9233:  JSR $C012
+L9233:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
 L9236:  BCC L923B
 L9238:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L923B:  TAX
@@ -1921,7 +1922,7 @@ L9240:  JSR L92A0
 L9243:  PLA
 L9244:  BCC L9255
 L9246:  LDA #$84
-L9248:  STA $30
+L9248:  STA TextIndex
 L924A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L924D:  BCC L9252
 L924F:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1936,7 +1937,7 @@ L9260:  JSR L98DB
 L9263:  PLA
 L9264:  BCC L9275
 L9266:  LDA #$68
-L9268:  STA $30
+L9268:  STA TextIndex
 L926A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L926D:  BCC L9272
 L926F:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1944,7 +1945,7 @@ L9272:  JMP L9278
 L9275:  JSR L92B3
 L9278:  JSR L9D5E
 L927B:  LDA #$85
-L927D:  STA $30
+L927D:  STA TextIndex
 L927F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9282:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9285:  BCC L928A
@@ -1992,7 +1993,7 @@ L92FC:  .byte $77, $77, $74, $44
 
 StableTalk:
 L9300:  LDA #$8B
-L9302:  STA $30
+L9302:  STA TextIndex
 L9304:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9307:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L930A:  CMP #$01
@@ -2035,13 +2036,13 @@ L935D:  JSR L8FC7
 L9360:  PLA
 L9361:  BCC L936D
 L9363:  LDA #$ED
-L9365:  STA $30
+L9365:  STA TextIndex
 L9367:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L936A:  JMP L8FA9
 L936D:  CMP #$06
 L936F:  BCC L937B
 L9371:  LDA #$F1
-L9373:  STA $30
+L9373:  STA TextIndex
 L9375:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9378:  JMP L8FA9
 L937B:  PHA
@@ -2052,7 +2053,7 @@ L9381:  STA $A0
 L9383:  LDA $97A1,X
 L9386:  STA $A1
 L9388:  LDA #$D6
-L938A:  STA $30
+L938A:  STA TextIndex
 L938C:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L938F:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9392:  BCC L9398
@@ -2101,7 +2102,7 @@ L93F7L:  .byte $00, $08, $99, $99, $99, $9C, $47, $77, $74
 
 InnTalk:
 L9400:  LDA #$90
-L9402:  STA $30
+L9402:  STA TextIndex
 L9404:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9407:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L940A:  CMP #$01
@@ -2158,7 +2159,7 @@ L946E:  BCC L9472
 L9470:  LDA #$63
 L9472:  STA (CrntChrPtr),Y
 L9474:  RTS
-L9475:  STA $30
+L9475:  STA TextIndex
 L9477:  JMP ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L947A:  LDY #$30
 L947C:  LDA (CrntChrPtr),Y
@@ -2225,7 +2226,7 @@ L94F0:  .byte $44, $44, $40, $00, $44, $44, $00, $04, $44, $44, $44, $44, $44, $
 
 TempleTalk:
 L9500:  LDA #$92
-L9502:  STA $30
+L9502:  STA TextIndex
 L9504:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9507:  LDA #$0A
 L9509:  STA Wnd2XPos
@@ -2239,7 +2240,7 @@ L951A:  LDA #$00
 L951C:  STA $9D
 L951E:  LDA #$93
 L9520:  STA TextIndex2
-L9523:  JSR $C012
+L9523:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
 L9526:  BCC L952B
 L9528:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L952B:  CMP #$01
@@ -2247,10 +2248,10 @@ L952D:  BEQ L9534
 L952F:  LDA #$94
 L9531:  JMP L9475
 L9534:  LDA #$96
-L9536:  STA $30
+L9536:  STA TextIndex
 L9538:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L953B:  LDA #$F9
-L953D:  STA $30
+L953D:  STA TextIndex
 L953F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9542:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9545:  BCC L954A
@@ -2272,11 +2273,11 @@ L9564:  LDA $99
 L9566:  PHA
 L9567:  LDA $9A
 L9569:  PHA
-L956A:  LDA #$01
-L956C:  STA $E9
+L956A:  LDA #CHR_NO_CHK_DEAD
+L956C:  STA ChkCharDead
 L956E:  JSR $C042
-L9571:  LDA #$00
-L9573:  STA $E9
+L9571:  LDA #CHR_CHK_DEAD
+L9573:  STA ChkCharDead
 L9575:  PLA
 L9576:  STA $2A
 L9578:  PLA
@@ -2322,14 +2323,14 @@ L95C5:  LDA #$00
 L95C7:  STA (CrntChrPtr),Y
 L95C9:  JSR $C03F
 L95CC:  LDA #$EA
-L95CE:  STA $30
+L95CE:  STA TextIndex
 L95D0:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L95D3:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L95D6:  JSR L9D5E
 L95D9:  LDA #$9E
 L95DB:  JMP L9475
 L95DE:  LDA #$D8
-L95E0:  STA $30
+L95E0:  STA TextIndex
 L95E2:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L95E5:  BCC L95EA
 L95E7:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2340,7 +2341,7 @@ L95FD:  .byte $77, $74, $44
 
 CasinoTalk:
 L9600:  LDA #$98
-L9602:  STA $30
+L9602:  STA TextIndex
 L9604:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9607:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L960A:  CMP #$01
@@ -2390,15 +2391,17 @@ L9671:  LDA #$03
 L9673:  STA NumMenuItems
 L9675:  LDA #$00
 L9677:  STA $9D
-L9679:  LDA #$9C
-L967B:  STA TextIndex2
-L967E:  JSR $C012
+
+L9679:  LDA #$9C                ;STN SCR PPR text.
+L967B:  STA TextIndex2          ;
+L967E:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
+
 L9681:  BCC L9686
 L9683:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9686:  PHA
 L9687:  JSR L99AE
-L968A:  LDA #$89
-L968C:  STA $D6
+L968A:  LDA #SFX_CASINO+INIT
+L968C:  STA ThisSFX
 L968E:  LDA #$78
 L9690:  STA $7303
 L9693:  LDA #$03
@@ -2461,7 +2464,7 @@ L9702:  SEC
 L9703:  SBC #$15
 L9705:  TAX
 L9706:  LDA $9778,X
-L9709:  STA $30
+L9709:  STA TextIndex
 L970B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L970E:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9711:  BCC L9716
@@ -2502,7 +2505,7 @@ L9753:  JSR L881C
 L9756:  LDA #$02
 L9758:  JSR $C04E
 L975B:  LDA #$A0
-L975D:  STA $30
+L975D:  STA TextIndex
 L975F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9762:  JSR L9D5E
 L9765:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
@@ -2561,11 +2564,13 @@ L9814:  LDA #$05
 L9816:  STA $30
 L9818:  JSR L9872
 L981B:  BCS L9833
-L981D:  LDA #$CB
-L981F:  STA $30
+
+L981D:  LDA #$CB                ;WELCOME BACK! I WILL GIVE YOU MORE POWER text.
+L981F:  STA TextIndex           ;
 L9821:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L9824:  LDA #$8B
-L9826:  STA $D6
+
+L9824:  LDA #SFX_SPELL_B+INIT
+L9826:  STA ThisSFX
 L9828:  LDA #$01
 L982A:  JSR $C04E
 L982D:  JSR L8800
@@ -2582,10 +2587,10 @@ L9845:  STA $30
 L9847:  JSR L9872
 L984A:  BCS L9862
 L984C:  LDA #$CB
-L984E:  STA $30
+L984E:  STA TextIndex
 L9850:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L9853:  LDA #$8B
-L9855:  STA $D6
+L9853:  LDA #SFX_SPELL_B+INIT
+L9855:  STA ThisSFX
 L9857:  LDA #$01
 L9859:  JSR $C04E
 L985C:  JSR L8800
@@ -2641,7 +2646,7 @@ L98C2:  LDA #$00
 L98C4:  STA $9D
 L98C6:  LDA #$80
 L98C8:  STA TextIndex2
-L98CB:  JSR $C012
+L98CB:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
 L98CE:  PHP
 L98CF:  PHA
 L98D0:  JSR L99AE
@@ -2685,7 +2690,7 @@ L990F:  LDA #$00
 L9911:  STA $9D
 L9913:  LDA #$65
 L9915:  STA TextIndex2
-L9918:  JSR $C012
+L9918:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
 L991B:  PHP
 L991C:  PHA
 L991D:  JSR L99AE
@@ -2771,7 +2776,7 @@ L99AF:  TXA
 L99B0:  PHA
 L99B1:  LDX #$C4
 L99B3:  LDA $7300,X
-L99B6:  CMP #$F0
+L99B6:  CMP #SPRT_HIDE
 L99B8:  BEQ L99C4
 L99BA:  TXA
 L99BB:  CLC
@@ -2925,7 +2930,7 @@ L9AD2:  ASL
 L9AD3:  STA Wnd2Height
 L9AD6:  LDA #$FF
 L9AD8:  STA TextIndex2
-L9ADB:  JSR $C012
+L9ADB:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
 L9ADE:  STA $30
 L9AE0:  PLA
 L9AE1:  TAY
@@ -2946,7 +2951,7 @@ L9AFD:  CLC
 L9AFE:  RTS
 L9AFF:  PLA
 L9B00:  LDA #$30
-L9B02:  STA $30
+L9B02:  STA TextIndex
 L9B04:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9B07:  SEC
 L9B08:  RTS
@@ -3077,7 +3082,7 @@ L9DEC:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $30, $00, $0C, $88, $88, $
 L9DFC:  .byte $33, $33, $33, $33
 
 L9E00:  LDA #$48
-L9E02:  STA $30
+L9E02:  STA TextIndex
 L9E04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9E07:  LDA #$B4
 L9E09:  JSR L9E64
@@ -3112,8 +3117,8 @@ L9E44:  TAX
 L9E45:  TYA
 L9E46:  CMP $9E6C,X
 L9E49:  BNE L9E62
-L9E4B:  LDA #$8E
-L9E4D:  STA $D6
+L9E4B:  LDA #SFX_CHST_OPEN+INIT
+L9E4D:  STA ThisSFX
 L9E4F:  TXA
 L9E50:  PHA
 L9E51:  ASL
@@ -3252,7 +3257,7 @@ L9FC5:  LDA $2E
 L9FC7:  STA $A1
 L9FC9:  JSR L98DB
 L9FCC:  LDA #$DE
-L9FCE:  STA $30
+L9FCE:  STA TextIndex
 L9FD0:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9FD3:  RTS
 
@@ -3695,7 +3700,7 @@ LA93B:  BEQ LA940
 LA93D:  JMP LA822
 LA940:  JSR $ADB4
 LA943:  LDX #$00
-LA945:  LDA #$F0
+LA945:  LDA #SPRT_HIDE
 LA947:  STA $7300,X
 LA94A:  INX
 LA94B:  INX
@@ -3849,7 +3854,7 @@ LAA9A:  BEQ LAAA0
 LAA9C:  INY
 LAA9D:  JMP LAA93
 LAAA0:  LDA #$FF
-LAAA2:  STA $30
+LAAA2:  STA TextIndex
 LAAA4:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LAAA7:  JSR $C021
 LAAAA:  LDA #$00
@@ -3936,7 +3941,7 @@ LABAD:  PLA
 LABAE:  PHA
 LABAF:  TAX
 LABB0:  LDA $AD4E,X
-LABB3:  STA $30
+LABB3:  STA TextIndex
 LABB5:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LABB8:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 LABBB:  BCS LABD9
@@ -4001,7 +4006,7 @@ LAC37:  LDA #$80
 LAC39:  ORA $C7
 LAC3B:  STA $C7
 LAC3D:  LDA #$39
-LAC3F:  STA $30
+LAC3F:  STA TextIndex
 LAC41:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LAC44:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 LAC47:  PLA
@@ -4009,7 +4014,7 @@ LAC48:  BCS LACA1
 LAC4A:  PHA
 LAC4B:  TAX
 LAC4C:  LDA $AD4A,X
-LAC4F:  STA $30
+LAC4F:  STA TextIndex
 LAC51:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LAC54:  PLA
 LAC55:  CMP #$00
@@ -4075,7 +4080,7 @@ LACD3:  JSR LADA0
 LACD6:  LDA #$1E
 LACD8:  STA $04
 LACDA:  LDA #$59
-LACDC:  STA $30
+LACDC:  STA TextIndex
 LACDE:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LACE1:  JSR $C021
 LACE4:  LDA #$00
@@ -4119,7 +4124,7 @@ LAD2F:  STA (CrntChrPtr),Y
 LAD31:  LDA #$29
 LAD33:  JMP LAD38
 LAD36:  LDA #$22
-LAD38:  STA $30
+LAD38:  STA TextIndex
 LAD3A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LAD3D:  RTS
 
@@ -5013,7 +5018,7 @@ LBCA0:  RTS
 
 LBCA1:  .byte  $F4, $F5, $F6, $F8, $F7, $F9, $FA, $FA, $FA, $FA, $FA, $FA, $FA, $00
 
-LBCAF:  LDA #$F0
+LBCAF:  LDA #SPRT_HIDE
 LBCB1:  STA $7300,X
 LBCB4:  INX
 LBCB5:  INX

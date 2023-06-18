@@ -124,6 +124,8 @@
 
 .alias TextIndex        $30     ;Index to text message. $FE, $FF=Buffer already filled.
 .alias ChrStatSelect    $30     ;Current character selected in the character status screen.
+.alias FlashCounter     $30     ;Used to count how log to flash the screen during spell casting.
+.alias EnCounter        $30     ;Keeps track of which enemy is being processed.
 
 .alias MapDatPtr        $41     ;Map data pointer.
 .alias MapDatPtrLB      $41     ;Map data pointer, lower byte.
@@ -257,14 +259,14 @@
 .alias ExodusDead       $E0     ;$01=Exodus dead, $02=Game won, $FF=Time expired, everyone dies.
 
 .alias DelayConst       $E3     ;Loaded with $1E when loading saved game. Used as a delay constant.
-
+.alias UnusedE4         $E4     ;Not used.
 .alias EnemyNum         $E5     ;Enemy number. Also $FF=enemy remains after fight.
                                 ;Numbers are the same as those found on Bank 3.
 
 .alias NewGmCreated     $E7     ;$01=A new game greated. Bank0C only.
 .alias EndGmTimerLB     $E7     ;Escape Exodus castle timer, lower byte. updates every frame.
 .alias EndGmTimerUB     $E8     ;Escape Exodus castle timer, upper byte. $0F=Times up.
-
+.alias ChkCharDead      $E9     ;Non-zero:Function needs to check if selected character is dead.
 
 .alias DoAnimations     $EA     ;1=Do animation, 0=skip animations.
 
@@ -315,6 +317,26 @@
 .alias Ch3Index         $03DB   ;Character 3 index in character pool.
 .alias Ch4Index         $03DC   ;Character 4 index in character pool.
 
+;Enemy types and hit points.
+.alias EnTypeBase       $03F0   ;Enemy type, base address.
+.alias EnHPBase         $03F1   ;Enemy hit points, base address.
+.alias En1Type          $03F0   ;Enemy 1 type.
+.alias En1HP            $03F1   ;Enemy 1 hit points.
+.alias En2Type          $03F2   ;Enemy 2 type.
+.alias En2HP            $03F3   ;Enemy 2 hit points.
+.alias En3Type          $03F4   ;Enemy 3 type.
+.alias En3HP            $03F5   ;Enemy 3 hit points.
+.alias En4Type          $03F6   ;Enemy 4 type.
+.alias En4HP            $03F7   ;Enemy 4 hit points.
+.alias En5Type          $03F8   ;Enemy 5 type.
+.alias En5HP            $03F9   ;Enemy 5 hit points.
+.alias En6Type          $03FA   ;Enemy 6 type.
+.alias En6HP            $03FB   ;Enemy 6 hit points.
+.alias En7Type          $03FC   ;Enemy 7 type.
+.alias En7HP            $03FD   ;Enemy 7 hit points.
+.alias En8Type          $03EE   ;Enemy 8 type.
+.alias En8HP            $03FF   ;Enemy 8 hit points.
+
 ;The following RAM is used to load the NPC sprites on the current map. There are 4 bytes per sprite.
 ;They do not Keep track of current direction, or movement on screen. They are used as a referecne to 
 ;load sprite data when a sprite moves from off screen to on screen. A total of 32 NPCs per map.
@@ -331,6 +353,7 @@
 .alias TextBuffer       $0580   ;Buffer for text to be displayed on the screen.
 
 .alias ScreenBlocks     $0700   ;Through $07EF. The blocks currently on the screen.
+.alias CharBlock        $0777   ;The block the firs character is standing on.
 
 ;---------- Save Game 1 Data ----------
 .alias SG1Base          $6000   ;Base address of save game 1 data.
@@ -432,6 +455,8 @@
 .alias SpriteBufferBase $7300   ;Base address of sprite buffer.
 .alias SpriteBuffer     $7300   ;Through $73FF. Sprite data buffered here before RAM.
 .alias BlocksBuffer     $7400   ;Through $74FF. Blocks to be put on the screen.
+.alias BkPalBuffer      $7500   ;Through $750F. Background palette for current map.
+.alias SpPalBuffer      $7510   ;Through $7510. Sprite pallete for current screen.
 
 .alias MapRAM           $7800   ;Through $7FFF. The current map is loaded into this area. 64 X 64.
                                 ;Each byte is 2 tiles. There is no compression.
@@ -703,6 +728,36 @@
 .alias NPC_SHERRY       $1D     ;Sherry.
 .alias NPC_WHIRLPOOL    $1E     ;Whirlpool.
 
+;Enemy types.
+.alias EN_ORC           $00     ;Orc.
+.alias EN_GOBLIN        $01     ;Goblin.
+.alias EN_SKELETON      $02     ;Skeleton.
+.alias EN_GHOUL         $03     ;Ghoul.
+.alias EN_GIANT         $04     ;Giant.
+.alias EN_GOLEM         $05     ;Golem.
+.alias EN_TITAN         $06     ;Titan.
+.alias EN_THIEF         $07     ;Thief.
+.alias EN_BRIGAND       $08     ;Brigand.
+.alias EN_PINCHER       $09     ;Pincher.
+.alias EN_BRADLE        $0A     ;Bradle.
+.alias EN_SNATCH        $0B     ;Snatch.
+.alias EN_GARGOYLE      $0C     ;Gargoyle.
+.alias EN_MANE          $0D     ;Mane.
+.alias EN_DEMON         $0E     ;Demon.
+.alias EN_GRIFFIN       $0F     ;Griffin.
+.alias EN_WYVERN        $10     ;Wyvern.
+.alias EN_DRAGON        $11     ;Dragon.
+.alias EN_DEVIL         $12     ;Devil.
+.alias EN_BALRON        $13     ;Balron.
+.alias EN_SERPENT       $14     ;Serpent.
+.alias EN_MANOWAR       $15     ;Man-O-War.
+.alias EN_PIRATE        $16     ;Pirate.
+.alias EN_LRD_BRIT      $1E     ;Lord British.
+.alias EN_BL_GRD        $20     ;Blue guard.
+.alias EN_F_VLGR        $2A     ;Female villager.
+.alias EN_M_BRTNDR      $2F     ;Male bartender.
+
+;Weapon types.
 .alias WPN_DAGGER       $01     ;Dagger.
 .alias WPN_MACE         $02     ;Mace.
 .alias WPN_SLING        $03     ;Sling.
@@ -719,6 +774,7 @@
 .alias WPN_SUN_SWRD     $0E     ;Sun Sword.
 .alias WPN_MYSTIC_W     $0F     ;Mystic Weapon.
 
+;Armor types.
 .alias ARM_CLOTH        $01     ;Cloth.
 .alias ARM_LEATHER      $02     ;Leather.
 .alias ARM_BRONZE       $03     ;Bronze.
@@ -727,6 +783,7 @@
 .alias ARM_DRAGON       $06     ;Dragon.
 .alias ARM_MYSTIC_A     $07     ;Mystic Armor.
 
+;Program banks.
 .alias BANK_MAPS0       $00     ;MMC1 bank $00. Overhead maps.
 .alias BANK_MAPS1       $01     ;MMC1 bank $01. Overhead maps.
 .alias BANK_DUNGEONS    $02     ;MMC1 bank $02. Dungeon maps.
@@ -758,7 +815,7 @@
 ;$06
 .alias SFX_MN_GATE_B    $07     ;Player travels through moon gate.
 ;$08
-;$09
+.alias SFX_CASINO       $09     ;Randomly choose paper, rock scissors.
 ;$0A
 .alias SFX_SPELL_B      $0B     ;Spell SFX variant B.
 ;$0C
@@ -784,7 +841,7 @@
 ;$20
 ;$21
 ;$22
-.alias SFX_GEM          $23     ;Use gem SFX.
+.alias SFX_MAP          $23     ;Use gem SFX.
 .alias SFX_SPELL_A      $24     ;Spell SFX variant A.
 .alias SFX_EN_MJ_SPL    $25     ;Enemy casts major spell.
 .alias SFX_EX_FALL      $26     ;Castle Exodus falling apart.
@@ -849,6 +906,8 @@
 .alias MAP_NPC_PRES     $08     ;NPCs present on map, except overworld.
 .alias MAP_PROP_FIGHT   $0A     ;Combo of other 2 properties, fight map.
 .alias MAP_PROP_OV      $0C     ;Combo of other 2 properties, overworld map.
+.alias MAP_SAME         $00     ;Stay on same map.
+.alias MAP_NEW          $01     ;Load new map.
 
 .alias SG_VALID1_IDX    $00     ;Valid save game byte 1 index.
 .alias SG_VALID2_IDX    $01     ;Valid save game byte 2 index.
@@ -894,6 +953,8 @@
 .alias CHR_MARKS        $3B     ;Index to character's marks.
 .alias CHR_CARDS        $3C     ;Index to character's cards.
 .alias CHR_FLOWER       $3D     ;Index to character's flower status.
+.alias CHR_CHK_DEAD     $00     ;Check if selected character is dead.
+.alias CHR_NO_CHK_DEAD  $01     ;Do not check if selected character is dead.
 
 ;$00=Good, $01=Poisoned, $02=Cold, $03=Dead, $04=Ash.
 .alias COND_GOOD        $00     ;Character has no status conditions.
@@ -986,7 +1047,19 @@
 .alias CLS_RANGER       $0A     ;Ranger class.
 .alias CLS_UNCHOSEN     $FF     ;Unchosen class.
 
-.alias TP_ZERO          $38     ;Index into tile patterns for the number 0.
+.alias MAGIC_NONE       $00     ;Class cannot use magic.
+.alias MAGIC_CLERIC     $01     ;Class can use cleric magic.
+.alias MAGIC_WIZARD     $02     ;Class can use wizard magic.
+.alias MAGIC_BOTH       $03     ;Class can use both magics.
+
+.alias SPL_DUNGEON      $01     ;Spell can be used in dungeons.
+.alias SPL_BATTLE       $02     ;Spell can be used in battles.
+.alias SPL_OVRWRLD      $04     ;Spell can be used on the overworld.
+.alias SPL_ALWAYS       $0F     ;Spell can always be used.
 
 .alias WND_YES          $00     ;YES selected in dialog box.
 .alias WND_NO           $01     ;NO selected in dialog box.
+
+.alias TP_ZERO          $38     ;Index into tile patterns for the number 0.
+
+.alias SPRT_HIDE        $F0     ;Hides sprite off bottom of the screen.
