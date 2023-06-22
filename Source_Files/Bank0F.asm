@@ -159,7 +159,7 @@ LC0A8:  INX                     ;
 LC0A9:  BNE -                   ;
 
 LC0AB:  LDA #$81
-LC0AD:  STA $BA
+LC0AD:  STA RngSeed
 LC0AF:  STA $D8
 
 LC0B1:  LDA #BANK_MUSIC         ;Swap to the music player bank.
@@ -834,29 +834,29 @@ LC582: TAY
 LC583: TXA
 LC584: PHA
 LC585: LDA DirConvTbl,Y
-LC588: STA $B5
+LC588: STA RngInput0
 LC58A: LDA #$80
-LC58C: STA $B6
-LC58E: JSR LFBF5
+LC58C: STA RngInput1
+LC58E: JSR RngCore              ;($FBF5)Core of the random number generator.
 LC591: CLC
 LC592: LDA $29
-LC594: ADC $B7
+LC594: ADC RngNum0
 LC596: STA $29
 LC598: LDA $2A
-LC59A: ADC $B8
+LC59A: ADC RngNum1
 LC59C: STA $2A
 LC59E: LDA $30
 LC5A0: LSR
-LC5A1: STA $B5
+LC5A1: STA RngInput0
 LC5A3: LDA #$80
-LC5A5: STA $B6
-LC5A7: JSR LFBF5
+LC5A5: STA RngInput1
+LC5A7: JSR RngCore              ;($FBF5)Core of the random number generator.
 LC5AA: CLC
 LC5AB: LDA #$00
-LC5AD: ADC $B7
+LC5AD: ADC RngNum0
 LC5AF: STA $2B
 LC5B1: LDA #$09
-LC5B3: ADC $B8
+LC5B3: ADC RngNum1
 LC5B5: STA $2C
 LC5B7: LDA #BANK_NPCS
 LC5B9: JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -1486,7 +1486,7 @@ LCA5D:  LDA #$FF
 LCA5F:  STA TextBuffer
 LCA62:  LDA #$FF
 LCA64:  STA $30
-LCA66:  JSR LD2BA
+LCA66:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LCA69:  LDA FightTurnIndex
 LCA6B:  ASL
 LCA6C:  TAX
@@ -1507,7 +1507,7 @@ LCA88:  CMP #$40
 LCA8A:  BEQ LCAD0
 LCA8C:  JMP LD03C
 LCA8F:  LDA #$21
-LCA91:  JSR LD2BA
+LCA91:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LCA94:  LDA #$B0
 LCA96:  STA $7300
 LCA99:  LDA #$A8
@@ -1569,7 +1569,7 @@ LCB0D:  LDA #$FF
 LCB0F:  STA TextBuffer
 LCB12:  LDA #$FF
 LCB14:  STA $30
-LCB16:  JSR LD2BA
+LCB16:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LCB19:  LDA TimeStopTimer
 LCB1B:  BNE LCADA
 LCB1D:  LDA FightTurnIndex
@@ -1836,7 +1836,7 @@ LCD04:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LCD07:  JMP LCAD0
 
 LCD0A:  STA $30
-LCD0C:  JSR LD2BA
+LCD0C:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LCD0F:  JMP LD178
 LCD12:  LDA #$00
 LCD14:  STA (CrntChrPtr),Y
@@ -1875,7 +1875,7 @@ LCD53:  BCC LCD58
 LCD55:  JMP LD315
 LCD58:  LDA #$29
 LCD5A:  STA $30
-LCD5C:  JSR LD2BA
+LCD5C:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LCD5F:  JMP LD178
 LCD62:  LDA #$24
 LCD64:  JMP LCD0A
@@ -2223,7 +2223,7 @@ LD056:  CMP #$08
 LD058:  BEQ LD064
 LD05A:  LDA #$27
 LD05C:  STA $30
-LD05E:  JSR LD2BA
+LD05E:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LD061:  JMP LCA7D
 LD064:  STX $2A
 LD066:  STY $29
@@ -2263,7 +2263,7 @@ LD0A4:  BNE LD0A2
 LD0A6:  JMP LCAD0
 LD0A9:  LDA #$2C
 LD0AB:  STA $30
-LD0AD:  JSR LD2BA
+LD0AD:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LD0B0:  JMP LCA7D
 LD0B3:  LDA ThisMap
 LD0B5:  CMP #MAP_EXODUS
@@ -2297,7 +2297,7 @@ LD0ED:  LDY #$08
 LD0EF:  LDA (CrntChrPtr),Y
 LD0F1:  CLC
 LD0F2:  ADC #$64
-LD0F4:  CMP $B8
+LD0F4:  CMP RngNum1
 LD0F6:  BCS LD148
 LD0F8:  JMP LD180
 LD0FB:  LDA #SFX_SWING+INIT
@@ -2337,7 +2337,7 @@ LD13A:  LDY #$08
 LD13C:  LDA (CrntChrPtr),Y
 LD13E:  SEC
 LD13F:  ADC #$64
-LD141:  CMP $B8
+LD141:  CMP RngNum1
 LD143:  BCS LD148
 LD145:  JMP LD180
 LD148:  LDY #CHR_STR
@@ -2347,24 +2347,24 @@ LD14F:  LDY #CHR_STR
 LD151:  LDA (CrntChrPtr),Y
 LD153:  LSR
 LD154:  SEC
-LD155:  ADC $B8
-LD157:  STA $B8
+LD155:  ADC RngNum1
+LD157:  STA RngNum1
 LD159:  CLC
 LD15A:  LDY #CHR_EQ_WEAPON
 LD15C:  LDA (CrntChrPtr),Y
 LD15E:  ASL
 LD15F:  CLC
 LD160:  ADC (CrntChrPtr),Y
-LD162:  ADC $B8
+LD162:  ADC RngNum1
 LD164:  ADC #$04
-LD166:  STA $B8
+LD166:  STA RngNum1
 LD168:  JSR DoEnHit             ;($D1DC)Enemy hit. Init SFX and calculate damage.
 LD16B:  BCS LD170
 LD16D:  JMP LCAD0
 LD170:  JMP BattleWon           ;($CD67)Enemy battle has been won.
 
 LD173:  STA $30
-LD175:  JSR LD2BA
+LD175:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LD178:  LDA DelayConst
 LD17A:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD17D:  JMP LCAD0
@@ -2421,18 +2421,18 @@ LD1DB:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 DoEnHit:
-LD1DC:  LDA $B8
+LD1DC:  LDA RngNum1
 LD1DE:  CMP #$FF
 LD1E0:  BEQ LD1F1
 LD1E2:  LDA $C9
 LD1E4:  BPL LD1F1
-LD1E6:  LSR $B8
-LD1E8:  LDA $B8
+LD1E6:  LSR RngNum1
+LD1E8:  LDA RngNum1
 LD1EA:  LSR
 LD1EB:  SEC
-LD1EC:  ADC $B8
+LD1EC:  ADC RngNum1
 LD1EE:  LSR
-LD1EF:  STA $B8
+LD1EF:  STA RngNum1
 
 LD1F1:  LDA #SFX_EN_HIT+INIT
 LD1F3:  STA ThisSFX
@@ -2470,7 +2470,7 @@ LD224:  RTS
 
 LD225:  LDA $2A
 LD227:  STA $30
-LD229:  JSR LD2BA
+LD229:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LD22C:  LDA DelayConst
 LD22E:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD231:  RTS
@@ -2510,7 +2510,7 @@ LD267:  BNE LD24E
 LD269:  SEC
 LD26A:  RTS
 LD26B:  LDA #$26
-LD26D:  JSR LD2BA
+LD26D:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LD270:  LDA #$00
 LD272:  STA $19
 LD274:  STA $18
@@ -2550,21 +2550,32 @@ LD2B4:  LDA #$08
 LD2B6:  STA Ch1Dir,X
 LD2B8:  SEC
 LD2B9:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+ShowCmbtSideMsg:
 LD2BA:  PHA
 LD2BB:  LDA #$D4
 LD2BD:  STA HideUprSprites
+
 LD2BF:  PLA
 LD2C0:  STA $30
+
 LD2C2:  LDA #$15
 LD2C4:  STA $2A
 LD2C6:  LDA #$16
 LD2C8:  STA $29
+
 LD2CA:  LDA #$09
 LD2CC:  STA $2E
 LD2CE:  LDA #$03
 LD2D0:  STA $2D
+
 LD2D2:  JSR DisplayText         ;($F0BE)Display text on the screen.
-LD2D5:  RTS
+LD2D5:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
 LD2D6:  LDA $30
 LD2D8:  ASL
 LD2D9:  TAY
@@ -2760,6 +2771,9 @@ LD40C:  LDA #$06
 LD40E:  STA Wnd2Height
 LD411:  JSR ShowSelectWnd       ;($E4FF)Show a window where player makes a selection.
 LD414:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LD415:  JSR LD441
 LD418:  LDX #$00
 LD41A:  CMP #$09
@@ -2791,6 +2805,7 @@ LD44B:  BCS LD447
 LD44D:  CPY #$10
 LD44F:  BCC LD453
 LD451:  LDY #$10
+
 LD453:  TYA
 LD454:  RTS
 
@@ -2965,14 +2980,14 @@ LD4F0:  LDA #MAP_SAME           ;Indicate we are staying on the same map before 
 LD4F2:  RTS                     ;
 
 ContinueRepel:
-LD4F3:  LDX #$24               ;Prepare MISSED text if we miss.
+LD4F3:  LDX #$24                ;Prepare MISSED text if we miss.
 
-LD4F5:  LDA Increment0         ;
-LD4F7:  AND #$10               ;Repel will miss if bit 4 is clear. Changes every 16 frames.
-LD4F9:  BEQ RepelText          ;
+LD4F5:  LDA Increment0          ;
+LD4F7:  AND #$10                ;Repel will miss if bit 4 is clear. Changes every 16 frames.
+LD4F9:  BEQ RepelText           ;
 
-LD4FB:  LDA #$FF
-LD4FD:  PHA
+LD4FB:  LDA #$FF                ;Base damage of spell=255 points.
+LD4FD:  PHA                     ;
 
 LD4FE:  JSR GetBCDNum           ;($D3EC)Convert binary number to BCD.
 
@@ -3013,7 +3028,7 @@ LD52E:  ADC $2D
 LD530:  BCC LD534
 
 LD532:  LDA #$FF
-LD534:  STA $B8
+LD534:  STA RngNum1
 
 LD536:  LDA EnCounter
 LD538:  PHA
@@ -3061,7 +3076,7 @@ LD565:  PLA
 LD566:  LDA #$00
 LD568:  RTS
 LD569:  PLA
-LD56A:  JSR LDA62
+LD56A:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 
 LD56D:  LDA #$05                ;Wait 5 frames.
 LD56F:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
@@ -3078,7 +3093,7 @@ LD583:  CLC
 LD584:  ADC $2E
 LD586:  BCC LD58A
 LD588:  LDA #$FF
-LD58A:  STA $B8
+LD58A:  STA RngNum1
 LD58C:  JSR DoEnHit             ;($D1DC)Enemy hit. Init SFX and calculate damage.
 LD58F:  LDA #$00
 LD591:  STA $7302
@@ -3091,7 +3106,7 @@ LD59F:  RTS
 
 DoLight:
 LD5A0:  LDA #$0A
-LD5A2:  JSR LDA62
+LD5A2:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD5A5:  LDA #$50
 LD5A7:  STA $B1
 LD5A9:  LDA #$1A
@@ -3100,7 +3115,7 @@ LD5AE:  JMP LD661
 
 DoDescend:
 LD5B1:  LDA #$0F
-LD5B3:  JSR LDA62
+LD5B3:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD5B6:  LDA DungeonLevel
 LD5B8:  CMP #$07
 LD5BA:  BEQ LD5C8
@@ -3117,7 +3132,7 @@ LD5D1:  RTS
 
 DoAscend:
 LD5D2:  LDA #$14
-LD5D4:  JSR LDA62
+LD5D4:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD5D7:  LDA DungeonLevel
 LD5D9:  BEQ LD5E7
 LD5DB:  JSR LDB0E
@@ -3138,7 +3153,7 @@ LD5F6:  JMP LD559
 
 DoTrans:
 LD5F9:  LDA #$1E
-LD5FB:  JSR LDA62
+LD5FB:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD5FE:  LDA $00
 LD600:  AND #$3F
 LD602:  STA MapXPos
@@ -3188,7 +3203,7 @@ LD650:  JMP LD559
 
 DoBright:
 LD653:  LDA #$28
-LD655:  JSR LDA62
+LD655:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD658:  LDA #$F0
 LD65A:  STA $B1
 LD65C:  LDA #$1A
@@ -3219,12 +3234,12 @@ LD692:  RTS
 
 DoCleric:
 LD693:  LDA #$2D
-LD695:  JSR LDA62
+LD695:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD698:  JMP LD378
 
 DoPoison:
 LD69B:  LDA #$32
-LD69D:  JSR LDA62
+LD69D:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD6A0:  LDA #$4B
 LD6A2:  JMP LD4FD
 
@@ -3235,7 +3250,7 @@ LD6A9:  JMP LD559
 
 DoStop:
 LD6AC:  LDA #$3C
-LD6AE:  JSR LDA62
+LD6AE:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD6B1:  LDA #$14
 LD6B3:  STA TimeStopTimer
 LD6B5:  LDA #SFX_TIME_STOP+INIT
@@ -3248,7 +3263,7 @@ LD6C2:  RTS
 
 DoPSIKill:
 LD6C3:  LDA #$41
-LD6C5:  JSR LDA62
+LD6C5:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD6C8:  LDY #CHR_INT
 LD6CA:  LDA (CrntChrPtr),Y
 LD6CC:  ASL
@@ -3256,7 +3271,7 @@ LD6CD:  JMP LD4FD
 
 DoRot:
 LD6D0:  LDA #$46
-LD6D2:  JSR LDA62
+LD6D2:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD6D5:  JSR GetBCDNum           ;($D3EC)Convert binary number to BCD.
 LD6D8:  LDA #$0A
 LD6DA:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
@@ -3305,7 +3320,7 @@ DoDeath:
 LD72B:  LDA #GME_EX_DEAD
 LD72D:  STA ExodusDead
 LD72F:  LDA #$4B
-LD731:  JSR LDA62
+LD731:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD734:  LDA #$FF
 LD736:  JMP LD4FD
 
@@ -3331,7 +3346,7 @@ LD758:  JMP LD4FD
 
 DoOpen:
 LD75B:  LDA #$05
-LD75D:  JSR LDA62
+LD75D:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD760:  LDA $00
 LD762:  AND #$05
 LD764:  BEQ LD779
@@ -3364,7 +3379,7 @@ LD799:  RTS
 
 DoGlow:
 LD79A:  LDA #$05
-LD79C:  JSR LDA62
+LD79C:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD79F:  JMP DoLight             ;($D5A0)Light dungeon.
 
 DoRise:
@@ -3372,12 +3387,12 @@ LD7A2:  JMP DoAscend            ;($D5D2)Ascend in dungeon.
 
 DoSink:
 LD7A5:  LDA #$0A
-LD7A7:  JSR LDA62
+LD7A7:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD7AA:  JMP DoDescend           ;($D5B1)Descend in dungeon.
 
 DoMove:
 LD7AD:  LDA #$1E
-LD7AF:  JSR LDA62
+LD7AF:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD7B2:  JSR LDB0E
 LD7B5:  LDA #$1E
 LD7B7:  STA TextIndex
@@ -3407,7 +3422,7 @@ LD7DF:  .byte $17, $42, $17, $43, $44
 
 DoSurface:
 LD7E4:  LDA #$28
-LD7E6:  JSR LDA62
+LD7E6:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD7E9:  LDA #$1F
 LD7EB:  STA TextIndex
 LD7ED:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
@@ -3420,7 +3435,7 @@ LD7FB:  RTS
 
 DoStar:
 LD7FC:  LDA #$05
-LD7FE:  JSR LDA62
+LD7FE:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD801:  JMP DoBright            ;($D653)Light a dungeon for a longer period of time.
 
 DoLargeHeal:
@@ -3438,7 +3453,7 @@ LD81A:  RTS
 
 DoMap:
 LD81B:  LDA #$37
-LD81D:  JSR LDA62
+LD81D:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD820:  LDA MapProperties
 LD822:  AND #MAP_DUNGEON
 LD824:  BNE LD838
@@ -3645,7 +3660,7 @@ DoDestroy:
 LD9B1:  LDA #GME_EX_DEAD
 LD9B3:  STA ExodusDead
 LD9B5:  LDA #$46
-LD9B7:  JSR LDA62
+LD9B7:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD9BA:  LDA #$FF
 LD9BC:  JMP LD4FD
 
@@ -3730,7 +3745,7 @@ LDA4D:  PHA
 LDA4E:  LDA $2C
 LDA50:  PHA
 LDA51:  TXA
-LDA52:  JSR LDA62
+LDA52:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LDA55:  PLA
 LDA56:  STA CrntChrPtrUB
 LDA58:  PLA
@@ -3745,6 +3760,7 @@ LDA61:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
+CastSpell:
 LDA62:  STA $30
 LDA64:  LDY #CHR_MAG_PNTS
 LDA66:  LDA (CrntChrPtr),Y
@@ -3775,7 +3791,7 @@ LDA8A:  LSR
 LDA8B:  LSR
 LDA8C:  CLC
 LDA8D:  ADC #$01
-LDA8F:  JSR LDB38
+LDA8F:  JSR FlashScreen         ;($DB38)Flash screen a given number of times.
 LDA92:  RTS
 
 ;----------------------------------------------------------------------------------------------------
@@ -3876,7 +3892,9 @@ LDB33:  JMP FlashLoop           ;($DB3A)Flash the screen.
 
 Flash8:
 LDB36:  LDA #$08                ;Repeat flash routine 8 times.
-LDB38:  STA FlashCounter        ;
+
+FlashScreen:
+LDB38:  STA FlashCounter        ;Prepare to flash screen a given number of times.
 
 FlashLoop:
 LDB3A:  LDA #>FlashPal          ;
@@ -4214,14 +4232,14 @@ LDDAC:  STA NumMenuItems
 LDDAE:  STA $9D
 LDDB0:  LDA CharBlock
 LDDB3:  AND #$1F
-LDDB5:  CMP #$0A
+LDDB5:  CMP #BLK_CHEST
 LDDB7:  BEQ LDDD9
 LDDB9:  LDA ThisMap
 LDDBB:  CMP #MAP_AMBROSIA
 LDDBD:  BNE LDDCB
 LDDBF:  LDA CharBlock
 LDDC2:  AND #$1F
-LDDC4:  CMP #$0D
+LDDC4:  CMP #BLK_FLOWER
 LDDC6:  BNE LDDCB
 LDDC8:  JMP LDEB5
 LDDCB:  JSR LDECF
@@ -5417,23 +5435,23 @@ LE64D:  RTS
 ;This function generates an random number between 0 and Accum-1. The result is put into A.
 
 GenRandomNum:
-LE64E:  PHA
-LE64F:  LDA $BA
-LE651:  STA $B6
-LE653:  LDA #$11
-LE655:  STA $B5
-LE657:  JSR LFBF5
-LE65A:  CLC
-LE65B:  LDA $B7
-LE65D:  ADC #$17
-LE65F:  STA $B6
-LE661:  STA $BA
-LE663:  PLA
-LE664:  STA $B5
-LE666:  JSR LFBF5
-LE669:  CLC
-LE66A:  LDA $B8
-LE66C:  RTS
+LE64E:  PHA                     ;
+LE64F:  LDA RngSeed             ;
+LE651:  STA RngInput1           ;
+LE653:  LDA #$11                ;
+LE655:  STA RngInput0           ;
+LE657:  JSR RngCore             ;($FBF5)Core of the random number generator.
+LE65A:  CLC                     ;
+LE65B:  LDA RngNum0             ;
+LE65D:  ADC #$17                ;Generate a random number and put it in A.
+LE65F:  STA RngInput1           ;
+LE661:  STA RngSeed             ;
+LE663:  PLA                     ;
+LE664:  STA RngInput0           ;
+LE666:  JSR RngCore             ;($FBF5)Core of the random number generator.
+LE669:  CLC                     ;
+LE66A:  LDA RngNum1             ;
+LE66C:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5659,9 +5677,9 @@ LE78C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE78F:  RTS
 
 LE790:  LDA CharBlock
-LE793:  CMP #$01
+LE793:  CMP #BLK_SHRUB
 LE795:  BEQ LE79B
-LE797:  CMP #$02
+LE797:  CMP #BLK_TREE
 LE799:  BNE LE7A8
 LE79B:  LDA #SFX_FOREST+INIT
 LE79D:  STA ThisSFX
@@ -6585,6 +6603,7 @@ LEE61:  BNE LEE6A
 LEE63:  LDA OnHorse
 LEE65:  BPL LEE6A
 LEE67:  JMP LEF28
+
 LEE6A:  LDA #BANK_CHARS
 LEE6C:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEE6F:  LDA #$01
@@ -6659,6 +6678,7 @@ LEEE9:  LDA OnBoat
 LEEEB:  AND #$7F
 LEEED:  STA OnBoat
 LEEEF:  RTS
+
 LEEF0:  LDA #BANK_NPCS
 LEEF2:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEEF5:  LDA #$8A
@@ -6685,6 +6705,7 @@ LEF20:  JSR ZeroPartyTrail      ;($EFD6)Pile all characters on top of each other
 LEF23:  PLA
 LEF24:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEF27:  RTS
+
 LEF28:  LDA #BANK_SFX
 LEF2A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LEF2D:  LDA #$01
@@ -7777,7 +7798,7 @@ LF66C:  LDA #$01
 LF66E:  STA $E2
 LF670:  LDA $00
 LF672:  ORA #$01
-LF674:  STA $BA
+LF674:  STA RngSeed
 LF676:  LDA #$0E
 LF678:  STA $18
 LF67A:  LDA #$00
@@ -8551,29 +8572,23 @@ LFBF4:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-LFBF5:  TXA                     ;Save X on the stack.
+RngCore:
+LFBF5:  TXA                     ;
 LFBF6:  PHA                     ;
-
-LFBF7:  LDA #$00
-LFBF9:  STA $B7
-
-LFBFB:  LDX #$08                ;prepare to loop 8 times.
-
-LFBFD:  LSR $B5
-LFBFF:  BCC LFC04
-LFC01:  CLC
-LFC02:  ADC $B6
-
-LFC04:  ROR
-LFC05:  ROR $B7
-
-LFC07:  DEX
-LFC08:  BNE LFBFD
-
-LFC0A:  STA $B8
-
+LFBF7:  LDA #$00                ;
+LFBF9:  STA RngNum0             ;
+LFBFB:  LDX #$08                ;
+LFBFD:* LSR RngInput0           ;
+LFBFF:  BCC +                   ;The core of the RNG algorithm.
+LFC01:  CLC                     ;The output will be a value between
+LFC02:  ADC RngInput1           ;0 and RngInput0-1, inclusive.
+LFC04:* ROR                     ;
+LFC05:  ROR RngNum0             ;
+LFC07:  DEX                     ;
+LFC08:  BNE --                  ;
+LFC0A:  STA RngNum1             ;
 LFC0C:  PLA                     ;
-LFC0D:  TAX                     ;Restore X from the stack.
+LFC0D:  TAX                     ;
 LFC0E:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------

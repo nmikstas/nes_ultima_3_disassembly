@@ -221,6 +221,13 @@
 .alias CurPieceYVis     $B4     ;Current piece active on battefield. Upper nibble is their Y
                                 ;position on the battlefiled. 1=top row. LSB 0=invisible, 1=visible.
 
+;Random number generator.
+.alias RngInput0        $B5     ;Input to the rng. RngNum1 is between 0 and this number -1.
+.alias RngInput1        $B6     ;Input to the rng.
+.alias RngNum0          $B7     ;Output of the rng.
+.alias RngNum1          $B8     ;Output of the rng.
+.alias RngSeed          $BA     ;Seed for rng.
+
 .alias OnBoat           $B9     ;$01=On boat, $00=Not on boat.
 
 .alias ConstPPUBufLen   $BC     ;Initial PPU buffer length. Does not change during processing.
@@ -353,7 +360,7 @@
 .alias TextBuffer       $0580   ;Buffer for text to be displayed on the screen.
 
 .alias ScreenBlocks     $0700   ;Through $07EF. The blocks currently on the screen.
-.alias CharBlock        $0777   ;The block the firs character is standing on.
+.alias CharBlock        $0777   ;The block the first character is standing on.
 
 ;---------- Save Game 1 Data ----------
 .alias SG1Base          $6000   ;Base address of save game 1 data.

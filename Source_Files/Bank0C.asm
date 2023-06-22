@@ -262,57 +262,60 @@ L8152:  STA PPUByteCntLB        ;
 
 L8154:  JSR LoadPPU1            ;($C006)Load values into PPU.
 
-L8157:  LDA #$9B
-L8159:  STA $2A
-L815B:  LDA #$1B
-L815D:  STA $29
+L8157:  LDA #>LBRoomNTDat       ;
+L8159:  STA PPUSrcPtrUB         ;Set a pointer to the name table data on this bank.
+L815B:  LDA #<LBRoomNTDat       ;
+L815D:  STA PPUSrcPtrLB         ;
 
-L815F:  LDA #$20
-L8161:  STA $2C
-L8163:  LDA #$00
-L8165:  STA $2B
+L815F:  LDA #PPU_NT0_UB         ;
+L8161:  STA PPUDstPtrUB         ;Prepare write the entire contents of name table 0.
+L8163:  LDA #PPU_NT0_LB         ;
+L8165:  STA PPUDstPtrLB         ;
 
-L8167:  LDA #$04
-L8169:  STA $2E
-L816B:  LDA #$00
-L816D:  STA $2D
+L8167:  LDA #$04                ;
+L8169:  STA PPUByteCntUB        ;Prepare to transfer 1024 bytes into the PPU.
+L816B:  LDA #$00                ;
+L816D:  STA PPUByteCntLB        ;
 
 L816F:  JSR LoadPPU1            ;($C006)Load values into PPU.
 
-L8172:  LDA #$9E
-L8174:  STA $2A
-L8176:  LDA #$EB
-L8178:  STA $29
+L8172:  LDA #>LBRoomATDat       ;
+L8174:  STA PPUSrcPtrUB         ;Set a pointer to the attribute table data on this bank.
+L8176:  LDA #<LBRoomATDat       ;
+L8178:  STA PPUSrcPtrLB         ;
 
-L817A:  LDA #$23
-L817C:  STA $2C
-L817E:  LDA #$C0
-L8180:  STA $2B
+L817A:  LDA #PPU_AT0_UB         ;
+L817C:  STA PPUDstPtrUB         ;Prepare write the entire contents of attribute table 0.
+L817E:  LDA #PPU_AT0_LB         ;
+L8180:  STA PPUDstPtrLB         ;
 
-L8182:  LDA #$00
-L8184:  STA $2E
-L8186:  LDA #$40
-L8188:  STA $2D
+L8182:  LDA #$00                ;
+L8184:  STA PPUByteCntUB        ;Prepare to transfer 64 bytes into the PPU.
+L8186:  LDA #$40                ;
+L8188:  STA PPUByteCntLB        ;
 
 L818A:  JSR LoadPPU1            ;($C006)Load values into PPU.
 
-L818D:  LDA #$83
-L818F:  STA PPUPyLdPtrUB
-L8191:  LDA #$5F
-L8193:  STA PPUPyLdPtrLB
+L818D:  LDA #>LBRoomPalDat      ;
+L818F:  STA PPUPyLdPtrUB        ;Load the palette data for the Lord British throne room scene.
+L8191:  LDA #<LBRoomPalDat      ;
+L8193:  STA PPUPyLdPtrLB        ;
 
 L8195:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
 
-L8198:  LDA #$00
-L819A:  STA $2B
-L819C:  LDA #$72
-L819E:  STA $2C
+L8198:  LDA #<Ch1Data
+L819A:  STA GenPtr2BLB
+L819C:  LDA #>Ch1Data
+L819E:  STA GenPtr2BUB
+
 L81A0:  LDA SGDatPtrLB
-L81A2:  STA $99
+L81A2:  STA SGCharPtrLB
 L81A4:  LDX SGDatPtrUB
 L81A6:  INX
-L81A7:  STX $9A
+L81A7:  STX SGCharPtrUB
+
 L81A9:  LDX #$00
+
 L81AB:  TXA
 L81AC:  LSR
 L81AD:  LSR
@@ -320,11 +323,13 @@ L81AE:  LSR
 L81AF:  LSR
 L81B0:  CLC
 L81B1:  ADC #$10
+
 L81B3:  TAY
 L81B4:  LDA (SGDatPtr),Y
 L81B6:  STA $2A
 L81B8:  LDA #$00
 L81BA:  STA $29
+
 L81BC:  LSR $2A
 L81BE:  ROR $29
 L81C0:  LSR $2A
@@ -337,11 +342,13 @@ L81CB:  LDA $9A
 L81CD:  ADC $2A
 L81CF:  STA $2A
 L81D1:  LDY #$00
+
 L81D3:  LDA ($29),Y
 L81D5:  STA ($2B),Y
 L81D7:  INY
 L81D8:  CPY #$40
 L81DA:  BNE L81D3
+
 L81DC:  CLC
 L81DD:  LDA $2B
 L81DF:  ADC #$40
@@ -421,21 +428,25 @@ L8259:  PHA
 L825A:  STA TextIndex
 L825C:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L825F:  CLC
-L8260:  LDA $00
-L8262:  ADC #$B4
-L8264:  CMP $00
-L8266:  BNE L8264
+L825F:  CLC                     ;
+L8260:  LDA Increment0          ;
+L8262:  ADC #$B4                ;Wait 180 frames before continuing.
+L8264:* CMP Increment0          ;
+L8266:  BNE -                   ;
+
 L8268:  PLA
 L8269:  CMP #$25
-L826B:  BEQ L8273
+L826B:  BEQ +
+
 L826D:  CLC
 L826E:  ADC #$01
 L8270:  JMP L8243
-L8273:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+
+L8273:* JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8276:  LDA Pad1Input
 L8278:  CMP #$80
-L827A:  BNE L8273
+L827A:  BNE -
+
 L827C:  LDA #$00
 L827E:  STA $CE
 L8280:  RTS
@@ -469,6 +480,7 @@ L82B6:  STA $2E
 L82B8:  STA $2D
 L82BA:  JSR L82BE
 L82BD:  RTS
+
 L82BE:  LDA #$78
 L82C0:  STA $19
 L82C2:  LDA #$20
@@ -514,9 +526,15 @@ L8319:  .byte $01, $01, $03, $00, $00, $01, $40, $10, $00, $60, $48, $11, $00, $
 L8329:  .byte $00, $68, $48, $13, $00, $68, $40, $30, $00, $70, $48, $31, $00, $70, $40, $32
 L8339:  .byte $00, $78, $48, $33, $00, $78, $40, $50, $01, $80, $48, $51, $01, $80, $40, $52
 L8349:  .byte $01, $88, $48, $53, $01, $88, $40, $70, $01, $90, $48, $71, $01, $90, $40, $72
-L8359:  .byte $01, $98, $48, $73, $01, $98, $0F, $1C, $30, $26, $0F, $30, $15, $26, $0F, $0C
-L8369:  .byte $15, $36, $0F, $30, $02, $36, $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30
-L8379:  .byte $0F, $2D, $0F, $30, $15, $36
+L8359:  .byte $01, $98, $48, $73, $01, $98
+
+;----------------------------------------------------------------------------------------------------
+
+;Palette data for the Lord British throne room scene.
+
+LBRoomPalDat:
+L835F:  .byte $0F, $1C, $30, $26, $0F, $30, $15, $26, $0F, $0C, $15, $36, $0F, $30, $02, $36
+L836F:  .byte $0F, $30, $11, $36, $0F, $06, $15, $26, $0F, $30, $0F, $2D, $0F, $30, $15, $36
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -3952,167 +3970,67 @@ L9B16:  STA Ch3Class            ;
 L9B18:  STA Ch4Class            ;
 L9B1A:  RTS                     ;
 
-;----------------------------------------------------------------------------------------------------
+;---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-L9B1B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC
-L9B2B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC
-L9B3B:  .byte $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9
-L9B4B:  .byte $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9
-L9B5B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $C6, $C7, $AB, $AC, $AB, $AC, $AB, $AC, $AD, $AE
-L9B6B:  .byte $AF, $B0, $AB, $AC, $AB, $AC, $AB, $AC, $C6, $C7, $AB, $AC, $AB, $AC, $AB, $AC
-L9B7B:  .byte $B8, $B9, $B8, $B9, $B8, $B9, $D2, $D3, $B8, $B9, $B8, $B9, $B8, $B9, $BA, $00
-L9B8B:  .byte $00, $BB, $B8, $B9, $B8, $B9, $B8, $B9, $D2, $D3, $B8, $B9, $B8, $B9, $B8, $B9
-L9B9B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $C4, $00
-L9BAB:  .byte $00, $C5, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC
-L9BBB:  .byte $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $D0, $00
-L9BCB:  .byte $00, $C5, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9
-L9BDB:  .byte $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EE, $EF, $00, $00
-L9BEB:  .byte $00, $00, $F0, $F1, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED
-L9BFB:  .byte $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F6, $00, $00, $00
-L9C0B:  .byte $00, $00, $00, $F7, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5
-L9C1B:  .byte $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00
-L9C2B:  .byte $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED
-L9C3B:  .byte $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00
-L9C4B:  .byte $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5
-L9C5B:  .byte $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00
-L9C6B:  .byte $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED
-L9C7B:  .byte $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00
-L9C8B:  .byte $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5
-L9C9B:  .byte $EC, $ED, $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00
-L9CAB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED, $EC, $ED
-L9CBB:  .byte $F4, $F5, $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9CCB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5, $F4, $F5
-L9CDB:  .byte $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9CEB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED
-L9CFB:  .byte $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9D0B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5
-L9D1B:  .byte $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $A6, $A7, $A8
-L9D2B:  .byte $A9, $AA, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED
-L9D3B:  .byte $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $B3, $B4, $B5
-L9D4B:  .byte $B6, $B7, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5
-L9D5B:  .byte $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $BE, $BF, $C0
-L9D6B:  .byte $C1, $C2, $C3, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1
-L9D7B:  .byte $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $CA, $CB, $CC
-L9D8B:  .byte $CD, $CE, $CF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7
-L9D9B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $D6, $D7, $D8
-L9DAB:  .byte $D9, $DA, $DB, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9DBB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $E0, $E1, $E2
-L9DCB:  .byte $E3, $E4, $E5, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9DDB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9DEB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9DFB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E0B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E1B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E2B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E3B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E4B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E5B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E6B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E7B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E8B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9E9B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9EAB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9EBB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-L9ECB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+;The following data is loaded into name table 0 and attribute table 0 when a new party is formed
+;and the Lord British scene is shown. This is the background graphics for that scene.
+
+LBRoomNTDat:
+L9B1B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC
+L9B3B:  .byte $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9
+L9B5B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $C6, $C7, $AB, $AC, $AB, $AC, $AB, $AC, $AD, $AE, $AF, $B0, $AB, $AC, $AB, $AC, $AB, $AC, $C6, $C7, $AB, $AC, $AB, $AC, $AB, $AC
+L9B7B:  .byte $B8, $B9, $B8, $B9, $B8, $B9, $D2, $D3, $B8, $B9, $B8, $B9, $B8, $B9, $BA, $00, $00, $BB, $B8, $B9, $B8, $B9, $B8, $B9, $D2, $D3, $B8, $B9, $B8, $B9, $B8, $B9
+L9B9B:  .byte $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $C4, $00, $00, $C5, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC, $AB, $AC
+L9BBB:  .byte $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $D0, $00, $00, $C5, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9, $B8, $B9
+L9BDB:  .byte $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED
+L9BFB:  .byte $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5
+L9C1B:  .byte $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED
+L9C3B:  .byte $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5
+L9C5B:  .byte $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED, $EC, $ED, $EC, $ED
+L9C7B:  .byte $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5, $F4, $F5, $F4, $F5
+L9C9B:  .byte $EC, $ED, $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED, $EC, $ED
+L9CBB:  .byte $F4, $F5, $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5, $F4, $F5
+L9CDB:  .byte $EC, $ED, $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED, $EC, $ED
+L9CFB:  .byte $F4, $F5, $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5, $F4, $F5
+L9D1B:  .byte $EC, $ED, $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $A6, $A7, $A8, $A9, $AA, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1, $EC, $ED
+L9D3B:  .byte $F4, $F5, $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $B3, $B4, $B5, $B6, $B7, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7, $F4, $F5
+L9D5B:  .byte $EE, $EF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $BE, $BF, $C0, $C1, $C2, $C3, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F0, $F1
+L9D7B:  .byte $F6, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $CA, $CB, $CC, $CD, $CE, $CF, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $F7
+L9D9B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $D6, $D7, $D8, $D9, $DA, $DB, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9DBB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $E0, $E1, $E2, $E3, $E4, $E5, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9DDB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9DFB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9E1B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9E3B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9E5B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9E7B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9E9B:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+L9EBB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 L9EDB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+
+LBRoomATDat:
 L9EEB:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $A0, $A0, $A0, $20, $80, $A0, $A0, $A0
 L9EFB:  .byte $AA, $AA, $2A, $0D, $06, $8A, $AA, $AA, $AA, $2A, $00, $00, $00, $00, $8A, $AA
 L9F0B:  .byte $2A, $00, $00, $FF, $FF, $00, $00, $8A, $F0, $F0, $F0, $FF, $FF, $F0, $F0, $F0
 L9F1B:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-L9F2B:  .byte $C0
-
-L9F2C:  AND #$7C
-L9F2E:  TAY
-L9F2F:  LDA NPCSprIndex,Y
-L9F32:  CMP #NPC_WTR_EN_5
-L9F34:  BEQ L9F42
-L9F36:  CMP #NPC_WTR_EN_7
-L9F38:  BEQ L9F42
-L9F3A:  CMP #NPC_EN_SHIP
-L9F3C:  BEQ L9F42
-L9F3E:  CMP #NPC_WHIRLPOOL
-L9F40:  BNE L9F4B
-
-L9F42:  LDA WorkPPUBufLen
-L9F44:  CMP #$03
-L9F46:  BNE L9F88
-L9F48:  JMP L9F70
-
-L9F4B:  LDA WorkPPUBufLen
-L9F4D:  CMP #$03
-L9F4F:  BEQ L9F88
-L9F51:  CMP #$04
-L9F53:  BEQ L9F88
-L9F55:  CMP #$08
-L9F57:  BEQ L9F88
-L9F59:  CMP #$0C
-L9F5B:  BEQ L9F88
-L9F5D:  CMP #$09
-L9F5F:  BEQ L9F88
-L9F61:  CMP #$05
-L9F63:  BNE L9F6B
-
-L9F65:  LDA MapProperties
-L9F67:  CMP #$0C
-L9F69:  BNE L9F88
-
-L9F6B:  LDA $C0
-L9F6D:  AND #$7C
-L9F6F:  TAY
-L9F70:  CLC
-L9F71:  LDA $A0A3,X
-L9F74:  ADC $0402,Y
-L9F77:  AND #$3F
-L9F79:  STA $0402,Y
-L9F7C:  CLC
-L9F7D:  LDA $A0A4,X
-L9F80:  ADC $0403,Y
-L9F83:  AND #$3F
-L9F85:  STA $0403,Y
-
-L9F88:  LDA $C0
-L9F8A:  AND #$7C
-L9F8C:  TAY
-L9F8D:  RTS
-L9F8E:  PLA
-L9F8F:  RTS
-
-L9F90:  TXA
-L9F91:  PHA
-L9F92:  LDX #$00
-L9F94:  LDA $4A
-L9F96:  SEC
-L9F97:  SBC $0402,Y
-L9F9A:  BMI L9F9E
-L9F9C:  EOR #$FF
-L9F9E:  CMP #$F8
-L9FA0:  JSR L9FB9
-L9FA3:  LDA $49
-L9FA5:  SEC
-L9FA6:  SBC $0403,Y
-L9FA9:  BMI L9FAF
-L9FAB:  EOR #$FF
-L9FAD:  ADC #$00
-L9FAF:  CMP #$F9
-L9FB1:  JSR L9FB9
-L9FB4:  CPX #$01
-L9FB6:  PLA
-L9FB7:  TAX
-L9FB8:  RTS
-
-L9FB9:  BPL L9FC1
-L9FBB:  CMP #$C8
-L9FBD:  BMI L9FC1
-L9FBF:  LDX #$FF
-L9FC1:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
 ;Unused code from Bank B.
-L9FC2:  .byte $8A, $48, $A5, $4D, $48, $A9, $04, $85, $4D, $A2, $04, $BD, $00, $73, $4A, $4A
-L9FD2:  .byte $4A, $4A, $18, $65, $49, $38, $E9, $07, $D9, $03, $04, $D0, $15, $BD, $03, $73
-L9FE2:  .byte $4A, $4A, $4A, $4A, $18, $65, $4A, $38, $E9, $07, $D9, $02, $04, $D0, $03, $4C
-L9FF2:  .byte $26, $A0, $8A, $18, $69, $10, $AA, $C6, $4D, $D0, $D0, $A2, $00, $BD
+L9F2B:  .byte $C0, $29, $7C, $A8, $B9, $00, $04, $C9, $18, $F0, $0C, $C9, $1B, $F0, $08, $C9
+L9F3B:  .byte $1C, $F0, $04, $C9, $1E, $D0, $09, $A5, $4E, $C9, $03, $D0, $40, $4C, $70, $9F
+L9F4B:  .byte $A5, $4E, $C9, $03, $F0, $37, $C9, $04, $F0, $33, $C9, $08, $F0, $2F, $C9, $0C
+L9F5B:  .byte $F0, $2B, $C9, $09, $F0, $27, $C9, $05, $D0, $06, $A5, $A8, $C9, $0C, $D0, $1D
+L9F6B:  .byte $A5, $C0, $29, $7C, $A8, $18, $BD, $A3, $A0, $79, $02, $04, $29, $3F, $99, $02
+L9F7B:  .byte $04, $18, $BD, $A4, $A0, $79, $03, $04, $29, $3F, $99, $03, $04, $A5, $C0, $29
+L9F8B:  .byte $7C, $A8, $60, $68, $60, $8A, $48, $A2, $00, $A5, $4A, $38, $F9, $02, $04, $30
+L9F9B:  .byte $02, $49, $FF, $C9, $F8, $20, $B9, $9F, $A5, $49, $38, $F9, $03, $04, $30, $04
+L9FAB:  .byte $49, $FF, $69, $00, $C9, $F9, $20, $B9, $9F, $E0, $01, $68, $AA, $60, $10, $06
+L9FBB:  .byte $C9, $C8, $30, $02, $A2, $FF, $60, $8A, $48, $A5, $4D, $48, $A9, $04, $85, $4D
+L9FCB:  .byte $A2, $04, $BD, $00, $73, $4A, $4A, $4A, $4A, $18, $65, $49, $38, $E9, $07, $D9
+L9FDB:  .byte $03, $04, $D0, $15, $BD, $03, $73, $4A, $4A, $4A, $4A, $18, $65, $4A, $38, $E9
+L9FEB:  .byte $07, $D9, $02, $04, $D0, $03, $4C, $26, $A0, $8A, $18, $69, $10, $AA, $C6, $4D
+L9FFB:  .byte $D0, $D0, $A2, $00, $BD
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6254,7 +6172,7 @@ LB9AE:  CPX #$80
 LB9B0:  BEQ LB9B5
 LB9B2:  JMP LB83A
 LB9B5:  RTS
-LB9B6:  LDA $A8
+LB9B6:  LDA MapProperties
 LB9B8:  AND #$04
 LB9BA:  BEQ LB9EE
 LB9BC:  TYA
