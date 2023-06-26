@@ -9,6 +9,7 @@
 .alias  Reset1                  $C000
 .alias  DisplayText1            $C003
 .alias  ShowWindow1             $C015
+.alias  FlashAndSound1          $C04E
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
 .alias  NMI                     $FFF0
@@ -4036,7 +4037,7 @@ LACED:  .byte $00, $00, $00, $00, $00, $00, $00, $01, $11, $44, $22, $22, $44, $
 LACFD:  .byte $22, $22, $24
 
 LAD00:  LDA #$05
-LAD02:  JSR $C04E
+LAD02:  JSR FlashAndSound1      ;($C04E)Flash screen with SFX.
 LAD05:  LDA #MUS_NONE+INIT
 LAD07:  STA InitNewMusic
 LAD09:  JSR LAD9A

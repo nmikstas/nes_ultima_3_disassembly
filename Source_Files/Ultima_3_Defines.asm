@@ -78,10 +78,21 @@
 .alias TargetY          $18     ;Target block/NPC Y coord.
 .alias TargetX          $19     ;Target block/NPC X coord.
 
+.alias NewChrY          $18     ;Next Y position to move character sprite in Lord British cut scene.
+.alias NewChrX          $19     ;Next X position to move character sprite in Lord British cut scene.
+
 ;Name entry variables.
 .alias NameLength       $17     ;The current length of the name being entered.
 .alias NameSelRow       $18     ;The current row of the selector is on.
 .alias NameCharIndex    $19     ;The index of the character the selector is on.
+
+.alias ChrDatPtr        $26     ;Pointer to character data.
+.alias ChrDatPtrLB      $26     ;Pointer to character data, lower byte.
+.alias ChrDatPtrUB      $27     ;Pointer to character data, upper byte.
+
+.alias ChrDatPtr_       $29     ;Pointer to character data.
+.alias ChrDatPtrLB_     $29     ;Pointer to character data, lower byte.
+.alias ChrDatPtrUB_     $2A     ;Pointer to character data, upper byte.
 
 .alias PPUPyLdPtr       $29     ;PPU buffer payload pointer.
 .alias PPUPyLdPtrLB     $29     ;PPU buffer payload pointer, lower byte.
@@ -90,6 +101,14 @@
 .alias IndJumpPtr       $0029   ;Pointer used for indirect jumps.
 .alias IndJumpPtrLB     $29     ;Pointer used for indirect jumps, lower byte.
 .alias IndJumpPtrUB     $2A     ;Pointer used for indirect jumps, upper byte.
+
+.alias ChrSrcPtr        $29     ;Character data source pointer.
+.alias ChrSrcPtrLB      $29     ;Character data source pointer, lower byte.
+.alias ChrSrcPtrUB      $2A     ;Character data source pointer, upper byte.
+
+.alias ChrDestPtr       $2B     ;Character data destination pointer.
+.alias ChrDestPtrLB     $2B     ;Character data destination pointer, lower byte.
+.alias ChrDestPtrUB     $2C     ;Character data destination pointer, upper byte.
 
 ;Text buffer registers.
 .alias TXTYPos          $29     ;Text string, Y position on screen in tiles.
@@ -117,9 +136,13 @@
 .alias WndHeight        $2D     ;Height of window to draw.
 .alias WndWidth         $2E     ;Width of window to draw.
 
+.alias ChrNum           $2B     ;Keep track of character number when previewing.
+.alias ChrRow           $2C     ;Row character data will appear on when previewing.
+
 .alias Ch4StClass       $2C     ;Character 4 class used in status screen.
 .alias Ch3StClass       $2D     ;Character 3 class used in status screen.
 .alias Ch2StClass       $2E     ;Character 2 class used in status screen.
+.alias ChrUnused2F      $2F     ;Written to but not read in character preview functions.
 .alias Ch1StClass       $30     ;Character 1 class used in status screen.
 
 .alias TextIndex        $30     ;Index to text message. $FE, $FF=Buffer already filled.
@@ -168,18 +191,21 @@
 .alias TextCharPtrUB    $8E     ;Pointer to text character, upper byte.
 .alias NewLineCount     $8D     ;Counts the number of new lines for formatting text.
 
+.alias PosChrPtr        $91     ;Character position pointers base.
+.alias PosChrPtrLB      $91     ;Character position pointers base, lower byte.
+.alias PosChrPtrUB      $92     ;Character position pointers base, upper byte.
+.alias Pos1ChrPtr       $91     ;Position 1 character data pointer.
 .alias ChrPtrBaseLB     $91     ;Base address for character pointer data, lower byte.
 .alias ChrPtrBaseUB     $92     ;Base address for character pointer data, upper byte.
-.alias Pos1ChrPtr       $91     ;Position 1 character data pointer.
+.alias Pos2ChrPtr       $93     ;Position 2 character data pointer.
 .alias Pos1ChrPtrLB     $91     ;Position 1 character data pointer, lower byte.
 .alias Pos1ChrPtrUB     $92     ;Position 1 character data pointer, upper byte.
-.alias Pos2ChrPtr       $93     ;Position 2 character data pointer.
+.alias Pos3ChrPtr       $95     ;Position 3 character data pointer.
 .alias Pos2ChrPtrLB     $93     ;Position 2 character data pointer, lower byte.
 .alias Pos2ChrPtrUB     $94     ;Position 2 character data pointer, upper byte.
-.alias Pos3ChrPtr       $95     ;Position 3 character data pointer.
+.alias Pos4ChrPtr       $97     ;Position 4 character data pointer.
 .alias Pos3ChrPtrLB     $95     ;Position 3 character data pointer, lower byte.
 .alias Pos3ChrPtrUB     $96     ;Position 3 character data pointer, upper byte.
-.alias Pos4ChrPtr       $97     ;Position 4 character data pointer.
 .alias Pos4ChrPtrLB     $97     ;Position 4 character data pointer, lower byte.
 .alias Pos4ChrPtrUB     $98     ;Position 4 character data pointer, upper byte.
 .alias CrntChrPtr       $99     ;And $9A. Pointer to current character data to change.
@@ -371,18 +397,21 @@
 .alias SG1P2CharIdx     $6011   ;Index in character list of player's second character.
 .alias SG1P3CharIdx     $6012   ;Index in character list of player's third character.
 .alias SG1P4CharIdx     $6013   ;Index in character list of player's fourth character.
+.alias SG1CharLlist     $6100   ;Start of the 20 character's data.
 
 ;---------- Save Game 2 Data ----------
 .alias SG2Base          $6600   ;Base address of save game 2 data.
 .alias SG2Valid1        $6600   ;Should always be $41 if save game 2 is valid.
 .alias SG2Valid2        $6601   ;Should always be $42 if save game 2 is valid.
 .alias SG2Name          $6602   ;Through $6606. Save game 2 name.
+.alias SG2CharLlist     $6700   ;Start of the 20 character's data.
 
 ;---------- Save Game 3 Data ----------
 .alias SG3Base          $6C00   ;Base address of save game 3 data.
 .alias SG3Valid1        $6C00   ;Should always be $41 if save game 3 is valid.
 .alias SG3Valid2        $6C01   ;Should always be $42 if save game 3 is valid.
 .alias SG3Name          $6C02   ;Through $C006. Save game 3 name.
+.alias SG3CharLlist     $6D00   ;Start of the 20 character's data.
 
 ;---------- Player 1 Data ----------
 ;This data repeats for the additional 3 other characters every 64 bytes.
@@ -680,6 +709,9 @@
 .alias  ___             $0D     ;Floor.
 .alias  _L_             $0E     ;Time lord.
 
+.alias NUM_CLASSES      $0B     ;11 different classes in the game.
+.alias NUM_RACES        $05     ;5 different races in the game.
+
 .alias D_PAD            $0F     ;All bits for D-pad input.
 .alias BTN_RIGHT        $01     ;Controller D-pad right.
 .alias BTN_LEFT         $02     ;Controller D-pad left.
@@ -962,6 +994,7 @@
 .alias CHR_FLOWER       $3D     ;Index to character's flower status.
 .alias CHR_CHK_DEAD     $00     ;Check if selected character is dead.
 .alias CHR_NO_CHK_DEAD  $01     ;Do not check if selected character is dead.
+.alias CHR_EMPTY_SLOT   $FF     ;Indicates an empty character slot.
 
 ;$00=Good, $01=Poisoned, $02=Cold, $03=Dead, $04=Ash.
 .alias COND_GOOD        $00     ;Character has no status conditions.
@@ -1017,6 +1050,7 @@
 .alias ANIM_ENABLE      $01     ;Enable animations.
 .alias ANIM_DISABLE     $00     ;Disable animations.
 
+.alias TXT_BLANK        $00     ;Empty space.
 .alias TXT_NAME         $F3     ;Display a character's name.
 .alias TXT_ENMY         $F4     ;Display an enemy's name.
 .alias TXT_AMNT         $F5     ;Display a numerical amount.

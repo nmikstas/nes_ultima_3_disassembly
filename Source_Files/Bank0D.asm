@@ -12,6 +12,7 @@
 .alias  ShowSelectWnd1          $C012
 .alias  ShowWindow1             $C015
 .alias  _ShowSelectWnd1         $C018
+.alias  FlashAndSound1          $C04E
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
 .alias  NMI                     $FFF0
@@ -2503,7 +2504,7 @@ L974E:  LDA $9780,X
 L9751:  STA (CrntChrPtr),Y
 L9753:  JSR L881C
 L9756:  LDA #$02
-L9758:  JSR $C04E
+L9758:  JSR FlashAndSound1      ;($C04E)Flash screen with SFX.
 L975B:  LDA #$A0
 L975D:  STA TextIndex
 L975F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
@@ -2572,7 +2573,7 @@ L9821:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9824:  LDA #SFX_SPELL_B+INIT
 L9826:  STA ThisSFX
 L9828:  LDA #$01
-L982A:  JSR $C04E
+L982A:  JSR FlashAndSound1      ;($C04E)Flash screen with SFX.
 L982D:  JSR L8800
 L9830:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9833:  LDA $29
@@ -2592,7 +2593,7 @@ L9850:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9853:  LDA #SFX_SPELL_B+INIT
 L9855:  STA ThisSFX
 L9857:  LDA #$01
-L9859:  JSR $C04E
+L9859:  JSR FlashAndSound1      ;($C04E)Flash screen with SFX.
 L985C:  JSR L8800
 L985F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9862:  LDA $29

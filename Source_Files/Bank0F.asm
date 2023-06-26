@@ -96,8 +96,12 @@ LC042:  JMP LE49E
 SetMapDatNPtrs1:
 LC045:  JMP SetMapDatNPtrs      ;($C4EA)Load map data and pointers.
 
-LC048:  JMP LEE23
+SwapBnkLdGFX1:
+LC048:  JMP SwapBnkLdGFX        ;($EE23)Save lower bank then load character sprites GFX.
+
 LC04B:  JMP LFAF6
+
+FlashAndSound1:
 LC04E:  JMP FlashAndSound       ;($DB2D)Flash screen with SFX.
 
 ChkValidNPC1:
@@ -534,7 +538,7 @@ LC364:  LDA #MUS_BOAT+INIT
 LC366:  STA InitNewMusic
 LC368:  LDA #$01
 LC36A:  STA OnBoat
-LC36C:  JSR LEE4E
+LC36C:  JSR LoadChrGFX          ;($EE4E)Load the sprite tiles for current party members.
 LC36F:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties.
 LC372:  LDY #$00
 LC374:  LDA NPCSprIndex,Y
@@ -1452,7 +1456,7 @@ LCA12:  BNE LC9F6
 LCA14:  LDA #$80
 LCA16:  ORA OnBoat
 LCA18:  STA OnBoat
-LCA1A:  JSR LEE4E
+LCA1A:  JSR LoadChrGFX          ;($EE4E)Load the sprite tiles for current party members.
 LCA1D:  JSR LD1B0
 LCA20:  LDA TimeStopTimer
 LCA22:  AND #$7F
@@ -4736,7 +4740,7 @@ LE17F:  LDX #$62
 LE181:  STY OnHorse
 LE183:  TXA
 LE184:  PHA
-LE185:  JSR LEE4E
+LE185:  JSR LoadChrGFX          ;($EE4E)Load the sprite tiles for current party members.
 LE188:  PLA
 LE189:  JMP LE18E
 LE18C:  LDA #$13
@@ -4778,7 +4782,7 @@ LE1C1:  STA $19
 LE1C3:  JSR LE1DC
 LE1C6:  LDA #$04
 LE1C8:  STA $2E
-LE1CA:  JSR LEE4E
+LE1CA:  JSR LoadChrGFX          ;($EE4E)Load the sprite tiles for current party members.
 LE1CD:  LDA #$16
 LE1CF:  STA TextIndex
 LE1D1:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
@@ -5840,7 +5844,7 @@ LE8DE:  LDA OnBoat
 LE8E0:  BEQ LE920
 LE8E2:  LDA #$00
 LE8E4:  STA OnBoat
-LE8E6:  JSR LEE4E
+LE8E6:  JSR LoadChrGFX          ;($EE4E)Load the sprite tiles for current party members.
 LE8E9:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties.
 LE8EC:  JSR ZeroPartyTrail      ;($EFD6)Pile all characters on top of each other.
 LE8EF:  JSR StartMusic          ;($FD6C)Determine which music to start playing.
@@ -6400,7 +6404,7 @@ LED26:  .byte $00, $01, $00, $FF, $01, $00, $FF, $00, $01, $02, $04, $08
 ;----------------------------------------------------------------------------------------------------
 
 IRQ:
-LED32:  RTI
+LED32:  RTI                     ;Always immediately exit an IRQ.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6566,12 +6570,17 @@ LEE22:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-LEE23:  LDA CurPRGBank
-LEE25:  PHA
-LEE26:  JSR LEE4E
-LEE29:  PLA
+SwapBnkLdGFX:
+LEE23:  LDA CurPRGBank          ;Save current lower bank.
+LEE25:  PHA                     ;
+
+LEE26:  JSR LoadChrGFX          ;($EE4E)Load the sprite tiles for current party members.
+
+LEE29:  PLA                     ;Restore lower bank.
 LEE2A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LEE2D:  RTS
+LEE2D:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 LEE2E:  LDA #BANK_MISC_GFX
 LEE30:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -6590,6 +6599,9 @@ LEE47:  LDA #$00
 LEE49:  STA $2D
 LEE4B:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
+;----------------------------------------------------------------------------------------------------
+
+LoadChrGFX:
 LEE4E:  LDA MapProperties
 LEE50:  AND #MAP_TURN
 LEE52:  BNE LEE6A
@@ -6597,6 +6609,7 @@ LEE54:  LDA OnBoat
 LEE56:  BMI LEE5D
 LEE58:  BEQ LEE5D
 LEE5A:  JMP LEEF0
+
 LEE5D:  LDA MapProperties
 LEE5F:  AND #MAP_TURN
 LEE61:  BNE LEE6A
@@ -6697,7 +6710,7 @@ LEF0D:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LEF10:  JMP LEECF
 LEF13:  LDA CurPRGBank
 LEF15:  PHA
-LEF16:  JSR LEE4E
+LEF16:  JSR LoadChrGFX          ;($EE4E)Load the sprite tiles for current party members.
 LEF19:  LDA ScrollDirAmt
 LEF1B:  BNE LEF19
 LEF1D:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties.
@@ -6708,21 +6721,23 @@ LEF27:  RTS
 
 LEF28:  LDA #BANK_SFX
 LEF2A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
+
 LEF2D:  LDA #$01
-LEF2F:  STA $2C
+LEF2F:  STA PPUDstPtrUB
 LEF31:  LDA #$00
-LEF33:  STA $2B
+LEF33:  STA PPUDstPtrLB
 LEF35:  LDA #$02
-LEF37:  STA $2E
+LEF37:  STA PPUByteCntUB
 LEF39:  LDA #$00
-LEF3B:  STA $2D
+LEF3B:  STA PPUByteCntLB
 LEF3D:  LDA #$B8
-LEF3F:  STA $2A
+LEF3F:  STA PPUSrcPtrUB
 LEF41:  LDA #$00
-LEF43:  STA $29
+LEF43:  STA PPUSrcPtrLB
 LEF45:  LDA #$04
 LEF47:  STA $30
 LEF49:  JSR LoadPPU             ;($EFE3)Load values into PPU.
+
 LEF4C:  INC $2C
 LEF4E:  INC $2C
 LEF50:  DEC $30
@@ -6834,9 +6849,10 @@ LF000:  PHA
 LF001:  LDA WorldUpdating
 LF003:  PHA
 
-LF004:  LDA #$00
-LF006:  STA CurPPUConfig1
-LF008:  LDA #$02
+LF004:  LDA #SCREEN_OFF         ;Turn the screen off.
+LF006:  STA CurPPUConfig1       ;
+ 
+LF008:  LDA #$02                ;Wait 2 frames before continuing.
 LF00A:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 
 LF00D:  LDA #$01
@@ -6862,21 +6878,26 @@ LF02C:  CLC
 LF02D:  LDA $2D
 LF02F:  ADC $29
 LF031:  STA $29
+
 LF033:  LDA #$00
 LF035:  ADC $2A
 LF037:  STA $2A
+
 LF039:  LDA $2E
-LF03B:  BEQ LF04D
+LF03B:  BEQ FinishPPULoad
+
 LF03D:  LDY #$00
 
 LF03F:* LDA ($29),Y
 LF041:  STA PPUIOReg
 LF044:  INY
 LF045:  BNE -
+
 LF047:  INC $2A
 LF049:  DEC $2E
 LF04B:  BNE -
 
+FinishPPULoad:
 LF04D:  LDA NTXPosLB
 LF04F:  STA PPUScroll
 LF052:  LDA NTYPosLB

@@ -11,6 +11,7 @@
 .alias  LoadPPU1                $C006
 .alias  LdLgCharTiles1          $C009
 .alias  LoadnAlphaNumMaps1      $C01E
+.alias  SwapBnkLdGFX1           $C048
 .alias  MapDatTbl               $FEA0
 .alias  SubMapTbl               $FF70
 .alias  RESET                   $FFA0
@@ -106,52 +107,64 @@ L8068:  CMP #$04                ;Was PREVIOUS MENU selected?
 L806A:  BEQ PrepCreateCont      ;If so, branch back to create/continue menu.
 
 PrepExamine:
-L806C:  JSR L8A7C
+L806C:  JSR ChrList             ;($8A7C)Character list screen.
 L806F:  JMP CreateLoop          ;($8059)Loop back to the create window.
 
 PrepCreateChr:
 L8072:  JSR CreateChr           ;($89D5)Run character creation functions.
 
-L8075:  CPX #$00
-L8077:  BEQ L808D
-L8079:  CPX #$01
-L807B:  BEQ L8096
+L8075:  CPX #$00                ;Did player choose to create a hand-made character?
+L8077:  BEQ PrepHandMade        ;If so, branch.
+
+L8079:  CPX #$01                ;Did player choose to create a ready made character?
+L807B:  BEQ PrepReadyMade       ;If so, branch.
+
 L807D:  BNE CreateLoop          ;($8059)Loop back to the create window.
 
 PrepFormParty:
-L807F:  JSR L8AB0
-L8082:  BCS CreateLoop          ;($8059)Loop back to the create window.
-L8084:  JMP L80B3
+L807F:  JSR FormParty           ;($8AB0)Form a party of 4 characters.
+L8082:  BCS CreateLoop          ;Does save game have at least 4 characters created? If not, branch.
+L8084:  JMP PrepJourneyOnward   ;($80B3)Prepare to start the main game.
 
 PrepDiscard:
-L8087:  JSR L9470
+L8087:  JSR Discard             ;($9470)Show discard character screen.
 L808A:  JMP CreateLoop          ;($8059)Loop back to the create window.
 
-L808D:  JSR L8D4B
-L8090:  JSR L90FA
+PrepHandMade:
+L808D:  JSR DoHandMade          ;($8D4B)Create a hand made character.
+L8090:  JSR EnterCharName       ;($90FA)Enter a newly created character's name.
 L8093:  JMP PrepCreateChr       ;($8072)Prepare to show create character window.
 
-L8096:  JSR L91C2
-L8099:  BCS PrepCreateChr
+PrepReadyMade:
+L8096:  JSR DoReadyMade         ;($91C2)Create a ready made character.
+L8099:  BCS PrepCreateChr       ;Are there at least 4 empty character slots? If not, branch.
 
-L809B:  LDX #$00
-L809D:  TXA
-L809E:  PHA
-L809F:  ASL
-L80A0:  TAX
-L80A1:  LDA $91,X
-L80A3:  STA $99
-L80A5:  LDA $92,X
-L80A7:  STA $9A
-L80A9:  JSR L90FA
-L80AC:  PLA
-L80AD:  TAX
-L80AE:  INX
-L80AF:  CPX #$04
-L80B1:  BNE L809D
+L809B:  LDX #$00                ;Zero out character created counter.
 
-L80B3:  LDA NewGmCreated
-L80B5:  BEQ JourneyOnward
+ReadyMadeLoop:
+L809D:  TXA                     ;Save counter on the stack.
+L809E:  PHA                     ;
+
+L809F:  ASL                     ;*2. pointers are 2 bytes.
+L80A0:  TAX                     ;
+
+L80A1:  LDA PosChrPtrLB,X       ;
+L80A3:  STA SGCharPtrLB         ;Get a pointer to the next open character slot.
+L80A5:  LDA PosChrPtrUB,X       ;
+
+L80A7:  STA SGCharPtrUB
+L80A9:  JSR EnterCharName       ;($90FA)Enter a newly created character's name.
+
+L80AC:  PLA                     ;Restore counter from the stack.
+L80AD:  TAX                     ;
+
+L80AE:  INX                     ;Have 4 ready made characters been named?
+L80AF:  CPX #$04                ;
+L80B1:  BNE ReadyMadeLoop       ;If not, branch to do another on.
+
+PrepJourneyOnward:
+L80B3:  LDA NewGmCreated        ;Was a new game created?
+L80B5:  BEQ JourneyOnward       ;If so, start party on overworld map. If not, branch.
 
 L80B7:  LDA #$01                ;Activate the time stop timer.
 L80B9:  STA TimeStopTimer       ;
@@ -303,87 +316,96 @@ L8193:  STA PPUPyLdPtrLB        ;
 
 L8195:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
 
-L8198:  LDA #<Ch1Data
-L819A:  STA GenPtr2BLB
-L819C:  LDA #>Ch1Data
-L819E:  STA GenPtr2BUB
+L8198:  LDA #<Ch1Data           ;
+L819A:  STA ChrDestPtrLB        ;Get a pointer to character 1's data.
+L819C:  LDA #>Ch1Data           ;
+L819E:  STA ChrDestPtrUB        ;
 
-L81A0:  LDA SGDatPtrLB
-L81A2:  STA SGCharPtrLB
-L81A4:  LDX SGDatPtrUB
-L81A6:  INX
-L81A7:  STX SGCharPtrUB
+L81A0:  LDA SGDatPtrLB          ;
+L81A2:  STA SGCharPtrLB         ;
+L81A4:  LDX SGDatPtrUB          ;Get a pointer to the character list for the given save game.
+L81A6:  INX                     ;
+L81A7:  STX SGCharPtrUB         ;
 
-L81A9:  LDX #$00
+L81A9:  LDX #$00                ;Zero out the counter. Will be either $00, $10, $20 or $30.
 
+CopyChrDatLoop:
 L81AB:  TXA
 L81AC:  LSR
 L81AD:  LSR
 L81AE:  LSR
 L81AF:  LSR
+
 L81B0:  CLC
 L81B1:  ADC #$10
 
 L81B3:  TAY
 L81B4:  LDA (SGDatPtr),Y
-L81B6:  STA $2A
+L81B6:  STA ChrSrcPtrUB
 L81B8:  LDA #$00
-L81BA:  STA $29
+L81BA:  STA ChrSrcPtrLB
 
-L81BC:  LSR $2A
-L81BE:  ROR $29
-L81C0:  LSR $2A
-L81C2:  ROR $29
+L81BC:  LSR ChrSrcPtrUB
+L81BE:  ROR ChrSrcPtrLB
+L81C0:  LSR ChrSrcPtrUB
+L81C2:  ROR ChrSrcPtrLB
+
 L81C4:  CLC
-L81C5:  LDA $99
-L81C7:  ADC $29
-L81C9:  STA $29
-L81CB:  LDA $9A
-L81CD:  ADC $2A
-L81CF:  STA $2A
-L81D1:  LDY #$00
+L81C5:  LDA SGCharPtrLB
+L81C7:  ADC ChrSrcPtrLB
+L81C9:  STA ChrSrcPtrLB
 
-L81D3:  LDA ($29),Y
-L81D5:  STA ($2B),Y
-L81D7:  INY
-L81D8:  CPY #$40
-L81DA:  BNE L81D3
+L81CB:  LDA SGCharPtrUB
+L81CD:  ADC ChrSrcPtrUB
+L81CF:  STA ChrSrcPtrUB
+
+L81D1:  LDY #$00                ;Zero out the index.
+
+L81D3:* LDA (ChrSrcPtr),Y       ;
+L81D5:  STA (ChrDestPtr),Y      ;Transfer all 64 bytes of data from selected character in the
+L81D7:  INY                     ;character pool into an active character data slot.
+L81D8:  CPY #$40                ;
+L81DA:  BNE -                   ;
 
 L81DC:  CLC
-L81DD:  LDA $2B
+L81DD:  LDA ChrDestPtrLB
 L81DF:  ADC #$40
-L81E1:  STA $2B
-L81E3:  LDA $2C
+L81E1:  STA ChrDestPtrLB
+
+L81E3:  LDA ChrDestPtrUB
 L81E5:  ADC #$00
-L81E7:  STA $2C
-L81E9:  TXA
-L81EA:  CLC
-L81EB:  ADC #$10
-L81ED:  TAX
-L81EE:  CPX #$40
-L81F0:  BNE L81AB
+L81E7:  STA ChrDestPtrUB
 
-L81F2:  LDA #<Ch1Data
-L81F4:  STA Pos1ChrPtrLB
-L81F6:  LDA #>Ch1Data
-L81F8:  STA Pos1ChrPtrUB
+L81E9:  TXA                     ;
+L81EA:  CLC                     ;Increment counter to next character.
+L81EB:  ADC #$10                ;
 
-L81FA:  LDA #<Ch2Data
-L81FC:  STA Pos2ChrPtrLB
-L81FE:  LDA #>Ch2Data
-L8200:  STA Pos2ChrPtrUB
+L81ED:  TAX                     ;Have 4 character data transfers been completed?
+L81EE:  CPX #$40                ;
+L81F0:  BNE CopyChrDatLoop      ;If not, branch to do another one.
 
-L8202:  LDA #<Ch3Data
-L8204:  STA Pos3ChrPtrLB
-L8206:  LDA #>Ch3Data
-L8208:  STA Pos3ChrPtrUB
+L81F2:  LDA #<Ch1Data           ;
+L81F4:  STA Pos1ChrPtrLB        ;Set character 1 to position 1.
+L81F6:  LDA #>Ch1Data           ;
+L81F8:  STA Pos1ChrPtrUB        ;
 
-L820A:  LDA #<Ch4Data
-L820C:  STA Pos4ChrPtrLB
-L820E:  LDA #>Ch4Data
-L8210:  STA Pos4ChrPtrUB
+L81FA:  LDA #<Ch2Data           ;
+L81FC:  STA Pos2ChrPtrLB        ;Set character 2 to position 2.
+L81FE:  LDA #>Ch2Data           ;
+L8200:  STA Pos2ChrPtrUB        ;
 
-L8212:  JSR $C048
+L8202:  LDA #<Ch3Data           ;
+L8204:  STA Pos3ChrPtrLB        ;Set character 3 to position 3.
+L8206:  LDA #>Ch3Data           ;
+L8208:  STA Pos3ChrPtrUB        ;
+
+L820A:  LDA #<Ch4Data           ;
+L820C:  STA Pos4ChrPtrLB        ;Set character 4 to position 4.
+L820E:  LDA #>Ch4Data           ;
+L8210:  STA Pos4ChrPtrUB        ;
+
+L8212:  JSR SwapBnkLdGFX1       ;($C048)Save lower bank then load character sprites GFX.
+
 L8215:  LDX #$00
 L8217:  LDA #$F0
 L8219:  STA SpriteBuffer,X
@@ -394,34 +416,41 @@ L821F:  INX
 L8220:  BNE L8217
 L8222:  LDA #$1E
 L8224:  STA CurPPUConfig1
-L8226:  LDA #$01
-L8228:  JSR LBE4B
-L822B:  JSR L8281
+
+L8226:  LDA #$01                ;Wait 1 frame.
+L8228:  JSR WaitSomeFrames      ;($BE4B)Wait a number of frames given by A.
+
+L822B:  JSR MovePlayerChars     ;($8281)Move the player's 4 characters towards Lord British.
+
 L822E:  LDA #$04
 L8230:  STA $2A
 L8232:  LDA #$16
 L8234:  STA $29
+
 L8236:  LDA #$18
 L8238:  STA $2E
 L823A:  LDA #$06
 L823C:  STA $2D
+
 L823E:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
-L8241:  LDA #$20
-L8243:  PHA
+L8241:  LDA #$20                ;WELCOME YE FOUR BRAVE SOULS text.
+
+KingTextLoop:
+L8243:  PHA                     ;Save text index on stack.
 
 L8244:  LDA #$D4
 L8246:  STA HideUprSprites
 
 L8248:  LDA #$06
-L824A:  STA $2A
+L824A:  STA TXTXPos
 L824C:  LDA #$18
-L824E:  STA $29
+L824E:  STA TXTYPos
 
 L8250:  LDA #$14
-L8252:  STA $2E
+L8252:  STA TXTClrCols
 L8254:  LDA #$02
-L8256:  STA $2D
+L8256:  STA TXTClrRows
 
 L8258:  PLA
 L8259:  PHA
@@ -434,89 +463,112 @@ L8262:  ADC #$B4                ;Wait 180 frames before continuing.
 L8264:* CMP Increment0          ;
 L8266:  BNE -                   ;
 
-L8268:  PLA
-L8269:  CMP #$25
-L826B:  BEQ +
+L8268:  PLA                     ;Has Lord British said his last segment of intro text?
+L8269:  CMP #$25                ;
+L826B:  BEQ +                   ;If not, branch to get next segment of text.
 
-L826D:  CLC
-L826E:  ADC #$01
-L8270:  JMP L8243
+L826D:  CLC                     ;Increment to next Lord British text segment.
+L826E:  ADC #$01                ;
+L8270:  JMP KingTextLoop        ;($8243)Display next segment of Lord British intro text.
 
 L8273:* JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8276:  LDA Pad1Input
-L8278:  CMP #$80
+L8278:  CMP #BTN_A
 L827A:  BNE -
 
 L827C:  LDA #$00
-L827E:  STA $CE
+L827E:  STA TimeStopTimer
 L8280:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+MovePlayerChars:
 L8281:  LDA #$FF
 L8283:  STA $30
 L8285:  LDX #$04
 L8287:  LDA #$01
 L8289:  STA $2E
 L828B:  STA $2D
-L828D:  JSR L82BE
+L828D:  JSR Move1Char           ;($82BE)Move 1 character towards Lord British.
+
 L8290:  LDA #$FF
 L8292:  STA $30
 L8294:  LDX #$14
 L8296:  LDA #$03
 L8298:  STA $2E
 L829A:  STA $2D
-L829C:  JSR L82BE
+L829C:  JSR Move1Char           ;($82BE)Move 1 character towards Lord British.
+
 L829F:  LDA #$01
 L82A1:  STA $30
 L82A3:  LDX #$24
 L82A5:  LDA #$03
 L82A7:  STA $2E
 L82A9:  STA $2D
-L82AB:  JSR L82BE
+L82AB:  JSR Move1Char           ;($82BE)Move 1 character towards Lord British.
+
 L82AE:  LDA #$01
 L82B0:  STA $30
 L82B2:  LDX #$34
 L82B4:  LDA #$01
 L82B6:  STA $2E
 L82B8:  STA $2D
-L82BA:  JSR L82BE
+L82BA:  JSR Move1Char           ;($82BE)Move 1 character towards Lord British.
 L82BD:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+Move1Char:
 L82BE:  LDA #$78
 L82C0:  STA $19
 L82C2:  LDA #$20
 L82C4:  STA $18
-L82C6:  JSR L82E6
-L82C9:  LDA #$03
-L82CB:  JSR LBE4B
+
+UpdateChrXYLoop:
+L82C6:  JSR UpdateChrPosition   ;($82E6)Update the XY position of the character.
+
+L82C9:  LDA #$03                ;Wait for 3 frames.
+L82CB:  JSR WaitSomeFrames      ;($BE4B)Wait a number of frames given by A.
+
 L82CE:  INC $18
 L82D0:  DEC $2E
-L82D2:  BNE L82C6
+L82D2:  BNE UpdateChrXYLoop
+
 L82D4:  CLC
 L82D5:  LDA $19
 L82D7:  ADC $30
 L82D9:  STA $19
 L82DB:  LDA $2D
 L82DD:  STA $2E
+
 L82DF:  LDA $18
 L82E1:  CMP #$50
-L82E3:  BNE L82C6
+L82E3:  BNE UpdateChrXYLoop
 L82E5:  RTS
 
-L82E6:  LDA $19
-L82E8:  STA $7303,X
-L82EB:  STA $7307,X
-L82EE:  CLC
-L82EF:  ADC #$08
-L82F1:  STA $730B,X
-L82F4:  STA $730F,X
-L82F7:  LDA $18
-L82F9:  STA SpriteBuffer,X
-L82FC:  STA $7308,X
-L82FF:  CLC
-L8300:  ADC #$08
-L8302:  STA $7304,X
-L8305:  STA $730C,X
-L8308:  RTS
+;----------------------------------------------------------------------------------------------------
+
+UpdateChrPosition:
+L82E6:  LDA NewChrX             ;
+L82E8:  STA SpriteBuffer+$3,X   ;Update the X position of the upper 2 character sprites.
+L82EB:  STA SpriteBuffer+$7,X   ;
+
+L82EE:  CLC                     ;Move to lower 2 sprites.
+L82EF:  ADC #$08                ;
+
+L82F1:  STA SpriteBuffer+$B,X   ;Update the X position of the lower 2 character sprites.
+L82F4:  STA SpriteBuffer+$F,X   ;
+
+L82F7:  LDA NewChrY             ;
+L82F9:  STA SpriteBuffer,X      ;Update the Y position of the upper 2 character sprites.
+L82FC:  STA SpriteBuffer+$8,X   ;
+
+L82FF:  CLC                     ;Move to lower 2 sprites.
+L8300:  ADC #$08                ;
+
+L8302:  STA SpriteBuffer+$4,X   ;
+L8305:  STA SpriteBuffer+$C,X   ;Update the Y position of the lower 2 character sprites.
+L8308:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1719,8 +1771,8 @@ L89F8:  STA $2E
 L89FA:  LDA #$03
 L89FC:  STA $2D
 
-L89FE:  LDA #$06
-L8A00:  STA TextIndex
+L89FE:  LDA #$06                ;HAND-MADE READY-MADE PREVIOUS MENU text.
+L8A00:  STA TextIndex           ;
 L8A02:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L8A05:  LDA #$80
@@ -1730,17 +1782,18 @@ L8A0C:  STA SpriteBuffer+3
 
 L8A0F:  LDX #$00
 
+CreateCharLoop:
 L8A11:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8A14:  LDA Pad1Input
 
 L8A16:  CMP #BTN_UP
 L8A18:  BEQ L8A63
 
-L8A1A:  CMP #$04
+L8A1A:  CMP #BTN_DOWN
 L8A1C:  BEQ L8A6B
 
-L8A1E:  CMP #$80
-L8A20:  BNE L8A11
+L8A1E:  CMP #BTN_A
+L8A20:  BNE CreateCharLoop
 
 L8A22:  LDY #$01
 L8A24:  TXA
@@ -1778,48 +1831,69 @@ L8A5E:  BNE L8A46
 L8A60:  PLA
 L8A61:  TAX
 L8A62:  RTS
+
 L8A63:  CPX #$00
-L8A65:  BEQ L8A11
+L8A65:  BEQ CreateCharLoop
 L8A67:  DEX
 L8A68:  JMP L8A70
-L8A6B:  CPX #$02
-L8A6D:  BEQ L8A11
-L8A6F:  INX
-L8A70:  LDA $8A79,X
-L8A73:  STA SpriteBufferBase
-L8A76:  JMP L8A11
 
+L8A6B:  CPX #$02
+L8A6D:  BEQ CreateCharLoop
+L8A6F:  INX
+
+L8A70:  LDA CreateChrYPosTbl,X  ;Update selector sprite Y position.
+L8A73:  STA SpriteBufferBase    ;
+L8A76:  JMP CreateCharLoop      ;($8A11)Wait for next input on create character screen.
+
+;----------------------------------------------------------------------------------------------------
+
+;The followong table is used to set the Y position of the selector sprite
+;while on the create character screen.
+
+CreateChrYPosTbl:
 L8A79:  .byte $80, $90, $A0
 
 ;----------------------------------------------------------------------------------------------------
 
+ChrList:
 L8A7C:  JSR InitPPU             ;($990C)Initialize the PPU.
-L8A7F:  LDA #$02
-L8A81:  STA TXTXPos
-L8A83:  LDA #$04
-L8A85:  STA TXTYPos
-L8A87:  LDA #$1C
-L8A89:  STA TXTClrCols
-L8A8B:  LDA #$01
-L8A8D:  STA TXTClrRows
+
+L8A7F:  LDA #$02                ;
+L8A81:  STA TXTXPos             ;Text will be located at tile coords X,Y=2,4.
+L8A83:  LDA #$04                ;
+L8A85:  STA TXTYPos             ;
+
+L8A87:  LDA #$1C                ;
+L8A89:  STA TXTClrCols          ;Clear 12 columns and 1 row for the text string.
+L8A8B:  LDA #$01                ;
+L8A8D:  STA TXTClrRows          ;
 
 L8A8F:  LDA #$07                ;CHARACTER LIST.
 L8A91:  STA TextIndex           ;
 L8A93:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8A96:  LDX SGDatPtrLB
-L8A98:  STX $99
-L8A9A:  LDX SGDatPtrUB
-L8A9C:  INX
-L8A9D:  STX $9A
-L8A9F:  JSR L99DF
-L8AA2:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L8AA5:  LDA Pad1Input
-L8AA7:  CMP #$80
-L8AA9:  BEQ L8AAF
-L8AAB:  CMP #$40
-L8AAD:  BNE L8AA2
-L8AAF:  RTS
+L8A96:  LDX SGDatPtrLB          ;
+L8A98:  STX SGCharPtrLB         ;Get pointer to base of save game character data.
+L8A9A:  LDX SGDatPtrUB          ;Pointer is always 256 bytes higher than base of save game data.
+L8A9C:  INX                     ;
+L8A9D:  STX SGCharPtrUB         ;
+
+L8A9F:  JSR ShowCharList        ;($99DF)Show the list of character is the current save game file.
+L8AA2:* JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
+
+L8AA5:  LDA Pad1Input           ;Was A button pressed?
+L8AA7:  CMP #BTN_A              ;
+L8AA9:  BEQ EndChrList          ;If so, branch to exit.
+
+L8AAB:  CMP #BTN_B              ;B button will also exit.
+L8AAD:  BNE -                   ;Any other button will be ignored.
+
+EndChrList:
+L8AAF:  RTS                     ;Stop showing character list.
+
+;----------------------------------------------------------------------------------------------------
+
+FormParty:
 L8AB0:  LDA SGDatPtrLB
 L8AB2:  STA $29
 L8AB4:  LDX SGDatPtrUB
@@ -1828,12 +1902,16 @@ L8AB7:  STX $2A
 L8AB9:  LDA #$04
 L8ABB:  STA $30
 L8ABD:  LDY #$00
-L8ABF:  LDX #$14
-L8AC1:  LDA ($29),Y
+L8ABF:  LDX #$14                ;Prepare to look through all 20 characters.
+
+L8AC1:  LDA (ChrDatPtr_),Y
+
 L8AC3:  CMP #$FF
 L8AC5:  BEQ L8ACB
+
 L8AC7:  DEC $30
 L8AC9:  BEQ L8ADD
+
 L8ACB:  CLC
 L8ACC:  LDA $29
 L8ACE:  ADC #$40
@@ -1843,27 +1921,32 @@ L8AD4:  ADC #$00
 L8AD6:  STA $2A
 L8AD8:  DEX
 L8AD9:  BNE L8AC1
-L8ADB:  SEC
-L8ADC:  RTS
+
+L8ADB:  SEC                     ;Save game does not have at least 2 characters created.
+L8ADC:  RTS                     ;
 
 L8ADD:  JSR InitPPU             ;($990C)Initialize the PPU.
-L8AE0:  LDA #$02
-L8AE2:  STA $2A
-L8AE4:  LDA #$04
-L8AE6:  STA $29
-L8AE8:  LDA #$1C
-L8AEA:  STA $2E
-L8AEC:  LDA #$01
-L8AEE:  STA $2D
-L8AF0:  LDA #$1A
-L8AF2:  STA TextIndex
+
+L8AE0:  LDA #$02                ;
+L8AE2:  STA TXTXPos             ;Text will be located at tile coords X,Y=2,4.
+L8AE4:  LDA #$04                ;
+L8AE6:  STA TXTYPos             ;
+
+L8AE8:  LDA #$1C                ;
+L8AEA:  STA TXTClrCols          ;Clear 12 columns and 1 row for the text string.
+L8AEC:  LDA #$01                ;
+L8AEE:  STA TXTClrRows          ;
+
+L8AF0:  LDA #$1A                ;FORM A PARTY text and number list 1-20.
+L8AF2:  STA TextIndex           ;
 L8AF4:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8AF7:  LDX SGDatPtrLB
-L8AF9:  STX $99
+L8AF9:  STX SGCharPtrLB
 L8AFB:  LDX SGDatPtrUB
 L8AFD:  INX
-L8AFE:  STX $9A
-L8B00:  JSR L99DF
+L8AFE:  STX SGCharPtrUB
+L8B00:  JSR ShowCharList        ;($99DF)Show the list of character is the current save game file.
 L8B03:  LDA #$10
 L8B05:  STA $2A
 L8B07:  LDA #$1A
@@ -2018,10 +2101,10 @@ L8C19:  ROR $29
 L8C1B:  LSR $2A
 L8C1D:  ROR $29
 L8C1F:  CLC
-L8C20:  LDA $99
+L8C20:  LDA SGCharPtrLB
 L8C22:  ADC $29
 L8C24:  STA $29
-L8C26:  LDA $9A
+L8C26:  LDA SGCharPtrUB
 L8C28:  ADC $2A
 L8C2A:  STA $2A
 L8C2C:  LDY #$00
@@ -2165,6 +2248,8 @@ L8D42:  LDA $2D
 L8D44:  ADC #$04
 L8D46:  STA $2D
 L8D48:  JMP L8D0F
+
+DoHandMade:
 L8D4B:  JSR InitPPU             ;($990C)Initialize the PPU.
 L8D4E:  LDA SGDatPtrLB
 L8D50:  STA $29
@@ -2174,6 +2259,7 @@ L8D56:  INC $2A
 L8D58:  LDA #$14
 L8D5A:  STA $30
 L8D5C:  LDY #$00
+
 L8D5E:  LDA ($29),Y
 L8D60:  CMP #$FF
 L8D62:  BEQ L8D76
@@ -2187,10 +2273,11 @@ L8D6F:  STA $2A
 L8D71:  DEC $30
 L8D73:  BNE L8D5E
 L8D75:  RTS
+
 L8D76:  LDA $2A
-L8D78:  STA $9A
+L8D78:  STA SGCharPtrUB
 L8D7A:  LDA $29
-L8D7C:  STA $99
+L8D7C:  STA SGCharPtrLB
 L8D7E:  LDA #$07
 L8D80:  STA $2A
 L8D82:  LDA #$04
@@ -2199,8 +2286,8 @@ L8D86:  LDA #$10
 L8D88:  STA $2E
 L8D8A:  LDA #$01
 L8D8C:  STA $2D
-L8D8E:  LDA #$09
-L8D90:  STA TextIndex
+L8D8E:  LDA #$09                ;CHARACTER MAKING text.
+L8D90:  STA TextIndex           ;
 L8D92:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8D95:  LDA #$02
 L8D97:  STA $2A
@@ -2219,8 +2306,8 @@ L8DB0:  LDA #$05
 L8DB2:  STA $2E
 L8DB4:  LDA #$06
 L8DB6:  STA $2D
-L8DB8:  LDA #$0A
-L8DBA:  STA TextIndex
+L8DB8:  LDA #$0A                ;RACE text followed by a list of races.
+L8DBA:  STA TextIndex           ;
 L8DBC:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8DBF:  LDA #$00
 L8DC1:  STA $31
@@ -2234,65 +2321,71 @@ L8DCE:  LDA #$40
 L8DD0:  STA SpriteBufferBase
 L8DD3:  LDA #$18
 L8DD5:  STA $7303
+
+HandMadeInputLoop:
 L8DD8:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8DDB:  LDA Pad1Input
-L8DDD:  CMP #$01
+L8DDD:  CMP #BTN_RIGHT
 L8DDF:  BNE L8E0A
+
 L8DE1:  LDA $31
-L8DE3:  BEQ L8DD8
+L8DE3:  BEQ HandMadeInputLoop
 L8DE5:  CMP #$01
 L8DE7:  BNE L8DFC
 L8DE9:  LDY #CHR_CLASS
 L8DEB:  LDA (CrntChrPtr),Y
 L8DED:  CMP #$05
-L8DEF:  BCS L8DD8
+L8DEF:  BCS HandMadeInputLoop
 L8DF1:  CLC
 L8DF2:  ADC #$06
 L8DF4:  STA (CrntChrPtr),Y
 L8DF6:  JSR L9016
-L8DF9:  JMP L8DD8
+L8DF9:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8DFC:  LDA $32
 L8DFE:  CMP #$03
-L8E00:  BEQ L8DD8
+L8E00:  BEQ HandMadeInputLoop
 L8E02:  INC $32
 L8E04:  JSR L9016
-L8E07:  JMP L8DD8
-L8E0A:  CMP #$02
+L8E07:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
+L8E0A:  CMP #BTN_LEFT
 L8E0C:  BNE L8E3E
 L8E0E:  LDA $31
 L8E10:  BNE L8E15
-L8E12:  JMP L8DD8
+L8E12:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E15:  CMP #$01
 L8E17:  BNE L8E2F
 L8E19:  LDY #CHR_CLASS
 L8E1B:  LDA (CrntChrPtr),Y
-L8E1D:  CMP #$06
+L8E1D:  CMP #CLS_LARK
 L8E1F:  BCS L8E24
-L8E21:  JMP L8DD8
+
+L8E21:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E24:  SEC
 L8E25:  SBC #$06
 L8E27:  STA (CrntChrPtr),Y
 L8E29:  JSR L9016
-L8E2C:  JMP L8DD8
+L8E2C:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E2F:  LDA $32
 L8E31:  BNE L8E36
-L8E33:  JMP L8DD8
+L8E33:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E36:  DEC $32
 L8E38:  JSR L9016
-L8E3B:  JMP L8DD8
-L8E3E:  CMP #$08
+L8E3B:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
+L8E3E:  CMP #BTN_UP
 L8E40:  BNE L8EA0
 L8E42:  LDA $31
 L8E44:  BNE L8E5A
 L8E46:  LDY #CHR_RACE
 L8E48:  LDA (CrntChrPtr),Y
 L8E4A:  BNE L8E4F
-L8E4C:  JMP L8DD8
+L8E4C:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E4F:  SEC
 L8E50:  SBC #$01
 L8E52:  STA (CrntChrPtr),Y
 L8E54:  JSR L9016
-L8E57:  JMP L8DD8
+L8E57:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E5A:  CMP #$01
 L8E5C:  BNE L8E76
 L8E5E:  LDY #CHR_CLASS
@@ -2300,12 +2393,12 @@ L8E60:  LDA (CrntChrPtr),Y
 L8E62:  BEQ L8E68
 L8E64:  CMP #$06
 L8E66:  BNE L8E6B
-L8E68:  JMP L8DD8
+L8E68:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E6B:  SEC
 L8E6C:  SBC #$01
 L8E6E:  STA (CrntChrPtr),Y
 L8E70:  JSR L9016
-L8E73:  JMP L8DD8
+L8E73:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E76:  LDY #$07
 L8E78:  LDA #$00
 L8E7A:  CLC
@@ -2315,7 +2408,7 @@ L8E7E:  CPY #$0B
 L8E80:  BNE L8E7A
 L8E82:  CMP #$2E
 L8E84:  BCC L8E89
-L8E86:  JMP L8DD8
+L8E86:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E89:  LDA #$07
 L8E8B:  CLC
 L8E8C:  ADC $32
@@ -2327,50 +2420,54 @@ L8E95:  CLC
 L8E96:  ADC #$05
 L8E98:  STA (CrntChrPtr),Y
 L8E9A:  JSR L9016
-L8E9D:  JMP L8DD8
-L8EA0:  CMP #$04
+L8E9D:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
+L8EA0:  CMP #BTN_DOWN
 L8EA2:  BNE L8EF4
+
 L8EA4:  LDA $31
 L8EA6:  BNE L8EBE
 L8EA8:  LDY #CHR_RACE
 L8EAA:  LDA (CrntChrPtr),Y
 L8EAC:  CMP #$04
 L8EAE:  BNE L8EB3
-L8EB0:  JMP L8DD8
+L8EB0:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8EB3:  CLC
 L8EB4:  ADC #$01
 L8EB6:  STA (CrntChrPtr),Y
 L8EB8:  JSR L9016
-L8EBB:  JMP L8DD8
+L8EBB:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8EBE:  CMP #$01
 L8EC0:  BNE L8EDC
 L8EC2:  LDY #CHR_CLASS
 L8EC4:  LDA (CrntChrPtr),Y
-L8EC6:  CMP #$05
+L8EC6:  CMP #CLS_BARBARIAN
 L8EC8:  BEQ L8ECE
 L8ECA:  CMP #$0A
 L8ECC:  BNE L8ED1
-L8ECE:  JMP L8DD8
+L8ECE:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8ED1:  CLC
 L8ED2:  ADC #$01
 L8ED4:  STA (CrntChrPtr),Y
 L8ED6:  JSR L9016
-L8ED9:  JMP L8DD8
+L8ED9:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8EDC:  CLC
 L8EDD:  LDA #$07
 L8EDF:  ADC $32
 L8EE1:  TAY
 L8EE2:  LDA (CrntChrPtr),Y
 L8EE4:  BNE L8EE9
-L8EE6:  JMP L8DD8
+L8EE6:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8EE9:  SEC
 L8EEA:  SBC #$05
 L8EEC:  STA (CrntChrPtr),Y
 L8EEE:  JSR L9016
-L8EF1:  JMP L8DD8
-L8EF4:  CMP #$80
+L8EF1:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
+L8EF4:  CMP #BTN_A
 L8EF6:  BEQ L8EFB
-L8EF8:  JMP L8DD8
+L8EF8:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
 L8EFB:  INC $31
 L8EFD:  LDA $31
 L8EFF:  CMP #$01
@@ -2385,6 +2482,7 @@ L8F14:  LDA #$40
 L8F16:  STA SpriteBufferBase
 L8F19:  LDA #$48
 L8F1B:  STA $7303
+
 L8F1E:  LDA #$08
 L8F20:  STA $2A
 L8F22:  LDA #$06
@@ -2394,6 +2492,7 @@ L8F28:  STA $2E
 L8F2A:  LDA #$0E
 L8F2C:  STA $2D
 L8F2E:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 L8F31:  LDA #$0A
 L8F33:  STA $2A
 L8F35:  LDA #$06
@@ -2402,10 +2501,12 @@ L8F39:  LDA #$0C
 L8F3B:  STA $2E
 L8F3D:  LDA #$07
 L8F3F:  STA $2D
-L8F41:  LDA #$0D
-L8F43:  STA TextIndex
+
+L8F41:  LDA #$0D                ;PROFESSION text followed by all professions.
+L8F43:  STA TextIndex           ;
 L8F45:  JSR ShowTextString      ;($995C)Show a text string on the screen.
-L8F48:  JMP L8DD8
+L8F48:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
 L8F4B:  CMP #$02
 L8F4D:  BNE L8F9A
 L8F4F:  LDA SpriteBufferBase
@@ -2414,6 +2515,7 @@ L8F55:  LDA $7303
 L8F58:  STA $73CB
 L8F5B:  LDA #$01
 L8F5D:  STA $73C9
+
 L8F60:  LDA #$02
 L8F62:  STA $2A
 L8F64:  LDA #$16
@@ -2423,6 +2525,7 @@ L8F6A:  STA $2E
 L8F6C:  LDA #$04
 L8F6E:  STA $2D
 L8F70:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 L8F73:  LDA #$04
 L8F75:  STA $2A
 L8F77:  LDA #$16
@@ -2434,19 +2537,20 @@ L8F81:  STA $2D
 L8F83:  LDA #$0B
 L8F85:  STA TextIndex
 L8F87:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8F8A:  LDA #$C0
 L8F8C:  STA SpriteBufferBase
 L8F8F:  LDA #$50
 L8F91:  STA $7303
 L8F94:  JSR L9016
-L8F97:  JMP L8DD8
+L8F97:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8F9A:  CMP #$03
 L8F9C:  BEQ L8FA9
 L8F9E:  LDA $7303
 L8FA1:  CMP #$A0
 L8FA3:  BNE L8FA6
 L8FA5:  RTS
-L8FA6:  JMP L8D4B
+L8FA6:  JMP DoHandMade          ;($8D4B)Create a hand made character.
 L8FA9:  LDY #$07
 L8FAB:  LDA #$00
 L8FAD:  CLC
@@ -2457,7 +2561,7 @@ L8FB3:  BNE L8FAD
 L8FB5:  CMP #$32
 L8FB7:  BEQ L8FBE
 L8FB9:  DEC $31
-L8FBB:  JMP L8DD8
+L8FBB:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8FBE:  LDA #$F0
 L8FC0:  STA SpriteBufferBase
 L8FC3:  LDA #$0C
@@ -2600,6 +2704,7 @@ L90EF:  RTS
 
 L90F0:  .byte $40, $50, $60, $70, $80, $90, $50, $78, $A0, $C8
 
+EnterCharName:
 L90FA:  JSR InitPPU             ;($990C)Initialize the PPU.
 L90FD:  LDA #$00
 L90FF:  STA CurPPUConfig1
@@ -2702,6 +2807,10 @@ L91BC:  INY
 L91BD:  CPY #$05
 L91BF:  BNE L91B8
 L91C1:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+DoReadyMade:
 L91C2:  JSR L9421
 L91C5:  BCC L91C8
 L91C7:  RTS
@@ -2911,9 +3020,9 @@ L937D: LDA $30
 L937F: ASL
 L9380: TAX
 L9381: LDA $91,X
-L9383: STA $99
+L9383: STA SGCharPtrLB
 L9385: LDA $92,X
-L9387: STA $9A
+L9387: STA SGCharPtrUB
 L9389: LDX $30
 L938B: LDA Ch1Class,X
 L938D: ASL
@@ -3000,6 +3109,8 @@ L946A:  CMP #$04
 L946C:  BNE L9439
 L946E:  CLC
 L946F:  RTS
+
+Discard:
 L9470:  JSR InitPPU             ;($990C)Initialize the PPU.
 L9473:  LDA #$02
 L9475:  STA $2A
@@ -3013,11 +3124,11 @@ L9483:  LDA #$1B
 L9485:  STA TextIndex
 L9487:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L948A:  LDX SGDatPtrLB
-L948C:  STX $99
+L948C:  STX SGCharPtrLB
 L948E:  LDX SGDatPtrUB
 L9490:  INX
-L9491:  STX $9A
-L9493:  JSR L99DF
+L9491:  STX SGCharPtrUB
+L9493:  JSR ShowCharList        ;($99DF)Show the list of character is the current save game file.
 L9496:  LDA #$10
 L9498:  STA $2A
 L949A:  LDA #$1A
@@ -3118,10 +3229,10 @@ L9551:  ROR $29
 L9553:  LSR $2A
 L9555:  ROR $29
 L9557:  CLC
-L9558:  LDA $99
+L9558:  LDA SGCharPtrLB
 L955A:  ADC $29
 L955C:  STA $29
-L955E:  LDA $9A
+L955E:  LDA SGCharPtrUB
 L9560:  ADC $2A
 L9562:  STA $2A
 L9564:  LDY #$00
@@ -3227,7 +3338,7 @@ L9626:  BNE L960C
 L9628:  CPX #$00
 L962A:  BNE L962F
 L962C:  JSR L9695
-L962F:  JMP L9470
+L962F:  JMP Discard             ;($9470)Show discard character screen.
 L9632:  CPX #$00
 L9634:  BEQ L960C
 L9636:  DEX
@@ -3672,9 +3783,11 @@ L9928:  BNE -
 
 L992A:  LDY #$00
 L992C:  LDA #$00
-L992E:  STA BlocksBuffer,Y
+
+L992E:* STA BlocksBuffer,Y
 L9931:  INY
-L9932:  BNE L992E
+L9932:  BNE -
+
 L9934:  LDA #$74
 L9936:  STA $2A
 L9938:  LDA #$00
@@ -3688,6 +3801,7 @@ L9946:  STA $2E
 L9948:  LDA #$00
 L994A:  STA $2D
 L994C:  JSR LoadPPU1            ;($C006)Load values into PPU.
+
 L994F:  INC $2C
 L9951:  LDA $2C
 L9953:  CMP #$24
@@ -3736,21 +3850,22 @@ L998E:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 LoadTxtStringBuf:
-L998F:  ASL
-L9990:  TAX
-L9991:  LDA StringPtrTbl,X
-L9994:  STA TXTSrcPtrLB
-L9996:  LDA StringPtrTbl+1,X
-L9999:  STA TXTSrcPtrUB
+L998F:  ASL                     ;*2. Pointers are 2 bbytes.
+L9990:  TAX                     ;
 
-L999B:  LDY #$00
+L9991:  LDA StringPtrTbl,X      ;
+L9994:  STA TXTSrcPtrLB         ;Get pointer to the text string.
+L9996:  LDA StringPtrTbl+1,X    ;
+L9999:  STA TXTSrcPtrUB         ;
 
-L999D:* LDA (TXTSrcPtr),Y
-L999F:  STA TextBuffer,Y
-L99A2:  INY
-L99A3:  CMP #TXT_END
-L99A5:  BNE -
-L99A7:  RTS
+L999B:  LDY #$00                ;Zero out the index.
+
+L999D:* LDA (TXTSrcPtr),Y       ;
+L999F:  STA TextBuffer,Y        ;Load letters into text buffer.
+L99A2:  INY                     ;
+L99A3:  CMP #TXT_END            ;Has the end of the string been reached?
+L99A5:  BNE -                   ;If not, branch to get another letter.
+L99A7:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -3805,152 +3920,226 @@ L99DE:* RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-L99DF:  LDA #$06
-L99E1:  STA $2C
-L99E3:  LDA #$01
-L99E5:  STA $2B
-L99E7:  LDX #$00
-L99E9:  LDA $2B
-L99EB:  JSR L9A22
-L99EE:  LDY #$02
-L99F0:  JSR L9AB7
-L99F3:  LDA $2B
-L99F5:  CLC
-L99F6:  ADC #$0A
-L99F8:  JSR L9A22
-L99FB:  JSR L9A07
-L99FE:  INC $2B
-L9A00:  LDA $2B
-L9A02:  CMP #$0B
-L9A04:  BCC L99E7
-L9A06:  RTS
+ShowCharList:
+L99DF:  LDA #$06                ;
+L99E1:  STA ChrRow              ;Start at character 1 at tile row 6 on the screen.
+L99E3:  LDA #$01                ;
+L99E5:  STA ChrNum              ;
 
-L9A07:  LDA #$02
-L9A09:  STA $2A
-L9A0B:  LDA $2C
-L9A0D:  STA $29
-L9A0F:  CLC
-L9A10:  ADC #$02
-L9A12:  STA $2C
-L9A14:  LDA #$1C
-L9A16:  STA $2E
-L9A18:  LDA #$01
-L9A1A:  STA $2D
-L9A1C:  LDA #TXT_DBL_SPACE
+ChrListLoop:
+L99E7:  LDX #$00                ;Zero out the index.
+
+L99E9:  LDA ChrNum              ;Prepare to get data for current selected character.
+L99EB:  JSR Show1Chr            ;($9A22)Show name, sex, class, race and condition of 1 character.
+
+L99EE:  LDY #$02                ;Add 2 blanks spaces to text string.
+L99F0:  JSR BlankChars          ;($9AB7)Add blank characters(spaces) to line of text.
+
+L99F3:  LDA ChrNum              ;
+L99F5:  CLC                     ;Prepare to get data for character in second column(11-20).
+L99F6:  ADC #$0A                ;
+L99F8:  JSR Show1Chr            ;($9A22)Show name, sex, class, race and condition of 1 character.
+
+L99FB:  JSR ShowChrDatString    ;($9A07)Show character data string on the screen.
+
+L99FE:  INC ChrNum              ;Increment to next character.
+L9A00:  LDA ChrNum              ;
+
+L9A02:  CMP #$0B                ;Have 10 rows of character data been shown?
+L9A04:  BCC ChrListLoop         ;If not, loop to get the next 2 characters(1 row).
+L9A06:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+ShowChrDatString:
+L9A07:  LDA #$02                ;Character data row always starts at tile position X=2.
+L9A09:  STA TXTXPos             ;
+
+L9A0B:  LDA ChrRow              ;Set the tile Y position of the character data.
+L9A0D:  STA TXTYPos             ;
+
+L9A0F:  CLC                     ;
+L9A10:  ADC #$02                ;Next character row is 2 tiles down.
+L9A12:  STA ChrRow              ;
+
+L9A14:  LDA #$1C                ;
+L9A16:  STA TXTClrCols          ;Clear 28 columns and 1 row for the text string.
+L9A18:  LDA #$01                ;
+L9A1A:  STA TXTClrRows          ;
+
+L9A1C:  LDA #TXT_DBL_SPACE      ;Indicate buffer is already populated, double spaced.
 L9A1E:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L9A21:  RTS
 
-L9A22:  PHA
-L9A23:  LDY #$00
-L9A25:  STY $27
-L9A27:  SEC
-L9A28:  SBC #$01
-L9A2A:  ASL
-L9A2B:  ASL
-L9A2C:  ASL
-L9A2D:  ASL
-L9A2E:  ROL $27
-L9A30:  ASL
-L9A31:  ROL $27
-L9A33:  ASL
-L9A34:  ROL $27
-L9A36:  CLC
-L9A37:  ADC $99
-L9A39:  STA $26
-L9A3B:  LDA $27
-L9A3D:  ADC $9A
-L9A3F:  STA $27
-L9A41:  PLA
-L9A42:  CMP #$0A
-L9A44:  BCC L9A49
-L9A46:  SBC #$0A
-L9A48:  INY
-L9A49:  CMP #$0A
-L9A4B:  BCC L9A50
-L9A4D:  LDA #$00
-L9A4F:  INY
-L9A50:  PHA
-L9A51:  LDA $9AE1,Y
-L9A54:  STA TextBuffer,X
-L9A57:  INX
-L9A58:  PLA
-L9A59:  TAY
-L9A5A:  LDA $9AE1,Y
-L9A5D:  STA TextBuffer,X
-L9A60:  INX
-L9A61:  LDA #$00
-L9A63:  STA TextBuffer,X
-L9A66:  INX
-L9A67:  LDY #$00
-L9A69:  LDA ($26),Y
-L9A6B:  CMP #$FF
-L9A6D:  BEQ L9AB1
-L9A6F:  STA TextBuffer,X
-L9A72:  INX
-L9A73:  INY
-L9A74:  INC $2F
-L9A76:  CPY #$05
-L9A78:  BNE L9A69
-L9A7A:  LDA #$00
-L9A7C:  STA TextBuffer,X
-L9A7F:  INX
-L9A80:  LDY #$06
-L9A82:  LDA ($26),Y
-L9A84:  TAY
-L9A85:  LDA $9AC1,Y
-L9A88:  STA TextBuffer,X
-L9A8B:  INX
-L9A8C:  LDY #$05
-L9A8E:  LDA ($26),Y
-L9A90:  TAY
-L9A91:  LDA $9AD7,Y
-L9A94:  STA TextBuffer,X
-L9A97:  INX
-L9A98:  LDY #$06
-L9A9A:  LDA ($26),Y
-L9A9C:  TAY
-L9A9D:  LDA $9ACC,Y
-L9AA0:  STA TextBuffer,X
-L9AA3:  INX
-L9AA4:  LDY #$0B
-L9AA6:  LDA ($26),Y
-L9AA8:  TAY
-L9AA9:  LDA $9ADC,Y
-L9AAC:  STA TextBuffer,X
-L9AAF:  INX
-L9AB0:  RTS
-L9AB1:  LDY #$0A
-L9AB3:  JSR L9AB7
-L9AB6:  RTS
+Show1Chr:
+L9A22:  PHA                     ;Store the current character number on the stack(1-20).
 
-L9AB7:  LDA #$00
-L9AB9:  STA TextBuffer,X
-L9ABC:  INX
-L9ABD:  DEY
-L9ABE:  BNE L9AB9
-L9AC0:  RTS
+L9A23:  LDY #$00                ;Zero out pointer upper byte.
+L9A25:  STY ChrDatPtrUB         ;
 
-L9AC1:  .byte $96, $8F, $96, $96, $8F, $96, $8F, $8F, $96, $96, $96, $8F, $8C, $A0, $9D, $99
-L9AD1:  .byte $8B, $95, $92, $8D, $8A, $9B, $91, $8E, $8D, $8B, $8F, $90, $99, $9C, $8D, $8A
+L9A27:  SEC                     ;Subtract 1 from the character number.
+L9A28:  SBC #$01                ;
+
+L9A2A:  ASL                     ;
+L9A2B:  ASL                     ;Shift character number into upper nibble and carry bit.
+L9A2C:  ASL                     ;
+L9A2D:  ASL                     ;
+
+L9A2E:  ROL ChrDatPtrUB         ;ChrNum-1 is 5 bits of data ($00-$13).
+L9A30:  ASL                     ;At this point, bit 4 is in carry and other bits in upper nibble.
+L9A31:  ROL ChrDatPtrUB         ;Upper 3 bits of ChrNum-1 is in 3 LSBs of ChrDatPtrUB.
+L9A33:  ASL                     ;Bit 1 and 0 are in 2 MSBs in Accum($00, $40, $80, $C0).
+L9A34:  ROL ChrDatPtrUB         ;
+
+L9A36:  CLC                     ;Add lower byte of calculated offset to base character pointer
+L9A37:  ADC SGCharPtrLB         ;to get final lower pointer address byte. Lower byte of base
+L9A39:  STA ChrDatPtrLB         ;pointer is always zero so lower byte always=offset.
+
+L9A3B:  LDA ChrDatPtrUB         ;Add calculated offset to upper byte of character data base address
+L9A3D:  ADC SGCharPtrUB         ;to get upper byte of this characters data pointer.
+L9A3F:  STA ChrDatPtrUB         ;
+
+L9A41:  PLA                     ;Is current character 0-9?
+L9A42:  CMP #$0A                ;
+L9A44:  BCC +                   ;If so, branch.
+
+L9A46:  SBC #$0A                ;Minus 10 from character number.
+L9A48:  INY                     ;Increment 1st digit. Will be either 1 or 2.
+
+L9A49:* CMP #$0A                ;Is character number 0-9?
+L9A4B:  BCC +                   ;If so, branch.
+
+L9A4D:  LDA #$00                ;Second digit in character number is 0.
+L9A4F:  INY                     ;First digit in character number is 2.
+
+L9A50:* PHA                     ;Save second digit of character number on stack.
+
+L9A51:  LDA NumTbl,Y            ;
+L9A54:  STA TextBuffer,X        ;Put first digit of character number in text string(0-2).
+L9A57:  INX                     ;
+
+L9A58:  PLA                     ;Restore second digit of character number from stack.
+
+L9A59:  TAY                     ;
+L9A5A:  LDA NumTbl,Y            ;Put second digit of character number in text string(0-9).
+L9A5D:  STA TextBuffer,X        ;
+L9A60:  INX                     ;
+
+L9A61:  LDA #TXT_BLANK          ;
+L9A63:  STA TextBuffer,X        ;Add a blank space to the text string.
+L9A66:  INX                     ;
+
+L9A67:  LDY #$00                ;Zero out the index.
+
+L9A69:* LDA (ChrDatPtr),Y       ;Is the current character slot empty?
+L9A6B:  CMP #CHR_EMPTY_SLOT     ;If so, branch to print blank characters.
+L9A6D:  BEQ ChrEmptySlot        ;
+
+L9A6F:  STA TextBuffer,X        ;
+L9A72:  INX                     ;Get the 5 letters in the character's name.
+L9A73:  INY                     ;
+L9A74:  INC ChrUnused2F         ;
+L9A76:  CPY #$05                ;Have all the letters been put into the text string?
+L9A78:  BNE -                   ;If not, branch to get another letter.
+
+L9A7A:  LDA #TXT_BLANK          ;
+L9A7C:  STA TextBuffer,X        ;Add a blank space to the text string.
+L9A7F:  INX                     ;
+
+L9A80:  LDY #CHR_CLASS          ;
+L9A82:  LDA (ChrDatPtr),Y       ;
+L9A84:  TAY                     ;Add an M or F to the text string indicating the character's sex.
+L9A85:  LDA ChrSexTbl,Y         ;The sex is based on the character class. The classes have fixed
+L9A88:  STA TextBuffer,X        ;genders.
+L9A8B:  INX                     ;
+
+L9A8C:  LDY #CHR_RACE           ;
+L9A8E:  LDA (ChrDatPtr),Y       ;
+L9A90:  TAY                     ;Put a letter in the text string indicating the character's race.
+L9A91:  LDA ChrRcaeTbl,Y        ;
+L9A94:  STA TextBuffer,X        ;
+L9A97:  INX                     ;
+
+L9A98:  LDY #CHR_CLASS          ;
+L9A9A:  LDA (ChrDatPtr),Y       ;
+L9A9C:  TAY                     ;Put a letter in the text string indicating the character's class.
+L9A9D:  LDA ChrClassTbl,Y       ;
+L9AA0:  STA TextBuffer,X        ;
+L9AA3:  INX                     ;
+
+L9AA4:  LDY #CHR_COND           ;
+L9AA6:  LDA (ChrDatPtr),Y       ;
+L9AA8:  TAY                     ;
+L9AA9:  LDA ChrStatTbl,Y        ;Put a letter in text string indicating the character's condition.
+L9AAC:  STA TextBuffer,X        ;
+L9AAF:  INX                     ;
+L9AB0:  RTS                     ;
+
+ChrEmptySlot:
+L9AB1:  LDY #$0A                ;Empty character slot. Store 10 blank spaces in text string.
+L9AB3:  JSR BlankChars          ;($9AB7)Add blank characters(spaces) to line of text.
+L9AB6:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+BlankChars:
+L9AB7:  LDA #TXT_BLANK          ;
+L9AB9:* STA TextBuffer,X        ;
+L9ABC:  INX                     ;Add a series of blank spaces to the text string. The
+L9ABD:  DEY                     ;number of blank spaces is stored in Y.
+L9ABE:  BNE -                   ;
+L9AC0:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table is the sex of the 11 classes. The index into the table is the class and
+;the value in the table is the sex.
+
+ChrSexTbl:
+;              M    F    M    M    F    M    F    F    M    M    M
+L9AC1:  .byte $96, $8F, $96, $96, $8F, $96, $8F, $8F, $96, $96, $96
+
+;The following table is the single character class of each of the 11 classes.
+
+ChrClassTbl:
+;              F    C    W    T    P    B    L    I    D    A    R
+L9ACC:  .byte $8F, $8C, $A0, $9D, $99, $8B, $95, $92, $8D, $8A, $9B
+
+;The following table is the single character race of each of the 5 races.
+
+ChrRcaeTbl:
+;              H    E    D    B    F
+L9AD7:  .byte $91, $8E, $8D, $8B, $8F
+
+;The following table is the single character condition of each of the 5 conditions.
+
+ChrStatTbl:
+;              G    P    S    D    A
+L9ADC:  .byte $90, $99, $9C, $8D, $8A
+
+;Tile indexes to the numbers 0-9.
+
+NumTbl:
+;              0    1    2    3    4    5    6    7    8    9
 L9AE1:  .byte $38, $39, $3A, $3B, $3C, $3D, $3E, $3F, $40, $41
 
 ;----------------------------------------------------------------------------------------------------
 
 LoadClassSprites:
-L9AEB:  LDY #$00
+L9AEB:  LDY #$00                ;Zero out the index.
 
-L9AED:* LDA ClassSpritesDat,Y
-L9AF0:  STA SpriteBuffer+4,Y
-L9AF3:  INY
-L9AF4:  CPY #$B0
-L9AF6:  BNE -
+L9AED:* LDA ClassSpritesDat,Y   ;
+L9AF0:  STA SpriteBuffer+4,Y    ;Load all the sprite data so show 11 characters on screen
+L9AF3:  INY                     ;representing the 11 different classes.
+L9AF4:  CPY #NUM_CLASSES*16     ;
+L9AF6:  BNE -                   ;
 
-L9AF8:  LDA #CLS_PALADIN
-L9AFA:  STA Ch1Class
-L9AFC:  STA Ch2Class
-L9AFE:  STA Ch3Class
-L9B00:  STA Ch4Class
-L9B02:  RTS
+L9AF8:  LDA #CLS_PALADIN        ;
+L9AFA:  STA Ch1Class            ;
+L9AFC:  STA Ch2Class            ;Set a default class for the 4 player characters - Paladin.
+L9AFE:  STA Ch3Class            ;
+L9B00:  STA Ch4Class            ;
+L9B02:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6756,10 +6945,12 @@ LBE44:  BNE LBE30
 LBE46:  LDA #$00
 LBE48:  STA $BF
 LBE4A:  RTS
+
+WaitSomeFrames:
 LBE4B:  CLC
-LBE4C:  ADC $00
-LBE4E:  CMP $00
-LBE50:  BNE LBE4E
+LBE4C:  ADC Increment0
+LBE4E:* CMP Increment0
+LBE50:  BNE -
 LBE52:  RTS
 
 ;----------------------------------------------------------------------------------------------------
