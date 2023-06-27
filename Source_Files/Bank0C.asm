@@ -322,42 +322,43 @@ L819C:  LDA #>Ch1Data           ;
 L819E:  STA ChrDestPtrUB        ;
 
 L81A0:  LDA SGDatPtrLB          ;
-L81A2:  STA SGCharPtrLB         ;
-L81A4:  LDX SGDatPtrUB          ;Get a pointer to the character list for the given save game.
+L81A2:  STA SGCharPtrLB         ;Get a pointer to the character list for the given save game.
+L81A4:  LDX SGDatPtrUB          ;SGDatPtr=$6100, $6700 or $6D00.
 L81A6:  INX                     ;
 L81A7:  STX SGCharPtrUB         ;
 
 L81A9:  LDX #$00                ;Zero out the counter. Will be either $00, $10, $20 or $30.
 
+;Copy character data from character pool to active character slot.
 CopyChrDatLoop:
-L81AB:  TXA
-L81AC:  LSR
-L81AD:  LSR
-L81AE:  LSR
-L81AF:  LSR
+L81AB:  TXA                     ;
+L81AC:  LSR                     ;Transfer X to A and move upper nibble to lower nibble.
+L81AD:  LSR                     ;A will now equal $00, $01, $02 or $03.
+L81AE:  LSR                     ;
+L81AF:  LSR                     ;
 
-L81B0:  CLC
-L81B1:  ADC #$10
+L81B0:  CLC                     ;A will now equal $10, $11, $12 or $13.
+L81B1:  ADC #$10                ;
 
-L81B3:  TAY
-L81B4:  LDA (SGDatPtr),Y
-L81B6:  STA ChrSrcPtrUB
-L81B8:  LDA #$00
-L81BA:  STA ChrSrcPtrLB
+L81B3:  TAY                     ;
+L81B4:  LDA (SGDatPtr),Y        ;Transfer the character pool index of the requested character
+L81B6:  STA ChrSrcPtrUB         ;into the character data source pointer($1300-$0000).
+L81B8:  LDA #$00                ;
+L81BA:  STA ChrSrcPtrLB         ;
 
-L81BC:  LSR ChrSrcPtrUB
-L81BE:  ROR ChrSrcPtrLB
-L81C0:  LSR ChrSrcPtrUB
-L81C2:  ROR ChrSrcPtrLB
+L81BC:  LSR ChrSrcPtrUB         ;
+L81BE:  ROR ChrSrcPtrLB         ;/4. ChrSrcPtr=$04C0 through $0000.
+L81C0:  LSR ChrSrcPtrUB         ;
+L81C2:  ROR ChrSrcPtrLB         ;
 
-L81C4:  CLC
-L81C5:  LDA SGCharPtrLB
-L81C7:  ADC ChrSrcPtrLB
-L81C9:  STA ChrSrcPtrLB
+L81C4:  CLC                     ;
+L81C5:  LDA SGCharPtrLB         ;Add base address of character data to calculated offset.
+L81C7:  ADC ChrSrcPtrLB         ;
+L81C9:  STA ChrSrcPtrLB         ;
 
-L81CB:  LDA SGCharPtrUB
-L81CD:  ADC ChrSrcPtrUB
-L81CF:  STA ChrSrcPtrUB
+L81CB:  LDA SGCharPtrUB         ;
+L81CD:  ADC ChrSrcPtrUB         ;Carry into upper byte, if necessary.
+L81CF:  STA ChrSrcPtrUB         ;
 
 L81D1:  LDY #$00                ;Zero out the index.
 
@@ -367,14 +368,14 @@ L81D7:  INY                     ;character pool into an active character data sl
 L81D8:  CPY #$40                ;
 L81DA:  BNE -                   ;
 
-L81DC:  CLC
-L81DD:  LDA ChrDestPtrLB
-L81DF:  ADC #$40
-L81E1:  STA ChrDestPtrLB
+L81DC:  CLC                     ;
+L81DD:  LDA ChrDestPtrLB        ;Move charcter data destination pointer to next open
+L81DF:  ADC #$40                ;character slot.
+L81E1:  STA ChrDestPtrLB        ;
 
-L81E3:  LDA ChrDestPtrUB
-L81E5:  ADC #$00
-L81E7:  STA ChrDestPtrUB
+L81E3:  LDA ChrDestPtrUB        ;
+L81E5:  ADC #$00                ;Carry into upper byte, if necessary.
+L81E7:  STA ChrDestPtrUB        ;
 
 L81E9:  TXA                     ;
 L81EA:  CLC                     ;Increment counter to next character.
@@ -406,31 +407,33 @@ L8210:  STA Pos4ChrPtrUB        ;
 
 L8212:  JSR SwapBnkLdGFX1       ;($C048)Save lower bank then load character sprites GFX.
 
-L8215:  LDX #$00
-L8217:  LDA #$F0
-L8219:  STA SpriteBuffer,X
-L821C:  INX
-L821D:  INX
-L821E:  INX
-L821F:  INX
-L8220:  BNE L8217
-L8222:  LDA #$1E
-L8224:  STA CurPPUConfig1
+L8215:  LDX #$00                ;Zero out the index.
+
+L8217:* LDA #$F0                ;
+L8219:  STA SpriteBuffer,X      ;
+L821C:  INX                     ;
+L821D:  INX                     ;Hide all sprites off the bottom of the screen.
+L821E:  INX                     ;
+L821F:  INX                     ;
+L8220:  BNE -                   ;
+
+L8222:  LDA #SCREEN_ON          ;Turn the screen on.
+L8224:  STA CurPPUConfig1       ;
 
 L8226:  LDA #$01                ;Wait 1 frame.
 L8228:  JSR WaitSomeFrames      ;($BE4B)Wait a number of frames given by A.
 
 L822B:  JSR MovePlayerChars     ;($8281)Move the player's 4 characters towards Lord British.
 
-L822E:  LDA #$04
-L8230:  STA $2A
-L8232:  LDA #$16
-L8234:  STA $29
+L822E:  LDA #$04                ;
+L8230:  STA WndXPos             ;Window will be located at tile coords X,Y=4,22.
+L8232:  LDA #$16                ;
+L8234:  STA WndYPos             ;
 
-L8236:  LDA #$18
-L8238:  STA $2E
-L823A:  LDA #$06
-L823C:  STA $2D
+L8236:  LDA #$18                ;
+L8238:  STA WndWidth            ;Window will be 24 tiles wide and 6 tiles tall.
+L823A:  LDA #$06                ;
+L823C:  STA WndHeight           ;
 
 L823E:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
@@ -439,22 +442,22 @@ L8241:  LDA #$20                ;WELCOME YE FOUR BRAVE SOULS text.
 KingTextLoop:
 L8243:  PHA                     ;Save text index on stack.
 
-L8244:  LDA #$D4
-L8246:  STA HideUprSprites
+L8244:  LDA #$D4                ;Hide the upper 10 sprites.
+L8246:  STA HideUprSprites      ;
 
-L8248:  LDA #$06
-L824A:  STA TXTXPos
-L824C:  LDA #$18
-L824E:  STA TXTYPos
+L8248:  LDA #$06                ;
+L824A:  STA TXTXPos             ;Text will be at tile coords X,Y=6,24.
+L824C:  LDA #$18                ;
+L824E:  STA TXTYPos             ;
 
-L8250:  LDA #$14
-L8252:  STA TXTClrCols
-L8254:  LDA #$02
-L8256:  STA TXTClrRows
+L8250:  LDA #$14                ;
+L8252:  STA TXTClrCols          ;Clear 20 columns and 2 rows for the text string.
+L8254:  LDA #$02                ;
+L8256:  STA TXTClrRows          ;
 
-L8258:  PLA
-L8259:  PHA
-L825A:  STA TextIndex
+L8258:  PLA                     ;Get the text index from the stack.
+L8259:  PHA                     ;
+L825A:  STA TextIndex           ;
 L825C:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L825F:  CLC                     ;
@@ -472,57 +475,65 @@ L826E:  ADC #$01                ;
 L8270:  JMP KingTextLoop        ;($8243)Display next segment of Lord British intro text.
 
 L8273:* JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L8276:  LDA Pad1Input
-L8278:  CMP #BTN_A
-L827A:  BNE -
+L8276:  LDA Pad1Input           ;
+L8278:  CMP #BTN_A              ;Wait until player pushes the A button to continue.
+L827A:  BNE -                   ;
 
-L827C:  LDA #$00
-L827E:  STA TimeStopTimer
-L8280:  RTS
+L827C:  LDA #$00                ;
+L827E:  STA TimeStopTimer       ;Turn off time stop before exiting.
+L8280:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
 MovePlayerChars:
-L8281:  LDA #$FF
-L8283:  STA $30
-L8285:  LDX #$04
-L8287:  LDA #$01
-L8289:  STA $2E
-L828B:  STA $2D
+L8281:  LDA #$FF                ;Move character -1 pixels in the X direction.
+L8283:  STA ChrDX               ;
+
+L8285:  LDX #$04                ;Character composed of sprites 1,2,3,4.
+
+L8287:  LDA #$01                ;Move character down 1 pixel for every X direction update.
+L8289:  STA ChrDYVar            ;
+L828B:  STA ChrDYConst          ;
 L828D:  JSR Move1Char           ;($82BE)Move 1 character towards Lord British.
 
-L8290:  LDA #$FF
-L8292:  STA $30
-L8294:  LDX #$14
-L8296:  LDA #$03
-L8298:  STA $2E
-L829A:  STA $2D
+L8290:  LDA #$FF                ;Move character -1 pixels in the X direction.
+L8292:  STA ChrDX               ;
+
+L8294:  LDX #$14                ;Character composed of sprites ,5,6,7,8.
+
+L8296:  LDA #$03                ;Move character down 3 pixels for every X direction update.
+L8298:  STA ChrDYVar            ;
+L829A:  STA ChrDYConst          ;
 L829C:  JSR Move1Char           ;($82BE)Move 1 character towards Lord British.
 
-L829F:  LDA #$01
-L82A1:  STA $30
-L82A3:  LDX #$24
-L82A5:  LDA #$03
-L82A7:  STA $2E
-L82A9:  STA $2D
+L829F:  LDA #$01                ;Move character 1 pixel in the X direction.
+L82A1:  STA ChrDX               ;
+
+L82A3:  LDX #$24                ;Character composed of sprites 9,10,11,12.
+
+L82A5:  LDA #$03                ;Move character down 3 pixels for every X direction update.
+L82A7:  STA ChrDYVar            ;
+L82A9:  STA ChrDYConst          ;
 L82AB:  JSR Move1Char           ;($82BE)Move 1 character towards Lord British.
 
-L82AE:  LDA #$01
-L82B0:  STA $30
-L82B2:  LDX #$34
-L82B4:  LDA #$01
-L82B6:  STA $2E
-L82B8:  STA $2D
+L82AE:  LDA #$01                ;Move character 1 pixel in the X direction.
+L82B0:  STA ChrDX               ;
+
+L82B2:  LDX #$34                ;Character composed of sprites 13,14,15,16.
+
+L82B4:  LDA #$01                ;Move character down 1 pixel for every X direction update.
+L82B6:  STA ChrDYVar            ;
+L82B8:  STA ChrDYConst          ;
 L82BA:  JSR Move1Char           ;($82BE)Move 1 character towards Lord British.
-L82BD:  RTS
+L82BD:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
 Move1Char:
-L82BE:  LDA #$78
-L82C0:  STA $19
-L82C2:  LDA #$20
-L82C4:  STA $18
+L82BE:  LDA #$78                ;
+L82C0:  STA NewChrX             ;Character starts at pixel position X,Y=120,32.
+L82C2:  LDA #$20                ;
+L82C4:  STA NewChrY             ;
 
 UpdateChrXYLoop:
 L82C6:  JSR UpdateChrPosition   ;($82E6)Update the XY position of the character.
@@ -530,21 +541,22 @@ L82C6:  JSR UpdateChrPosition   ;($82E6)Update the XY position of the character.
 L82C9:  LDA #$03                ;Wait for 3 frames.
 L82CB:  JSR WaitSomeFrames      ;($BE4B)Wait a number of frames given by A.
 
-L82CE:  INC $18
-L82D0:  DEC $2E
-L82D2:  BNE UpdateChrXYLoop
+L82CE:  INC NewChrY             ;Move the character down 1 pixel.
+L82D0:  DEC ChrDYVar            ;Is it time to update the X position?
+L82D2:  BNE UpdateChrXYLoop     ;If not, branch to move the character down another pixel.
 
-L82D4:  CLC
-L82D5:  LDA $19
-L82D7:  ADC $30
-L82D9:  STA $19
-L82DB:  LDA $2D
-L82DD:  STA $2E
+L82D4:  CLC                     ;
+L82D5:  LDA NewChrX             ;Move the character in the X direction 1 pixel.
+L82D7:  ADC ChrDX               ;
+L82D9:  STA NewChrX             ;
 
-L82DF:  LDA $18
-L82E1:  CMP #$50
-L82E3:  BNE UpdateChrXYLoop
-L82E5:  RTS
+L82DB:  LDA ChrDYConst          ;Reload the Y position counter.
+L82DD:  STA ChrDYVar            ;
+
+L82DF:  LDA NewChrY             ;
+L82E1:  CMP #$50                ;Has the character moved to pixel position Y=80?
+L82E3:  BNE UpdateChrXYLoop     ;If not, branch to move the character sprites some more.
+L82E5:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1749,98 +1761,119 @@ CreateChr:
 L89D5:  JSR InitPPU             ;($990C)Initialize the PPU.
 L89D8:  JSR LoadClassSprites    ;($9AEB)Load the various character class sprites on the screen.
 
-L89DB:  LDA #$04
-L89DD:  STA $2A
-L89DF:  LDA #$0E
-L89E1:  STA $29
+L89DB:  LDA #$04                ;
+L89DD:  STA WndXPos             ;Window will be located at tile coords X,Y=4,14
+L89DF:  LDA #$0E                ;
+L89E1:  STA WndYPos             ;
 
-L89E3:  LDA #$18
-L89E5:  STA $2E
-L89E7:  LDA #$08
-L89E9:  STA $2D
+L89E3:  LDA #$18                ;
+L89E5:  STA WndWidth            ;Window will be 24 tiles wide and 8 tiles tall.
+L89E7:  LDA #$08                ;
+L89E9:  STA WndHeight           ;
 
 L89EB:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
-L89EE:  LDA #$08
-L89F0:  STA $2A
-L89F2:  LDA #$10
-L89F4:  STA $29
+L89EE:  LDA #$08                ;
+L89F0:  STA TXTXPos             ;Text will be located at tile coords X,Y=8,20.
+L89F2:  LDA #$10                ;
+L89F4:  STA TXTYPos             ;
 
-L89F6:  LDA #$13
-L89F8:  STA $2E
-L89FA:  LDA #$03
-L89FC:  STA $2D
+L89F6:  LDA #$13                ;
+L89F8:  STA TXTClrCols          ;Clear 19 columns and 3 rows for the text string.
+L89FA:  LDA #$03                ;
+L89FC:  STA TXTClrRows          ;
 
 L89FE:  LDA #$06                ;HAND-MADE READY-MADE PREVIOUS MENU text.
 L8A00:  STA TextIndex           ;
 L8A02:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8A05:  LDA #$80
-L8A07:  STA SpriteBuffer
-L8A0A:  LDA #$30
-L8A0C:  STA SpriteBuffer+3
+L8A05:  LDA #$80                ;
+L8A07:  STA SpriteBuffer        ;Starting pixel position of selector sprite X,Y=48,128.
+L8A0A:  LDA #$30                ;
+L8A0C:  STA SpriteBuffer+3      ;
 
-L8A0F:  LDX #$00
+L8A0F:  LDX #$00                ;Index into CreateChrYPosTbl for Y position of selector sprite.
 
 CreateCharLoop:
 L8A11:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L8A14:  LDA Pad1Input
+L8A14:  LDA Pad1Input           ;
 
-L8A16:  CMP #BTN_UP
-L8A18:  BEQ L8A63
+L8A16:  CMP #BTN_UP             ;Was up button pressed?
+L8A18:  BEQ CreateChrMoveUp     ;If so, branch to process button press.
 
-L8A1A:  CMP #BTN_DOWN
-L8A1C:  BEQ L8A6B
+L8A1A:  CMP #BTN_DOWN           ;Was down button pressed?
+L8A1C:  BEQ CreateChrMoveDn     ;If so, branch to process button press.
 
-L8A1E:  CMP #BTN_A
-L8A20:  BNE CreateCharLoop
+L8A1E:  CMP #BTN_A              ;Was A button pressed?
+L8A20:  BNE CreateCharLoop      ;If not, branch to ignore the input.
 
-L8A22:  LDY #$01
-L8A24:  TXA
-L8A25:  CPX #$02
-L8A27:  BEQ L8A62
-L8A29:  PHA
-L8A2A:  CPX #$00
-L8A2C:  BEQ L8A30
-L8A2E:  LDY #$04
-L8A30:  STY $2E
-L8A32:  LDX #$14
-L8A34:  LDA SGDatPtrLB
-L8A36:  STA $29
-L8A38:  LDA SGDatPtrUB
-L8A3A:  STA $2A
-L8A3C:  INC $2A
-L8A3E:  LDY #$00
-L8A40:  LDA ($29),Y
-L8A42:  CMP #$FF
-L8A44:  BEQ L8A5C
-L8A46:  CLC
-L8A47:  LDA $29
-L8A49:  ADC #$40
-L8A4B:  STA $29
-L8A4D:  LDA $2A
-L8A4F:  ADC #$00
-L8A51:  STA $2A
-L8A53:  DEX
-L8A54:  BNE L8A40
-L8A56:  PLA
-L8A57:  LDX #$02
-L8A59:  JMP L8A70
-L8A5C:  DEC $2E
-L8A5E:  BNE L8A46
-L8A60:  PLA
-L8A61:  TAX
-L8A62:  RTS
+L8A22:  LDY #$01                ;Prepare to look for 1 open spot for the new character.
+L8A24:  TXA                     ;
 
-L8A63:  CPX #$00
-L8A65:  BEQ CreateCharLoop
-L8A67:  DEX
-L8A68:  JMP L8A70
+L8A25:  CPX #$02                ;Did player select the previous menu?
+L8A27:  BEQ ExitCreateChar      ;If so, branch to exit.
 
-L8A6B:  CPX #$02
-L8A6D:  BEQ CreateCharLoop
-L8A6F:  INX
+L8A29:  PHA                     ;Save the selection made on the stack.
 
+L8A2A:  CPX #$00                ;Did player select to make a hand-made character?
+L8A2C:  BEQ +                   ;If so, branch.
+
+L8A2E:  LDY #$04                ;Prepare to look for 4 open spots for the new characters.
+L8A30:* STY GenByte2E           ;
+
+L8A32:  LDX #NUM_CHARACTERS     ;Prepare to look through all 20 character slots.
+
+L8A34:  LDA SGDatPtrLB          ;
+L8A36:  STA ChrDatPtrLB_        ;
+L8A38:  LDA SGDatPtrUB          ;Get a pointer to the base of character data in the saved game.
+L8A3A:  STA ChrDatPtrUB_        ;
+L8A3C:  INC ChrDatPtrUB_        ;
+
+L8A3E:  LDY #$00                ;Zero out the the index.
+
+ChkNextSlot:
+L8A40:  LDA (ChrDatPtr_),Y      ;Is the current character slot empty?
+L8A42:  CMP #CHR_EMPTY_SLOT     ;
+L8A44:  BEQ OpenSlotFound       ;If so, branch.
+
+FindChrSlotsLoop:
+L8A46:  CLC                     ;
+L8A47:  LDA ChrDatPtrLB_        ;
+L8A49:  ADC #$40                ;
+L8A4B:  STA ChrDatPtrLB_        ;Move pointer to next character slot.
+L8A4D:  LDA ChrDatPtrUB_        ;
+L8A4F:  ADC #$00                ;
+L8A51:  STA ChrDatPtrUB_        ;
+
+L8A53:  DEX                     ;Update number of character slots remining to check.
+L8A54:  BNE ChkNextSlot         ;More slots to check? Is fo, branch.
+
+L8A56:  PLA                     ;Not enough empty character slots.
+L8A57:  LDX #$02                ;Move selector sprite to previous menu selection.
+L8A59:  JMP CreateChrUpdateY    ;($8A70)Update Y position of selector sprite.
+
+OpenSlotFound:
+L8A5C:  DEC GenByte2E           ;Have we found enough empty character slots?
+L8A5E:  BNE FindChrSlotsLoop    ;If not, branch to find another one.
+
+L8A60:  PLA                     ;Restore the menu item the player selected back into X.
+L8A61:  TAX                     ;
+
+ExitCreateChar:
+L8A62:  RTS                     ;Exit create character screen.
+
+CreateChrMoveUp:
+L8A63:  CPX #$00                ;Is selector sprite at top menu selection?
+L8A65:  BEQ CreateCharLoop      ;If not, move selector sprite up one position.
+L8A67:  DEX                     ;
+L8A68:  JMP CreateChrUpdateY    ;($8A70)Update Y position of selector sprite.
+
+CreateChrMoveDn:
+L8A6B:  CPX #$02                ;Is selector sprite at bottom menu selection?
+L8A6D:  BEQ CreateCharLoop      ;
+L8A6F:  INX                     ;If not, move selector down one position.
+
+CreateChrUpdateY:
 L8A70:  LDA CreateChrYPosTbl,X  ;Update selector sprite Y position.
 L8A73:  STA SpriteBufferBase    ;
 L8A76:  JMP CreateCharLoop      ;($8A11)Wait for next input on create character screen.
@@ -1894,37 +1927,43 @@ L8AAF:  RTS                     ;Stop showing character list.
 ;----------------------------------------------------------------------------------------------------
 
 FormParty:
-L8AB0:  LDA SGDatPtrLB
-L8AB2:  STA $29
-L8AB4:  LDX SGDatPtrUB
-L8AB6:  INX
-L8AB7:  STX $2A
-L8AB9:  LDA #$04
-L8ABB:  STA $30
-L8ABD:  LDY #$00
-L8ABF:  LDX #$14                ;Prepare to look through all 20 characters.
+L8AB0:  LDA SGDatPtrLB          ;
+L8AB2:  STA ChrDatPtrLB_        ;
+L8AB4:  LDX SGDatPtrUB          ;Get a pointer to the base of the character data.
+L8AB6:  INX                     ;
+L8AB7:  STX ChrDatPtrUB_        ;
 
-L8AC1:  LDA (ChrDatPtr_),Y
+L8AB9:  LDA #$04                ;We need to find at least 4 valid characters.
+L8ABB:  STA GenByte30           ;
 
-L8AC3:  CMP #$FF
-L8AC5:  BEQ L8ACB
+L8ABD:  LDY #$00                ;Zero out the index.
 
-L8AC7:  DEC $30
-L8AC9:  BEQ L8ADD
+L8ABF:  LDX #NUM_CHARACTERS     ;Prepare to look through all 20 character slots.
 
-L8ACB:  CLC
-L8ACC:  LDA $29
-L8ACE:  ADC #$40
-L8AD0:  STA $29
-L8AD2:  LDA $2A
-L8AD4:  ADC #$00
-L8AD6:  STA $2A
-L8AD8:  DEX
-L8AD9:  BNE L8AC1
+FindChrLoop:
+L8AC1:  LDA (ChrDatPtr_),Y      ;Did we find a valid character slot?
+L8AC3:  CMP #CHR_EMPTY_SLOT     ;
+L8AC5:  BEQ NextSlot            ;If not, branch to move to the next slot.
 
-L8ADB:  SEC                     ;Save game does not have at least 2 characters created.
+L8AC7:  DEC GenByte30           ;Found a valid character.
+L8AC9:  BEQ FormPartyList       ;Did we find 4 valid characters? If not, branch to find another.
+
+NextSlot:
+L8ACB:  CLC                     ;
+L8ACC:  LDA ChrDatPtrLB_        ;
+L8ACE:  ADC #$40                ;
+L8AD0:  STA ChrDatPtrLB_        ;Move the pointer to the next character slot.
+L8AD2:  LDA ChrDatPtrUB_        ;
+L8AD4:  ADC #$00                ;
+L8AD6:  STA ChrDatPtrUB_        ;
+
+L8AD8:  DEX                     ;Do we still have more character slots we can check?
+L8AD9:  BNE FindChrLoop         ;If so, branch to check the next slot.
+
+L8ADB:  SEC                     ;Save game does not have at least 4 characters created.
 L8ADC:  RTS                     ;
 
+FormPartyList:
 L8ADD:  JSR InitPPU             ;($990C)Initialize the PPU.
 
 L8AE0:  LDA #$02                ;
@@ -1941,49 +1980,61 @@ L8AF0:  LDA #$1A                ;FORM A PARTY text and number list 1-20.
 L8AF2:  STA TextIndex           ;
 L8AF4:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8AF7:  LDX SGDatPtrLB
-L8AF9:  STX SGCharPtrLB
-L8AFB:  LDX SGDatPtrUB
-L8AFD:  INX
-L8AFE:  STX SGCharPtrUB
+L8AF7:  LDX SGDatPtrLB          ;
+L8AF9:  STX SGCharPtrLB         ;
+L8AFB:  LDX SGDatPtrUB          ;Get a pointer to the base of the character data.
+L8AFD:  INX                     ;
+L8AFE:  STX SGCharPtrUB         ;
+
 L8B00:  JSR ShowCharList        ;($99DF)Show the list of character is the current save game file.
-L8B03:  LDA #$10
-L8B05:  STA $2A
-L8B07:  LDA #$1A
-L8B09:  STA $29
-L8B0B:  LDA #$0A
-L8B0D:  STA $2E
-L8B0F:  LDA #$01
-L8B11:  STA $2D
-L8B13:  LDA #$08
-L8B15:  STA TextIndex
+
+L8B03:  LDA #$10                ;
+L8B05:  STA TXTXPos             ;Text will be located at tile coords X,Y=20,26.
+L8B07:  LDA #$1A                ;
+L8B09:  STA TXTYPos             ;
+
+L8B0B:  LDA #$0A                ;
+L8B0D:  STA TXTClrCols          ;Clear 10 columns and 1 row for the text string.
+L8B0F:  LDA #$01                ;
+L8B11:  STA TXTClrRows          ;
+
+L8B13:  LDA #$08                ;END text.
+L8B15:  STA TextIndex           ;
 L8B17:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8B1A:  LDA #$30
 L8B1C:  STA SpriteBufferBase
+
 L8B1F:  LDA #$20
 L8B21:  STA $7303
+
 L8B24:  LDA #$00
 L8B26:  STA ValidGamesFlags
+
 L8B28:  LDY #$10
 L8B2A:  LDA (SGDatPtr),Y
 L8B2C:  CLC
 L8B2D:  ADC #$01
 L8B2F:  STA Ch1Class
+
 L8B31:  INY
 L8B32:  LDA (SGDatPtr),Y
 L8B34:  CLC
 L8B35:  ADC #$01
 L8B37:  STA Ch2Class
+
 L8B39:  INY
 L8B3A:  LDA (SGDatPtr),Y
 L8B3C:  CLC
 L8B3D:  ADC #$01
 L8B3F:  STA Ch3Class
+
 L8B41:  INY
 L8B42:  LDA (SGDatPtr),Y
 L8B44:  CLC
 L8B45:  ADC #$01
 L8B47:  STA Ch4Class
+
 L8B49:  JSR L8CF5
 L8B4C:  LDX #$00
 L8B4E:  LDY #$00
@@ -2202,6 +2253,9 @@ L8CEA:  JMP L8CEF
 L8CED:  LDA #$78
 L8CEF:  STA $7303
 L8CF2:  JMP L8B50
+
+;----------------------------------------------------------------------------------------------------
+
 L8CF5:  LDY #$00
 L8CF7:  LDA #$F0
 L8CF9:  STA $73C4,Y
@@ -2220,6 +2274,7 @@ L8D0F:  INY
 L8D10:  CPY #$04
 L8D12:  BNE L8D0A
 L8D14:  RTS
+
 L8D15:  LDX #$20
 L8D17:  CMP #$0B
 L8D19:  BCC L8D1D
@@ -2248,6 +2303,8 @@ L8D42:  LDA $2D
 L8D44:  ADC #$04
 L8D46:  STA $2D
 L8D48:  JMP L8D0F
+
+;----------------------------------------------------------------------------------------------------
 
 DoHandMade:
 L8D4B:  JSR InitPPU             ;($990C)Initialize the PPU.
@@ -3246,15 +3303,19 @@ L9573:  LDA $2A
 L9575:  PHA
 L9576:  LDA $29
 L9578:  PHA
+
 L9579:  LDA #$0E
 L957B:  STA $2A
 L957D:  LDA #$0A
 L957F:  STA $29
+
 L9581:  LDA #$0A
 L9583:  STA $2E
 L9585:  LDA #$0A
 L9587:  STA $2D
+
 L9589:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 L958C:  PLA
 L958D:  STA $29
 L958F:  PLA
@@ -6411,60 +6472,61 @@ LBA18:  .byte $00, $00, $03, $00, $00, $02, $02, $02, $02, $02, $02, $02, $02, $
 
 ;----------------------------------------------------------------------------------------------------
 
-LBA27:  TXA
-LBA28:  PHA
-LBA29:  LDA #$00
-LBA2B:  STA $B7
-LBA2D:  LDX #$08
-LBA2F:  LSR $B5
-LBA31:  BCC LBA36
-LBA33:  CLC
-LBA34:  ADC $B6
-LBA36:  ROR
-LBA37:  ROR $B7
-LBA39:  DEX
-LBA3A:  BNE LBA2F
-LBA3C:  STA $B8
-LBA3E:  PLA
-LBA3F:  TAX
-LBA40:  RTS
+RngCore:
+LBA27:  TXA                     ;
+LBA28:  PHA                     ;
+LBA29:  LDA #$00                ;
+LBA2B:  STA RngNum0             ;
+LBA2D:  LDX #$08                ;
+LBA2F:* LSR RngInput0           ;
+LBA31:  BCC +                   ;The core of the RNG algorithm.
+LBA33:  CLC                     ;The output will be a value between
+LBA34:  ADC RngInput1           ;0 and RngInput0-1, inclusive.
+LBA36:* ROR                     ;
+LBA37:  ROR RngNum0             ;
+LBA39:  DEX                     ;
+LBA3A:  BNE --                  ;
+LBA3C:  STA RngNum1             ;
+LBA3E:  PLA                     ;
+LBA3F:  TAX                     ;
+LBA40:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
 LoadSGData:
 LBA41:  LDY #SG_BOAT_X          ;
-LBA43:  LDA (SGDatPtr),Y        ;Save the boat X coord to the saved game.
+LBA43:  LDA (SGDatPtr),Y        ;Get the boat X coord from the saved game.
 LBA45:  STA BoatXPos            ;
 
 LBA48:  INY                     ;
-LBA49:  LDA (SGDatPtr),Y        ;Save the boat Y coord to the saved game.
+LBA49:  LDA (SGDatPtr),Y        ;Get the boat Y coord from the saved game.
 LBA4B:  STA BoatYPos            ;
 
 LBA4E:  LDY #SG_HORSE           ;
-LBA50:  LDA (SGDatPtr),Y        ;Save the horse status to the saved game.
+LBA50:  LDA (SGDatPtr),Y        ;Get the horse status from the saved game.
 LBA52:  STA OnHorse             ;
 
 LBA54:  LDY #SG_BRIB_PRAY       ;
-LBA56:  LDA (SGDatPtr),Y        ;Save the bribe/pray commands to the saved game.
+LBA56:  LDA (SGDatPtr),Y        ;Get the bribe/pray commands from the saved game.
 LBA58:  STA BribePray           ;
 
 LBA5A:  LDY #SG_PARTY_X         ;
-LBA5C:  LDA (SGDatPtr),Y        ;Save the party's X coord to the saved game.
+LBA5C:  LDA (SGDatPtr),Y        ;Get the party's X coord from the saved game.
 LBA5E:  STA MapXPos             ;
 
 LBA60:  INY                     ;
-LBA61:  LDA (SGDatPtr),Y        ;Save the party's Y coord to the saved game.
+LBA61:  LDA (SGDatPtr),Y        ;Get the party's Y coord from the saved game.
 LBA63:  STA MapYPos             ;
 
 LBA65:  LDY #SG_MAP_PROPS       ;
-LBA67:  LDA (SGDatPtr),Y        ;Save the current map's properties to the saved game.
+LBA67:  LDA (SGDatPtr),Y        ;Get the current map's properties from the saved game.
 LBA69:  STA MapProperties       ;
 
 LBA6B:  INY                     ;
-LBA6C:  LDA (SGDatPtr),Y        ;Save the current map to the saved game.
+LBA6C:  LDA (SGDatPtr),Y        ;get the current map from the saved game.
 LBA6E:  STA ThisMap             ;
 
-;Save Character data.
+;Get Character data.
 LBA70:  LDY #SG_CHR1_INDEX      ;
 LBA72:  LDA (SGDatPtr),Y        ;
 LBA74:  STA Ch1Index            ;
@@ -6483,26 +6545,25 @@ LBA8B:  STA GenPtr29UB          ;Set the pointer to the 1st character's data.
 LBA8D:  LDA #<Ch1Data           ;
 LBA8F:  STA GenPtr29LB          ;
 
-LBA91:  LDA #$10                ;Set an index to the 1st character's index in the character pool.
+LBA91:  LDA #SG_CHR1_INDEX      ;Set an index to the 1st character's index in the character pool.
 LBA93:  STA GenByte30           ;
 
 LoadCharDatLoop:
 LBA95:  LDY GenByte30
 LBA97:  LDA (SGDatPtr),Y
-LBA99:  STA $B5
+LBA99:  STA RngInput0
 
-LBA9B:  LDA #$40
-LBA9D:  STA $B6
-
-LBA9F:  JSR LBA27
+LBA9B:  LDA #$40                ;generate a random number between 0 and 63.
+LBA9D:  STA RngInput1           ;
+LBA9F:  JSR RngCore             ;($BA27)Core of the random number generator.
 
 LBAA2:  CLC
 LBAA3:  LDA SGDatPtrLB
-LBAA5:  ADC $B7
+LBAA5:  ADC RngNum0
 LBAA7:  STA $2B
 
 LBAA9:  LDA SGDatPtrUB
-LBAAB:  ADC $B8
+LBAAB:  ADC RngNum1
 LBAAD:  STA $2C
 
 LBAAF:  INC $2C

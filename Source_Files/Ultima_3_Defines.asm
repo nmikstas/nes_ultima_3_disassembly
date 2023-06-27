@@ -138,6 +138,8 @@
 
 .alias ChrNum           $2B     ;Keep track of character number when previewing.
 .alias ChrRow           $2C     ;Row character data will appear on when previewing.
+.alias ChrDYConst       $2D     ;LB intro scene, Reloads ChrDYVar when it hits 0.
+.alias ChrDYVar         $2E     ;LB intro scene, move char down this many pixels for every X.
 
 .alias Ch4StClass       $2C     ;Character 4 class used in status screen.
 .alias Ch3StClass       $2D     ;Character 3 class used in status screen.
@@ -149,6 +151,7 @@
 .alias ChrStatSelect    $30     ;Current character selected in the character status screen.
 .alias FlashCounter     $30     ;Used to count how log to flash the screen during spell casting.
 .alias EnCounter        $30     ;Keeps track of which enemy is being processed.
+.alias ChrDX            $30     ;During LB intro scene, This moves the X position of characters.
 
 .alias MapDatPtr        $41     ;Map data pointer.
 .alias MapDatPtrLB      $41     ;Map data pointer, lower byte.
@@ -711,6 +714,7 @@
 
 .alias NUM_CLASSES      $0B     ;11 different classes in the game.
 .alias NUM_RACES        $05     ;5 different races in the game.
+.alias NUM_CHARACTERS   $14     ;20 character slots per saved game.
 
 .alias D_PAD            $0F     ;All bits for D-pad input.
 .alias BTN_RIGHT        $01     ;Controller D-pad right.

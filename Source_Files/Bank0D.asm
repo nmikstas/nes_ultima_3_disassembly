@@ -910,7 +910,7 @@ L8861:  LDA (CrntChrPtr),Y
 L8863:  STA $B5
 L8865:  LDA #$64
 L8867:  STA $B6
-L8869:  JSR L8885
+L8869:  JSR RngCore             ;($8885)Core of the random number generator.
 L886C:  CLC
 L886D:  LDA $B7
 L886F:  ADC #$32
@@ -925,23 +925,27 @@ L887F:  INY
 L8880:  LDA $B8
 L8882:  STA (CrntChrPtr),Y
 L8884:  RTS
-L8885:  TXA
-L8886:  PHA
-L8887:  LDA #$00
-L8889:  STA $B7
-L888B:  LDX #$08
-L888D:  LSR $B5
-L888F:  BCC L8894
-L8891:  CLC
-L8892:  ADC $B6
-L8894:  ROR
-L8895:  ROR $B7
-L8897:  DEX
-L8898:  BNE L888D
-L889A:  STA $B8
-L889C:  PLA
-L889D:  TAX
-L889E:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+RngCore:
+L8885:  TXA                     ;
+L8886:  PHA                     ;
+L8887:  LDA #$00                ;
+L8889:  STA RngNum0             ;
+L888B:  LDX #$08                ;
+L888D:* LSR RngInput0           ;
+L888F:  BCC +                   ;The core of the RNG algorithm.
+L8891:  CLC                     ;The output will be a value between
+L8892:  ADC RngInput1           ;0 and RngInput0-1, inclusive.
+L8894:* ROR                     ;
+L8895:  ROR RngNum0             ;
+L8897:  DEX                     ;
+L8898:  BNE --                  ;
+L889A:  STA RngNum1             ;
+L889C:  PLA                     ;
+L889D:  TAX                     ;
+L889E:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -998,27 +1002,33 @@ L893B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 
 ;----------------------------------------------------------------------------------------------------
 
+SaveGame:
 L893E:  LDY #SG_BOAT_X
 L8940:  LDA BoatXPos
 L8943:  STA (SGDatPtr),Y
 L8945:  INY
 L8946:  LDA BoatYPos
 L8949:  STA (SGDatPtr),Y
+
 L894B:  LDY #SG_HORSE
 L894D:  LDA OnHorse
 L894F:  STA (SGDatPtr),Y
+
 L8951:  LDY #SG_BRIB_PRAY
 L8953:  LDA BribePray
 L8955:  STA (SGDatPtr),Y
+
 L8957:  LDY #SG_PARTY_X
 L8959:  LDA MapXPos
 L895B:  STA (SGDatPtr),Y
 L895D:  INY
 L895E:  LDA MapYPos
 L8960:  STA (SGDatPtr),Y
+
 L8962:  LDY #SG_MAP_PROPS
 L8964:  LDA MapProperties
 L8966:  STA (SGDatPtr),Y
+
 L8968:  INY
 L8969:  LDA ThisMap
 L896B:  STA (SGDatPtr),Y
@@ -1027,6 +1037,7 @@ L896D:  LDA #$72
 L896F:  STA $2A
 L8971:  LDA #$00
 L8973:  STA $29
+
 L8975:  LDA #$10
 L8977:  STA $30
 L8979:  LDY $30
@@ -1034,7 +1045,7 @@ L897B:  LDA (SGDatPtr),Y
 L897D:  STA $B5
 L897F:  LDA #$40
 L8981:  STA $B6
-L8983:  JSR L8885
+L8983:  JSR RngCore             ;($8885)Core of the random number generator.
 
 L8986:  CLC
 L8987:  LDA $C5
@@ -1058,6 +1069,7 @@ L89A7:  INC $30
 L89A9:  LDA $30
 L89AB:  CMP #$14
 L89AD:  BNE L8979
+
 L89AF:  LDY #$10
 L89B1:  LDA Ch1Index
 L89B4:  STA (SGDatPtr),Y
@@ -1121,7 +1133,7 @@ L8A4F:  ADC #$01
 L8A51:  STA $B5
 L8A53:  LDA #$64
 L8A55:  STA $B6
-L8A57:  JSR L8885
+L8A57:  JSR RngCore             ;($8885)Core of the random number generator.
 L8A5A:  LDY #$30
 L8A5C:  LDA (CrntChrPtr),Y
 L8A5E:  SEC
@@ -2709,7 +2721,7 @@ L9930:  CLC
 L9931:  ADC $00
 L9933:  ADC $01
 L9935:  STA $B6
-L9937:  JSR L8885
+L9937:  JSR RngCore             ;($8885)Core of the random number generator.
 L993A:  LDA $B7
 L993C:  ADC $B8
 L993E:  STA $BA

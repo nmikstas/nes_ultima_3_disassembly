@@ -953,7 +953,7 @@ LC661:  RTS
 
 DoTalkCmd:
 LC662:  JSR ChkValidNPC         ;($C6EC)Check if valid NPC in front of player.
-LC665:  BCS NoTalk
+LC665:  BCS NoTalk              ;Is there a valid NPC in front of the player? If not, branch.
 
 LC667:  LDA LastTalkedNPC0
 LC669:  STA LastTalkedNPC1
@@ -1021,13 +1021,16 @@ LC6C5:  STA TextIndex           ;
 LC6C7:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LC6CA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
+;The following table contains the function pointers to the various types of interactive
+;dialog found in the game.
+
 TalkFuncTbl:
 LC6CD:  .word FortuneTalk, HealerTalk, WeaponTalk, ArmoryTalk
 LC6D5:  .word GroceryTalk, PubTalk,    GuildTalk,  StableTalk
 LC6DD:  .word InnTalk,     TempleTalk, CasinoTalk, ShrineTalk
 LC6E5:  .word LBTalk,      SherryTalk
 
-LC6E9:  JMP (IndJumpPtr)
+LC6E9:  JMP (IndJumpPtr)        ;Jump to interactive dialog function above.
 
 ;----------------------------------------------------------------------------------------------------
 
