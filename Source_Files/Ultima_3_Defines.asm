@@ -81,6 +81,9 @@
 .alias NewChrY          $18     ;Next Y position to move character sprite in Lord British cut scene.
 .alias NewChrX          $19     ;Next X position to move character sprite in Lord British cut scene.
 
+.alias FormPartyY       $18     ;When forming party, Y pos of A,B button press.
+.alias FormPartyX       $19     ;When forming party, X pos of A,B button press.
+
 ;Name entry variables.
 .alias NameLength       $17     ;The current length of the name being entered.
 .alias NameSelRow       $18     ;The current row of the selector is on.
@@ -186,6 +189,12 @@
 .alias Ch3Class         $80     ;Char 3 class while making pre-made characters. $FF=Not chosen yet.
 .alias Ch4Class         $81     ;Char 4 class while making pre-made characters. $FF=Not chosen yet.
 
+.alias ChIndex_         $007E   ;Base address of characters selected when forming party.
+.alias Ch1Index_        $7E     ;Character 1 index in character pool when forming party.
+.alias Ch2Index_        $7F     ;Character 2 index in character pool when forming party.
+.alias Ch3Index_        $80     ;Character 3 index in character pool when forming party.
+.alias Ch4Index_        $81     ;Character 4 index in character pool when forming party.
+
 .alias TextBasePtr      $8B     ;Pointer to dialog pointer table($8000 or $9D80).
 .alias TextBasePtrLB    $8B     ;Pointer to dialog pointer table lower byte.
 .alias TextBasePtrUB    $8C     ;Pointer to dialog pointer table upper byte.
@@ -246,7 +255,7 @@
 .alias FightTurnIndex   $B3     ;Index to player/enemy that moves next. 0-3 are player characters.
                                 ;4 through 11 are enemies. 12 max.
 .alias ValidGamesFlags  $B3     ;The 3LSBs contain flag showing wich spots have valid saved games.
-                                ;This is for Bank0C only.
+.alias IsFormingParty   $B3     ;0=Selecting characters when forming party. 2=END elected.
 .alias CurPieceYVis     $B4     ;Current piece active on battefield. Upper nibble is their Y
                                 ;position on the battlefiled. 1=top row. LSB 0=invisible, 1=visible.
 
@@ -1091,6 +1100,12 @@
 .alias CLS_ALCHEMIST    $09     ;Alchemist class.
 .alias CLS_RANGER       $0A     ;Ranger class.
 .alias CLS_UNCHOSEN     $FF     ;Unchosen class.
+
+.alias RC_HUMAN         $00     ;Human race.
+.alias RC_ELF           $01     ;Elf race.
+.alias RC_DWARF         $02     ;Dwarf race.
+.alias RC_BOBBIT        $03     ;Bobbit race.
+.alias RC_FUZZY         $04     ;Fuzzy race.
 
 .alias MAGIC_NONE       $00     ;Class cannot use magic.
 .alias MAGIC_CLERIC     $01     ;Class can use cleric magic.

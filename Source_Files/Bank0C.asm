@@ -774,10 +774,10 @@ L8485:  LDX #$00                ;Default position of the selector sprite is in f
 
 LoadWndSelectPos:
 L8487:  LDA LoadWndYPosTbl,X    ;Set selector sprite Y position.
-L848A:  STA SpriteBufferBase    ;
+L848A:  STA SpriteBuffer        ;
 
 L848D:  LDA #$50                ;X position of selector sprite is always X=80.
-L848F:  STA SpriteBufferBase+3  ;
+L848F:  STA SpriteBuffer+3      ;
 
 ;Check for user inputs.
 LoadWndInputLoop:
@@ -973,7 +973,7 @@ L8588:  LDX #$00                ;Zero out index(save game 1).
 
 SelectEraseLoop:
 L858A:  LDA LoadWndYPosTbl,X    ;Set the selector sprite at the given menu item.
-L858D:  STA SpriteBufferBase    ;
+L858D:  STA SpriteBuffer        ;
 
 L8590:  LDA #$50                ;Set X position of new selector sprite at X=80.
 L8592:  STA SpriteBuffer+3      ;
@@ -1745,7 +1745,7 @@ L89C6:  INX                     ;Move the selector down 1 menu item.
 
 CreateUpdateY:
 L89C7:  LDA CreateYPosTbl,X     ;Update the Y position of the selector sprite.
-L89CA:  STA SpriteBufferBase    ;
+L89CA:  STA SpriteBuffer        ;
 L89CD:  JMP CreateInputLoop     ;($89A7)Jump to get the next input.
 
 ;----------------------------------------------------------------------------------------------------
@@ -1875,7 +1875,7 @@ L8A6F:  INX                     ;If not, move selector down one position.
 
 CreateChrUpdateY:
 L8A70:  LDA CreateChrYPosTbl,X  ;Update selector sprite Y position.
-L8A73:  STA SpriteBufferBase    ;
+L8A73:  STA SpriteBuffer        ;
 L8A76:  JMP CreateCharLoop      ;($8A11)Wait for next input on create character screen.
 
 ;----------------------------------------------------------------------------------------------------
@@ -2003,13 +2003,13 @@ L8B15:  STA TextIndex           ;
 L8B17:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L8B1A:  LDA #$30
-L8B1C:  STA SpriteBufferBase
+L8B1C:  STA SpriteBuffer
 
 L8B1F:  LDA #$20
-L8B21:  STA $7303
+L8B21:  STA SpriteBuffer+3
 
 L8B24:  LDA #$00
-L8B26:  STA ValidGamesFlags
+L8B26:  STA IsFormingParty
 
 L8B28:  LDY #$10
 L8B2A:  LDA (SGDatPtr),Y
@@ -2038,34 +2038,46 @@ L8B47:  STA Ch4Class
 L8B49:  JSR L8CF5
 L8B4C:  LDX #$00
 L8B4E:  LDY #$00
+
+FormPartyInputLoop:
 L8B50:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L8B53:  LDA ValidGamesFlags
-L8B55:  BNE L8BB5
+L8B53:  LDA IsFormingParty
+L8B55:  BNE FormChkBtnA
+
 L8B57:  LDA Pad1Input
-L8B59:  CMP #$01
-L8B5B:  BNE L8B6D
+L8B59:  CMP #BTN_RIGHT
+L8B5B:  BNE FormChkBtnLft
+
 L8B5D:  CPX #$01
-L8B5F:  BNE L8B64
-L8B61:  JMP L8B50
-L8B64:  INX
+L8B5F:  BNE +
+L8B61:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+L8B64:* INX
 L8B65:  LDA #$98
-L8B67:  STA $7303
-L8B6A:  JMP L8B50
-L8B6D:  CMP #$02
-L8B6F:  BNE L8B81
+L8B67:  STA SpriteBuffer+3
+L8B6A:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+FormChkBtnLft:
+L8B6D:  CMP #BTN_LEFT
+L8B6F:  BNE FormChkBtnUp
+
 L8B71:  CPX #$00
 L8B73:  BNE L8B78
-L8B75:  JMP L8B50
+L8B75:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 L8B78:  DEX
 L8B79:  LDA #$20
-L8B7B:  STA $7303
-L8B7E:  JMP L8B50
-L8B81:  CMP #$08
-L8B83:  BNE L8B9B
+L8B7B:  STA SpriteBuffer+3
+L8B7E:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+FormChkBtnUp:
+L8B81:  CMP #BTN_UP
+L8B83:  BNE FormChkBtnDn
+
 L8B85:  CPY #$00
-L8B87:  BNE L8B8C
-L8B89:  JMP L8B50
-L8B8C:  DEY
+L8B87:  BNE +
+L8B89:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+L8B8C:* DEY
 L8B8D:  TYA
 L8B8E:  ASL
 L8B8F:  ASL
@@ -2073,13 +2085,17 @@ L8B90:  ASL
 L8B91:  ASL
 L8B92:  CLC
 L8B93:  ADC #$30
-L8B95:  STA SpriteBufferBase
-L8B98:  JMP L8B50
-L8B9B:  CMP #$04
-L8B9D:  BNE L8BB5
+L8B95:  STA SpriteBuffer
+L8B98:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+FormChkBtnDn:
+L8B9B:  CMP #BTN_DOWN
+L8B9D:  BNE FormChkBtnA
+
 L8B9F:  CPY #$09
 L8BA1:  BNE L8BA6
-L8BA3:  JMP L8B50
+L8BA3:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
 L8BA6:  INY
 L8BA7:  TYA
 L8BA8:  ASL
@@ -2088,152 +2104,186 @@ L8BAA:  ASL
 L8BAB:  ASL
 L8BAC:  CLC
 L8BAD:  ADC #$30
-L8BAF:  STA SpriteBufferBase
-L8BB2:  JMP L8B50
+L8BAF:  STA SpriteBuffer
+L8BB2:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+FormChkBtnA:
 L8BB5:  LDA Pad1Input
-L8BB7:  CMP #$80
+L8BB7:  CMP #BTN_A
 L8BB9:  BEQ L8BBE
+
 L8BBB:  JMP L8C6B
-L8BBE:  LDA ValidGamesFlags
+
+L8BBE:  LDA IsFormingParty
 L8BC0:  BEQ L8BFF
+
 L8BC2:  CMP #$01
-L8BC4:  BEQ L8BFD
+L8BC4:  BEQ PartyNotFormed
+
 L8BC6:  TYA
 L8BC7:  PHA
 L8BC8:  LDY #$00
-L8BCA:  LDA $007E,Y
-L8BCD:  BEQ L8BF8
-L8BCF:  INY
-L8BD0:  CPY #$04
-L8BD2:  BNE L8BCA
-L8BD4:  LDY #$10
-L8BD6:  LDA Ch1Class
+
+L8BCA:*  LDA ChIndex_,Y         ;
+L8BCD:  BEQ PartyNotComplete    ;Have 4 characters been selected?
+L8BCF:  INY                     ;If not, branch. Party can't journey onward.
+L8BD0:  CPY #$04                ;
+L8BD2:  BNE -                   ;
+
+L8BD4:  LDY #SG_CHR1_INDEX
+L8BD6:  LDA Ch1Index_
 L8BD8:  SEC
 L8BD9:  SBC #$01
 L8BDB:  STA (SGDatPtr),Y
 L8BDD:  INY
-L8BDE:  LDA Ch2Class
+L8BDE:  LDA Ch2Index_
 L8BE0:  SEC
 L8BE1:  SBC #$01
 L8BE3:  STA (SGDatPtr),Y
 L8BE5:  INY
-L8BE6:  LDA Ch3Class
+L8BE6:  LDA Ch3Index_
 L8BE8:  SEC
 L8BE9:  SBC #$01
 L8BEB:  STA (SGDatPtr),Y
 L8BED:  INY
-L8BEE:  LDA Ch4Class
+L8BEE:  LDA Ch4Index_
 L8BF0:  SEC
 L8BF1:  SBC #$01
 L8BF3:  STA (SGDatPtr),Y
 L8BF5:  PLA
-L8BF6:  CLC
-L8BF7:  RTS
+
+L8BF6:  CLC                     ;Indicate a valid party has been formed before returning.
+L8BF7:  RTS                     ;
+
+PartyNotComplete:
 L8BF8:  PLA
 L8BF9:  TAY
-L8BFA:  JMP L8B50
+L8BFA:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+PartyNotFormed:
 L8BFD:  SEC
 L8BFE:  RTS
-L8BFF:  STX $19
-L8C01:  STY $18
-L8C03:  LDA $19
-L8C05:  BEQ L8C09
+
+L8BFF:  STX FormPartyX
+L8C01:  STY FormPartyY
+L8C03:  LDA FormPartyX
+L8C05:  BEQ +
+
 L8C07:  LDA #$0A
-L8C09:  CLC
-L8C0A:  ADC $18
-L8C0C:  STA $2A
+
+L8C09:* CLC
+L8C0A:  ADC FormPartyY
+L8C0C:  STA ChrSrcPtrUB
 L8C0E:  CLC
 L8C0F:  ADC #$01
 L8C11:  STA $30
 L8C13:  LDA #$00
-L8C15:  STA $29
-L8C17:  LSR $2A
-L8C19:  ROR $29
-L8C1B:  LSR $2A
-L8C1D:  ROR $29
+L8C15:  STA ChrSrcPtrLB
+L8C17:  LSR ChrSrcPtrUB
+L8C19:  ROR ChrSrcPtrLB
+L8C1B:  LSR ChrSrcPtrUB
+L8C1D:  ROR ChrSrcPtrLB
 L8C1F:  CLC
+
 L8C20:  LDA SGCharPtrLB
-L8C22:  ADC $29
-L8C24:  STA $29
+L8C22:  ADC ChrSrcPtrLB
+L8C24:  STA ChrSrcPtrLB
 L8C26:  LDA SGCharPtrUB
-L8C28:  ADC $2A
-L8C2A:  STA $2A
+L8C28:  ADC ChrSrcPtrUB
+L8C2A:  STA ChrSrcPtrUB
+
 L8C2C:  LDY #$00
-L8C2E:  LDA ($29),Y
-L8C30:  CMP #$FF
+L8C2E:  LDA (ChrSrcPtr),Y
+L8C30:  CMP #CHR_EMPTY_SLOT
 L8C32:  BNE L8C3B
-L8C34:  LDY $18
-L8C36:  LDX $19
-L8C38:  JMP L8B50
+
+L8C34:  LDY FormPartyY
+L8C36:  LDX FormPartyX
+L8C38:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
 L8C3B:  LDY #$00
-L8C3D:  LDA $007E,Y
+L8C3D:  LDA ChIndex_,Y
 L8C40:  CMP $30
 L8C42:  BEQ L8C64
 L8C44:  INY
 L8C45:  CPY #$04
 L8C47:  BNE L8C3D
 L8C49:  LDY #$00
-L8C4B:  LDA $007E,Y
+L8C4B:  LDA ChIndex_,Y
 L8C4E:  BEQ L8C5C
 L8C50:  INY
 L8C51:  CPY #$04
 L8C53:  BNE L8C4B
-L8C55:  LDY $18
-L8C57:  LDX $19
-L8C59:  JMP L8B50
+L8C55:  LDY FormPartyY
+L8C57:  LDX FormPartyX
+L8C59:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 L8C5C:  LDA $30
-L8C5E:  STA $007E,Y
+L8C5E:  STA ChIndex_,Y
 L8C61:  JSR L8CF5
-L8C64:  LDY $18
-L8C66:  LDX $19
-L8C68:  JMP L8B50
-L8C6B:  CMP #$40
-L8C6D:  BNE L8CA9
-L8C6F:  LDA ValidGamesFlags
+L8C64:  LDY FormPartyY
+L8C66:  LDX FormPartyX
+L8C68:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+L8C6B:  CMP #BTN_B
+L8C6D:  BNE FormChkBtnSel
+
+L8C6F:  LDA IsFormingParty
 L8C71:  BEQ L8C76
-L8C73:  JMP L8CA9
-L8C76:  STX $19
-L8C78:  STY $18
-L8C7A:  LDA $19
+L8C73:  JMP FormChkBtnSel       ;($8CA9)Check if select button was pressed.
+
+L8C76:  STX FormPartyX
+L8C78:  STY FormPartyY
+L8C7A:  LDA FormPartyX
 L8C7C:  BEQ L8C80
 L8C7E:  LDA #$0A
 L8C80:  SEC
-L8C81:  ADC $18
+L8C81:  ADC FormPartyY
 L8C83:  STA $30
 L8C85:  LDY #$00
-L8C87:  LDA $007E,Y
+L8C87:  LDA ChIndex_,Y
 L8C8A:  CMP $30
 L8C8C:  BEQ L8C9A
 L8C8E:  INY
 L8C8F:  CPY #$04
 L8C91:  BNE L8C87
-L8C93:  LDX $19
-L8C95:  LDY $18
-L8C97:  JMP L8B50
+L8C93:  LDX FormPartyX
+L8C95:  LDY FormPartyY
+L8C97:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
 L8C9A:  LDA #$00
-L8C9C:  STA $007E,Y
+L8C9C:  STA ChIndex_,Y
 L8C9F:  JSR L8CF5
-L8CA2:  LDY $18
-L8CA4:  LDX $19
-L8CA6:  JMP L8B50
-L8CA9:  CMP #$20
-L8CAB:  BEQ L8CB0
-L8CAD:  JMP L8B50
-L8CB0:  INC ValidGamesFlags
-L8CB2:  LDA ValidGamesFlags
+
+L8CA2:  LDY FormPartyY
+L8CA4:  LDX FormPartyX
+L8CA6:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+FormChkBtnSel:
+L8CA9:  CMP #BTN_SELECT         ;Was the select button pressed? If so, branch.
+L8CAB:  BEQ +                   ;Else ignore any other inputs.
+L8CAD:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
+L8CB0:* INC IsFormingParty
+L8CB2:  LDA IsFormingParty
 L8CB4:  CMP #$01
 L8CB6:  BNE L8CBC
+
 L8CB8:  LDA #$02
-L8CBA:  STA ValidGamesFlags
+L8CBA:  STA IsFormingParty
+
 L8CBC:  CMP #$03
 L8CBE:  BNE L8CDD
+
 L8CC0:  LDA #$00
-L8CC2:  STA ValidGamesFlags
+L8CC2:  STA IsFormingParty
+
 L8CC4:  LDA #$20
 L8CC6:  CPX #$00
-L8CC8:  BEQ L8CCC
+L8CC8:  BEQ +
+
 L8CCA:  LDA #$98
-L8CCC:  STA $7303
+
+L8CCC:* STA SpriteBuffer+3
 L8CCF:  TYA
 L8CD0:  ASL
 L8CD1:  ASL
@@ -2241,18 +2291,22 @@ L8CD2:  ASL
 L8CD3:  ASL
 L8CD4:  CLC
 L8CD5:  ADC #$30
-L8CD7:  STA SpriteBufferBase
-L8CDA:  JMP L8B50
+L8CD7:  STA SpriteBuffer
+L8CDA:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
+
 L8CDD:  LDA #$D0
-L8CDF:  STA SpriteBufferBase
-L8CE2:  LDA ValidGamesFlags
+L8CDF:  STA SpriteBuffer
+L8CE2:  LDA IsFormingParty
 L8CE4:  CMP #$01
 L8CE6:  BEQ L8CED
+
 L8CE8:  LDA #$A8
-L8CEA:  JMP L8CEF
+L8CEA:  JMP +
+
 L8CED:  LDA #$78
-L8CEF:  STA $7303
-L8CF2:  JMP L8B50
+
+L8CEF:* STA SpriteBuffer+3
+L8CF2:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -2346,6 +2400,7 @@ L8D8C:  STA $2D
 L8D8E:  LDA #$09                ;CHARACTER MAKING text.
 L8D90:  STA TextIndex           ;
 L8D92:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8D95:  LDA #$02
 L8D97:  STA $2A
 L8D99:  LDA #$06
@@ -2355,6 +2410,7 @@ L8D9F:  STA $2E
 L8DA1:  LDA #$0C
 L8DA3:  STA $2D
 L8DA5:  JSR DrawWndBrdr         ;($97A9)Draw window border.
+
 L8DA8:  LDA #$04
 L8DAA:  STA $2A
 L8DAC:  LDA #$06
@@ -2366,6 +2422,7 @@ L8DB6:  STA $2D
 L8DB8:  LDA #$0A                ;RACE text followed by a list of races.
 L8DBA:  STA TextIndex           ;
 L8DBC:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8DBF:  LDA #$00
 L8DC1:  STA $31
 L8DC3:  STA $32
@@ -2375,7 +2432,7 @@ L8DC9:  INY
 L8DCA:  CPY #$40
 L8DCC:  BNE L8DC7
 L8DCE:  LDA #$40
-L8DD0:  STA SpriteBufferBase
+L8DD0:  STA SpriteBuffer
 L8DD3:  LDA #$18
 L8DD5:  STA $7303
 
@@ -2529,14 +2586,14 @@ L8EFB:  INC $31
 L8EFD:  LDA $31
 L8EFF:  CMP #$01
 L8F01:  BNE L8F4B
-L8F03:  LDA SpriteBufferBase
+L8F03:  LDA SpriteBuffer
 L8F06:  STA $73C4
 L8F09:  LDA $7303
 L8F0C:  STA $73C7
 L8F0F:  LDA #$01
 L8F11:  STA $73C5
 L8F14:  LDA #$40
-L8F16:  STA SpriteBufferBase
+L8F16:  STA SpriteBuffer
 L8F19:  LDA #$48
 L8F1B:  STA $7303
 
@@ -2566,7 +2623,7 @@ L8F48:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made ch
 
 L8F4B:  CMP #$02
 L8F4D:  BNE L8F9A
-L8F4F:  LDA SpriteBufferBase
+L8F4F:  LDA SpriteBuffer
 L8F52:  STA $73C8
 L8F55:  LDA $7303
 L8F58:  STA $73CB
@@ -2596,7 +2653,7 @@ L8F85:  STA TextIndex
 L8F87:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L8F8A:  LDA #$C0
-L8F8C:  STA SpriteBufferBase
+L8F8C:  STA SpriteBuffer
 L8F8F:  LDA #$50
 L8F91:  STA $7303
 L8F94:  JSR L9016
@@ -2620,7 +2677,8 @@ L8FB7:  BEQ L8FBE
 L8FB9:  DEC $31
 L8FBB:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8FBE:  LDA #$F0
-L8FC0:  STA SpriteBufferBase
+L8FC0:  STA SpriteBuffer
+
 L8FC3:  LDA #$0C
 L8FC5:  STA $2A
 L8FC7:  LDA #$1A
@@ -2629,16 +2687,19 @@ L8FCB:  LDA #$12
 L8FCD:  STA $2E
 L8FCF:  LDA #$01
 L8FD1:  STA $2D
-L8FD3:  LDA #$0C
-L8FD5:  STA TextIndex
+L8FD3:  LDA #$0C                ;OK CANCEL text.
+L8FD5:  STA TextIndex           ;
 L8FD7:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L8FDA:  LDA #$A0
 L8FDC:  STA $7303
 L8FDF:  LDA #$D0
-L8FE1:  STA SpriteBufferBase
+L8FE1:  STA SpriteBuffer
+
 L8FE4:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8FE7:  LDA Pad1Input
-L8FE9:  CMP #$01
+
+L8FE9:  CMP #BTN_RIGHT
 L8FEB:  BNE L8FFC
 L8FED:  LDA $7303
 L8FF0:  CMP #$A0
@@ -2646,7 +2707,8 @@ L8FF2:  BNE L8FE4
 L8FF4:  LDA #$B8
 L8FF6:  STA $7303
 L8FF9:  JMP L8FE4
-L8FFC:  CMP #$02
+
+L8FFC:  CMP #BTN_LEFT
 L8FFE:  BNE L900F
 L9000:  LDA $7303
 L9003:  CMP #$B8
@@ -2654,8 +2716,10 @@ L9005:  BNE L8FE4
 L9007:  LDA #$A0
 L9009:  STA $7303
 L900C:  JMP L8FE4
-L900F:  CMP #$80
+
+L900F:  CMP #BTN_A
 L9011:  BNE L8FE4
+
 L9013:  JMP L8EFB
 L9016:  LDA $31
 L9018:  BNE L9026
@@ -2663,7 +2727,7 @@ L901A:  LDY #CHR_RACE
 L901C:  LDA (CrntChrPtr),Y
 L901E:  TAX
 L901F:  LDA $90F0,X
-L9022:  STA SpriteBufferBase
+L9022:  STA SpriteBuffer
 L9025:  RTS
 L9026:  CMP #$01
 L9028:  BNE L9044
@@ -2678,7 +2742,7 @@ L9037:  SBC #$06
 L9039:  STX $7303
 L903C:  TAX
 L903D:  LDA $90F0,X
-L9040:  STA SpriteBufferBase
+L9040:  STA SpriteBuffer
 L9043:  RTS
 L9044:  LDX $32
 L9046:  LDA $90F6,X
@@ -2691,11 +2755,13 @@ L9054:  CPY #$1E
 L9056:  BNE L9050
 L9058:  LDA #$32
 L905A:  LDY #CHR_STR
-L905C:  SEC
+
+L905C:* SEC
 L905D:  SBC (CrntChrPtr),Y
 L905F:  INY
 L9060:  CPY #$0B
-L9062:  BNE L905C
+L9062:  BNE -
+
 L9064:  STA BinInputLB
 L9066:  LDA #$00
 L9068:  STA BinInputUB
@@ -2880,6 +2946,7 @@ L91D2:  STA ValidGamesFlags
 L91D4:  JSR InitPPU             ;($990C)Initialize the PPU.
 L91D7:  LDA #$00
 L91D9:  STA CurPPUConfig1
+
 L91DB:  LDA #$04
 L91DD:  STA $2A
 L91DF:  LDA #$04
@@ -2891,6 +2958,7 @@ L91E9:  STA $2D
 L91EB:  LDA #$0F
 L91ED:  STA TextIndex
 L91EF:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L91F2:  LDA #$04
 L91F4:  STA $2A
 L91F6:  LDA #$0C
@@ -2975,6 +3043,7 @@ L9294:  PLA
 L9295:  STA $30
 L9297:  LDA #$00
 L9299:  STA ValidGamesFlags
+
 L929B:  LDA #$06
 L929D:  STA $2A
 L929F:  LDA #$0E
@@ -2984,6 +3053,7 @@ L92A5:  STA $2E
 L92A7:  LDA #$07
 L92A9:  STA $2D
 L92AB:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L92AE:  LDA #$1E
 L92B0:  STA CurPPUConfig1
 L92B2:  JSR L9352
@@ -3063,7 +3133,7 @@ L9352:  LDA ValidGamesFlags
 L9354:  ASL
 L9355:  TAX
 L9356:  LDA $9363,X
-L9359:  STA SpriteBufferBase
+L9359:  STA SpriteBuffer
 L935C:  LDA $9364,X
 L935F:  STA $7303
 L9362:  RTS
@@ -3115,12 +3185,17 @@ L93C4: CMP #$04
 L93C6: BNE L937D
 L93C8: RTS
 
-L93C9:  .byte $00, $02, $19, $0F, $05, $05, $00, $00, $01, $02, $05, $0F, $05, $19, $00, $00
-L93D9:  .byte $02, $04, $05, $0F, $19, $05, $00, $00, $03, $02, $0F, $19, $05, $05, $00, $00
-L93E9:  .byte $04, $03, $19, $0F, $05, $05, $00, $00, $05, $02, $19, $0F, $05, $05, $00, $00
-L93F9:  .byte $06, $01, $19, $0F, $05, $05, $00, $00, $07, $04, $05, $19, $05, $0F, $00, $00
-L9409:  .byte $08, $03, $05, $05, $14, $14, $00, $00, $09, $01, $05, $14, $14, $05, $00, $00
-L9419:  .byte $0A, $00, $19, $0F, $05, $05, $00, $00                                             
+L93C9:  .byte CLS_FIGHTER,     RC_DWARF,  25, 15, 05, 05, $00, $00
+L93D1:  .byte CLS_CLERIC,      RC_DWARF,  05, 15, 05, 25, $00, $00
+L93D9:  .byte CLS_WIZARD,      RC_FUZZY,  05, 15, 25, 05, $00, $00
+L93E1:  .byte CLS_THIEF,       RC_DWARF,  15, 25, 05, 05, $00, $00
+L93E9:  .byte CLS_PALADIN,     RC_BOBBIT, 25, 15, 05, 05, $00, $00
+L93F1:  .byte CLS_BARBARIAN,   RC_DWARF,  25, 15, 05, 05, $00, $00
+L93F9:  .byte CLS_LARK,        RC_ELF,    25, 15, 05, 05, $00, $00
+L9401:  .byte CLS_ILLUSIONIST, RC_FUZZY,  05, 25, 05, 15, $00, $00
+L9409:  .byte CLS_DRUID,       RC_BOBBIT, 05, 05, 20, 20, $00, $00
+L9411:  .byte CLS_ALCHEMIST,   RC_ELF,    05, 20, 20, 05, $00, $00
+L9419:  .byte CLS_RANGER,      RC_HUMAN,  25, 15, 05, 05, $00, $00                                             
 
 L9421:  LDA SGDatPtrLB
 L9423:  STA $29
@@ -3186,6 +3261,7 @@ L948E:  LDX SGDatPtrUB
 L9490:  INX
 L9491:  STX SGCharPtrUB
 L9493:  JSR ShowCharList        ;($99DF)Show the list of character is the current save game file.
+
 L9496:  LDA #$10
 L9498:  STA $2A
 L949A:  LDA #$1A
@@ -3197,8 +3273,9 @@ L94A4:  STA $2D
 L94A6:  LDA #$08
 L94A8:  STA TextIndex
 L94AA:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L94AD:  LDA #$30
-L94AF:  STA SpriteBufferBase
+L94AF:  STA SpriteBuffer
 L94B2:  LDA #$20
 L94B4:  STA $7303
 L94B7:  LDA #$00
@@ -3240,7 +3317,7 @@ L94FF:  ASL
 L9500:  ASL
 L9501:  CLC
 L9502:  ADC #$30
-L9504:  STA SpriteBufferBase
+L9504:  STA SpriteBuffer
 L9507:  JMP L94BF
 L950A:  CMP #$04
 L950C:  BNE L9524
@@ -3255,7 +3332,7 @@ L9519:  ASL
 L951A:  ASL
 L951B:  CLC
 L951C:  ADC #$30
-L951E:  STA SpriteBufferBase
+L951E:  STA SpriteBuffer
 L9521:  JMP L94BF
 L9524:  LDA Pad1Input
 L9526:  CMP #$80
@@ -3436,10 +3513,10 @@ L9672:  ASL
 L9673:  ASL
 L9674:  CLC
 L9675:  ADC #$30
-L9677:  STA SpriteBufferBase
+L9677:  STA SpriteBuffer
 L967A:  JMP L94BF
 L967D:  LDA #$D0
-L967F:  STA SpriteBufferBase
+L967F:  STA SpriteBuffer
 L9682:  LDA ValidGamesFlags
 L9684:  CMP #$01
 L9686:  BEQ L968D
@@ -3832,15 +3909,15 @@ L9917:  BNE -                   ;If not, branch to wait more.
 L9919:  LDA #$D4                ;Hide the upper 10 sprites.
 L991B:  STA HideUprSprites      ;
 
-L991D:  LDY #$00
-L991F:  LDA #$F0
+L991D:  LDY #$00                ;Prepare to hide all sprites off the bottom of the screen.
+L991F:  LDA #$F0                ;
 
-L9921:* STA SpriteBuffer,Y
-L9924:  INY
-L9925:  INY
-L9926:  INY
-L9927:  INY
-L9928:  BNE -
+L9921:* STA SpriteBuffer,Y      ;
+L9924:  INY                     ;
+L9925:  INY                     ;Have all the sprites been hidden?
+L9926:  INY                     ;If not, branch to hide another one.
+L9927:  INY                     ;
+L9928:  BNE -                   ;
 
 L992A:  LDY #$00
 L992C:  LDA #$00
@@ -3861,12 +3938,13 @@ L9944:  LDA #$01
 L9946:  STA $2E
 L9948:  LDA #$00
 L994A:  STA $2D
-L994C:  JSR LoadPPU1            ;($C006)Load values into PPU.
+L994C:* JSR LoadPPU1            ;($C006)Load values into PPU.
 
 L994F:  INC $2C
 L9951:  LDA $2C
 L9953:  CMP #$24
-L9955:  BNE L994C
+L9955:  BNE -
+
 L9957:  LDA #$1E
 L9959:  STA CurPPUConfig1
 L995B:  RTS
@@ -4620,7 +4698,7 @@ LA204:  JSR Chr2ndPage          ;($A3ED)Show cards and armor status page.
 
 PrepSelArmor:
 LA207:  LDA #$F0                ;Hide selectior sprite off bottom of screen.
-LA209:  STA SpriteBufferBase    ;
+LA209:  STA SpriteBuffer        ;
 
 LA20C:  JSR DoSelArmor          ;($B5E1)Select equipped armor.
 LA20F:  STA GenByte30           ;
@@ -6739,7 +6817,7 @@ LBC5C:  ADC $2E
 LBC5E:  ASL
 LBC5F:  ASL
 LBC60:  ASL
-LBC61:  STA SpriteBufferBase
+LBC61:  STA SpriteBuffer
 LBC64:  LDA Wnd2XPos
 LBC67:  CLC
 LBC68:  ADC #$01
@@ -6817,8 +6895,8 @@ LBCF2:  ASL
 LBCF3:  ASL
 LBCF4:  ASL
 LBCF5:  CLC
-LBCF6:  ADC SpriteBufferBase
-LBCF9:  STA SpriteBufferBase
+LBCF6:  ADC SpriteBuffer
+LBCF9:  STA SpriteBuffer
 LBCFC:  LDA #$FF
 LBCFE:  STA $9B
 LBD00:  JSR LBE15
@@ -6902,8 +6980,8 @@ LBD8A:  ASL
 LBD8B:  ASL
 LBD8C:  ASL
 LBD8D:  CLC
-LBD8E:  ADC SpriteBufferBase
-LBD91:  STA SpriteBufferBase
+LBD8E:  ADC SpriteBuffer
+LBD91:  STA SpriteBuffer
 LBD94:  JMP LBCFC
 LBD97:  LDA $2D
 LBD99:  SEC
@@ -6914,7 +6992,7 @@ LBD9F:  ASL
 LBDA0:  ASL
 LBDA1:  ASL
 LBDA2:  CLC
-LBDA3:  ADC SpriteBufferBase
+LBDA3:  ADC SpriteBuffer
 LBDA6:  JMP LBD91
 LBDA9:  LDA #$00
 LBDAB:  STA $2B
@@ -6926,7 +7004,7 @@ LBDB3:  ASL
 LBDB4:  ASL
 LBDB5:  ASL
 LBDB6:  SEC
-LBDB7:  SBC SpriteBufferBase
+LBDB7:  SBC SpriteBuffer
 LBDBA:  EOR #$FF
 LBDBC:  CLC
 LBDBD:  ADC #$01
