@@ -1539,7 +1539,7 @@ L9062:  .byte $F4, $F5, $F8, $F9, $F4, $FF, $F8, $FE, $FC, $F5, $FD, $F9, $FC, $
 
 L9072:  PHA
 L9073:  CLC
-L9074:  ADC $0300
+L9074:  ADC PPUBufLength
 L9077:  BCS L908D
 L9079:  TAX
 L907A:  LDA DisSpriteAnim
@@ -1552,13 +1552,13 @@ L9085:  JMP L908D
 L9088:  TXA
 L9089:  CMP #$20
 L908B:  BCC L9095
-L908D:  LDA #$01
-L908F:  STA $0E
-L9091:  LDA $0E
+L908D:  LDA #PPU_DO_UPDATE
+L908F:  STA UpdatePPU
+L9091:  LDA UpdatePPU
 L9093:  BNE L9091
-L9095:  LDA #$00
-L9097:  STA $0E
-L9099:  LDX $0300
+L9095:  LDA #PPU_NO_UPDATE
+L9097:  STA UpdatePPU
+L9099:  LDX PPUBufLength
 L909C:  INX
 L909D:  CLC
 L909E:  PLA
@@ -1566,22 +1566,30 @@ L909F:  ADC #$02
 L90A1:  STA PPUBuffer,X
 L90A4:  INX
 L90A5:  SEC
-L90A6:  ADC $0300
-L90A9:  STA $0300
+L90A6:  ADC PPUBufLength
+L90A9:  STA PPUBufLength
 L90AC:  RTS
-L90AD:  LDA $0300
-L90B0:  BEQ L90B6
-L90B2:  LDA #$01
-L90B4:  STA $0E
-L90B6:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+SetPPUUpdate:
+L90AD:  LDA PPUBufLength
+L90B0:  BEQ +
+L90B2:  LDA #PPU_DO_UPDATE
+L90B4:  STA UpdatePPU
+L90B6:* RTS
+
+;----------------------------------------------------------------------------------------------------
+
 L90B7:  LDX HideUprSprites
 L90B9:  LDA #SPRT_HIDE
-L90BB:  STA SpriteBuffer,X
+
+L90BB:* STA SpriteBuffer,X
 L90BE:  INX
 L90BF:  INX
 L90C0:  INX
 L90C1:  INX
-L90C2:  BNE L90BB
+L90C2:  BNE -
 L90C4:  RTS
 
 L90C5:  .byte $44, $44, $44, $44, $44, $44, $24, $24, $42, $24, $22, $22, $44, $44, $44, $44
@@ -1699,8 +1707,8 @@ L9250:  .byte $2F, $0A, $09, $09, $2F, $30, $01, $26, $2F, $06, $15, $26, $2F, $
 L9260:  .byte $2F, $30, $15, $26                                    
 
 L9264:  LDY #$00
-L9266:  LDA ($29),Y
-L9268:  STA $7500,Y
+L9266:  LDA (PPUSrcPtr),Y
+L9268:  STA PalBuffer,Y
 L926B:  INY
 L926C:  CPY #$20
 L926E:  BNE L9266
@@ -1712,7 +1720,7 @@ L927A:  INX
 L927B:  LDA #$00
 L927D:  STA PPUBuffer,X
 L9280:  LDY #$00
-L9282:  LDA ($29),Y
+L9282:  LDA (PPUSrcPtr),Y
 L9284:  INX
 L9285:  STA PPUBuffer,X
 L9288:  INY
@@ -3023,9 +3031,9 @@ LA249:  BCS PPUStringLoop
 
 PPUBufDone:
 LA24B:  JSR LA280
-LA24E:  LDA #$00
+LA24E:  LDA #PPU_NO_UPDATE
 LA250:  STA PPUBufBase
-LA253:  STA $0E
+LA253:  STA UpdatePPU
 LA255:  RTS
 
 LA256:  .byte $8C, $11, $11, $11, $11, $11, $22, $C2, $22, $22, $22, $22, $2C, $22, $11, $11
@@ -4637,6 +4645,7 @@ LB38A:  STA $2A
 LB38C:  LDA #$AB
 LB38E:  STA $29
 LB390:  JMP LB3AC
+
 LB393:  CMP #$0A
 LB395:  BCS LB3A2
 LB397:  LDA #$B4
@@ -4649,8 +4658,10 @@ LB3A4:  STA $2A
 LB3A6:  LDA #$6B
 LB3A8:  STA $29
 LB3AA:  DEC $B1
+
 LB3AC:  JSR LB67A
 LB3AF:  RTS
+
 LB3B0:  JSR LB6BD
 LB3B3:  CMP #$0E
 LB3B5:  BEQ LB3C6
@@ -4979,14 +4990,18 @@ LB677:  LSR
 LB678:  TAY
 LB679:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 LB67A:  LDY #$00
-LB67C:  LDA ($29),Y
-LB67E:  STA $7500,Y
+
+LB67C:* LDA (PPUSrcPtr),Y
+LB67E:  STA PalBuffer,Y
 LB681:  INY
 LB682:  CPY #$20
-LB684:  BNE LB67C
+LB684:  BNE -
+
 LB686:  LDA #$20
-LB688:  JSR LBC8F
+LB688:  JSR UpdatePPUBufLen     ;($BC8F)Update PPU buffer length.
 LB68B:  LDA #$3F
 LB68D:  STA PPUBuffer,X
 LB690:  INX
@@ -5000,7 +5015,7 @@ LB69E:  INY
 LB69F:  CPY #$20
 LB6A1:  BNE LB698
 LB6A3:  LDA #$01
-LB6A5:  JSR LBC8F
+LB6A5:  JSR UpdatePPUBufLen     ;($BC8F)Update PPU buffer length.
 LB6A8:  LDA #$00
 LB6AA:  STA PPUBuffer,X
 LB6AD:  INX
@@ -5011,6 +5026,7 @@ LB6B4:  LDA #$00
 LB6B6:  STA PPUBuffer,X
 LB6B9:  JSR LB6CA
 LB6BC:  RTS
+
 LB6BD:  LDA $49
 LB6BF:  ASL
 LB6C0:  ASL
@@ -5019,12 +5035,13 @@ LB6C2:  ASL
 LB6C3:  CLC
 LB6C4:  ADC $4A
 LB6C6:  TAY
-LB6C7:  LDA ($41),Y
+LB6C7:  LDA (MapDatPtr),Y
 LB6C9:  RTS
-LB6CA:  LDA $0300
+
+LB6CA:  LDA PPUBufLength
 LB6CD:  BEQ LB6D3
-LB6CF:  LDA #$01
-LB6D1:  STA $0E
+LB6CF:  LDA #PPU_DO_UPDATE
+LB6D1:  STA UpdatePPU
 LB6D3:  RTS
 LB6D4:  LDA $2A
 LB6D6:  STA $30
@@ -5622,13 +5639,16 @@ LBC86:  RTS
 
 LBC87:  .byte $70, $70, $78, $70, $70, $78, $78, $78
 
+;----------------------------------------------------------------------------------------------------
+
+UpdatePPUBufLen:
 LBC8F:  PHA
 LBC90:  CLC
-LBC91:  ADC $0300
+LBC91:  ADC PPUBufLength
 LBC94:  BCS LBCAA
 LBC96:  TAX
 LBC97:  LDA DisSpriteAnim
-LBC99:  ORA $9F
+LBC99:  ORA DisNPCMovement
 LBC9B:  BEQ LBCA5
 LBC9D:  TXA
 LBC9E:  CMP #$60
@@ -5637,13 +5657,15 @@ LBCA2:  JMP LBCAA
 LBCA5:  TXA
 LBCA6:  CMP #$20
 LBCA8:  BCC LBCB2
-LBCAA:  LDA #$01
-LBCAC:  STA $0E
-LBCAE:  LDA $0E
+
+LBCAA:  LDA #PPU_DO_UPDATE
+LBCAC:  STA UpdatePPU
+LBCAE:  LDA UpdatePPU
 LBCB0:  BNE LBCAE
-LBCB2:  LDA #$00
-LBCB4:  STA $0E
-LBCB6:  LDX $0300
+
+LBCB2:  LDA #PPU_NO_UPDATE
+LBCB4:  STA UpdatePPU
+LBCB6:  LDX PPUBufLength
 LBCB9:  INX
 LBCBA:  CLC
 LBCBB:  PLA
@@ -5651,8 +5673,8 @@ LBCBC:  ADC #$02
 LBCBE:  STA PPUBuffer,X
 LBCC1:  INX
 LBCC2:  SEC
-LBCC3:  ADC $0300
-LBCC6:  STA $0300
+LBCC3:  ADC PPUBufLength
+LBCC6:  STA PPUBufLength
 LBCC9:  RTS
 
 LBCCA:  .byte $BD, $FA, $F0, $E0, $C2, $C0, $AC, $F1, $FE, $B0, $C7, $FC, $FF, $FC, $E0, $D2
@@ -5793,7 +5815,7 @@ LBE21:  AND #$1F
 LBE23:  STA $72
 LBE25:  JSR $C02D
 LBE28:  LDA #$20
-LBE2A:  JSR LBC8F
+LBE2A:  JSR UpdatePPUBufLen     ;($BC8F)Update PPU buffer length.
 LBE2D:  LDA #$23
 LBE2F:  STA PPUBuffer,X
 LBE32:  INX
@@ -5808,7 +5830,7 @@ LBE42:  INY
 LBE43:  CPY #$20
 LBE45:  BNE LBE3B
 LBE47:  LDA #$20
-LBE49:  JSR LBC8F
+LBE49:  JSR UpdatePPUBufLen     ;($BC8F)Update PPU buffer length.
 LBE4C:  LDA #$23
 LBE4E:  STA PPUBuffer,X
 LBE51:  INX
@@ -5823,7 +5845,7 @@ LBE61:  INY
 LBE62:  CPY #$20
 LBE64:  BNE LBE5A
 LBE66:  LDA #$20
-LBE68:  JSR LBC8F
+LBE68:  JSR UpdatePPUBufLen     ;($BC8F)Update PPU buffer length.
 LBE6B:  LDA #$27
 LBE6D:  STA PPUBuffer,X
 LBE70:  INX
@@ -5838,7 +5860,7 @@ LBE80:  INY
 LBE81:  CPY #$20
 LBE83:  BNE LBE79
 LBE85:  LDA #$20
-LBE87:  JSR LBC8F
+LBE87:  JSR UpdatePPUBufLen     ;($BC8F)Update PPU buffer length.
 LBE8A:  LDA #$27
 LBE8C:  STA PPUBuffer,X
 LBE8F:  INX
@@ -5862,6 +5884,7 @@ LBED8:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $
 LBEE8:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 LBEF8:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 
+UpdateCstlFall:
 LBF00:  LDA #SFX_EX_FALL+INIT
 LBF02:  STA ThisSFX
 LBF04:  LDX #$02

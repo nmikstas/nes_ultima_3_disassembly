@@ -133,6 +133,12 @@
 .alias PPUByteCntLB     $2D     ;PPU write, 16-bit counter, lower byte.
 .alias PPUByteCntUB     $2E     ;PPU write, 16-bit counter, upper byte.
 
+;Large character portrait.
+.alias NTDestAdr        $29     ;Name table destination address.
+.alias NTDestAdrLB      $29     ;Name table destination address, lower byte.
+.alias NTDestAdrUB      $2A     ;Name table destination address, upper byte.
+.alias PTStartTile      $2D     ;Tile number to start loading GFX data into.
+
 ;Window drawing.
 .alias WndYPos          $29     ;Y position of window to draw.
 .alias WndXPos          $2A     ;X position of window to draw.
@@ -156,6 +162,12 @@
 .alias EnCounter        $30     ;Keeps track of which enemy is being processed.
 .alias ChrDX            $30     ;During LB intro scene, This moves the X position of characters.
 
+.alias RdyMadeChr2_     $2C     ;Class of the 1st ready-made character to appear on the screen.
+.alias RdyMadeChr1_     $2D     ;Class of the 2nd ready-made character to appear on the screen.
+.alias RdyMadeChr1      $31     ;Class of the 1st ready-made character to appear on the screen.
+.alias RdyMadeChr2      $32     ;Class of the 2nd ready-made character to appear on the screen.
+.alias RdyMadeIndex     $33     ;Index into ready-made characters table(0-5).
+
 .alias MapDatPtr        $41     ;Map data pointer.
 .alias MapDatPtrLB      $41     ;Map data pointer, lower byte.
 .alias MapDatPtrUB      $42     ;Map data pointer, upper byte.
@@ -164,6 +176,8 @@
 .alias NPCSrcPtrLB      $45     ;Base address of NPC data for current map, lower byte.
 .alias NPCSrcPtrUB      $46     ;Base address of NPC data for current map, upper byte.
 
+.alias TargetYPos       $47     ;Target Y location on map.
+.alias TargetXPos       $48     ;Target X location on map.
 .alias MapYPos          $49     ;Player's Y position on the current map.
 .alias MapXPos          $4A     ;Player's X position on the current map.
 .alias ReturnYPos       $4B     ;Return Y coordinates on world map when leaving town/dungeon.
@@ -184,6 +198,7 @@
 .alias Ch3Dir           $80     ;Character 3 direction. $00,$04=down, $01=right, $02=left, $08=up.
 .alias Ch4Dir           $81     ;Character 4 direction. $00,$04=down, $01=right, $02=left, $08=up.
 
+.alias ChClasses        $007E   ;Base address of character classes.
 .alias Ch1Class         $7E     ;Char 1 class while making pre-made characters. $FF=Not chosen yet.
 .alias Ch2Class         $7F     ;Char 2 class while making pre-made characters. $FF=Not chosen yet.
 .alias Ch3Class         $80     ;Char 3 class while making pre-made characters. $FF=Not chosen yet.
@@ -250,12 +265,14 @@
 .alias IgnoreInput      $A9     ;1=Ignore game pad input.
 
 .alias HideUprSprites   $AF     ;Multiple of 4. sprites higher than valule are hidden off screen.
+.alias UnusedB0         $B0     ;Written to but never read.
 
 .alias DungeonLevel     $B2     ;The current dungeon level minus 1.
 .alias FightTurnIndex   $B3     ;Index to player/enemy that moves next. 0-3 are player characters.
                                 ;4 through 11 are enemies. 12 max.
 .alias ValidGamesFlags  $B3     ;The 3LSBs contain flag showing wich spots have valid saved games.
 .alias IsFormingParty   $B3     ;0=Selecting characters when forming party. 2=END elected.
+.alias RdyMdSelection   $B3     ;0=first char in ready-made character screen. 1=second char.
 .alias CurPieceYVis     $B4     ;Current piece active on battefield. Upper nibble is their Y
                                 ;position on the battlefiled. 1=top row. LSB 0=invisible, 1=visible.
 
@@ -307,13 +324,15 @@
 .alias UnusedE4         $E4     ;Not used.
 .alias EnemyNum         $E5     ;Enemy number. Also $FF=enemy remains after fight.
                                 ;Numbers are the same as those found on Bank 3.
-
+.alias ThisNPCIndex     $E6     ;Index to current NPC.
 .alias NewGmCreated     $E7     ;$01=A new game greated. Bank0C only.
 .alias EndGmTimerLB     $E7     ;Escape Exodus castle timer, lower byte. updates every frame.
 .alias EndGmTimerUB     $E8     ;Escape Exodus castle timer, upper byte. $0F=Times up.
 .alias ChkCharDead      $E9     ;Non-zero:Function needs to check if selected character is dead.
 
 .alias DoAnimations     $EA     ;1=Do animation, 0=skip animations.
+
+.alias EntrSndAndFlsh   $EC     ;1=Make sound and flash when entering new map(Exiting moon gate).
 
 .alias ActiveMessage    $EF     ;$01=Message not completed. Used when message is multi part.
 
@@ -503,8 +522,9 @@
 .alias SpriteBufferBase $7300   ;Base address of sprite buffer.
 .alias SpriteBuffer     $7300   ;Through $73FF. Sprite data buffered here before RAM.
 .alias BlocksBuffer     $7400   ;Through $74FF. Blocks to be put on the screen.
+.alias PalBuffer        $7500   ;Throug  $751F. Both palette buffers below.
 .alias BkPalBuffer      $7500   ;Through $750F. Background palette for current map.
-.alias SpPalBuffer      $7510   ;Through $7510. Sprite pallete for current screen.
+.alias SpPalBuffer      $7510   ;Through $751F. Sprite pallete for current screen.
 
 .alias MapRAM           $7800   ;Through $7FFF. The current map is loaded into this area. 64 X 64.
                                 ;Each byte is 2 tiles. There is no compression.
@@ -990,6 +1010,7 @@
 .alias CHR_WEAPONS      $0C     ;Index to character's weapons.
 .alias CHR_ARMOR        $1B     ;Index to character's Armor.
 .alias CHR_ITEMS        $22     ;Index to character's items.
+.alias CHR_GLD_PICK     $27     ;Index to character's gold pick inventory.
 .alias CHR_COMPASS      $2A     ;Index to character's compass heart.
 .alias CHR_FOOD         $2B     ;Index to character's food.
 .alias CHR_HIT_PNTS     $2D     ;Index to character's hit points.
@@ -1022,13 +1043,14 @@
 .alias BLK_WATER        $03     ;Water GFX block.
 .alias BLK_MOUNTAIN     $04     ;Mountain GFX block.
 .alias BLK_DOOR         $05     ;Door GFX block.
+.alias BLK_MOONGATE     $05     ;Moongate GFX block.
 .alias BLK_PATH         $06     ;Path GFX block.
 .alias BLK_FIRE         $07     ;Fire GFX block.
 .alias BLK_HWALL        $08     ;Horizontal wall GFX block.
 .alias BLK_BSNAKE       $08     ;Back half of snake GFX block.
 .alias BLK_COUNTER      $09     ;Shop counter GFX block.
 .alias BLK_CHEST        $0A     ;Treasure cheest GFX block.
-.alias BLK_FLOOR        $0B     ; GFX block.
+.alias BLK_FLOOR        $0B     ;Floor GFX block.
 .alias BLK_VWALL        $0C     ;Vertical wall GFX block.
 .alias BLK_FSNAKE       $0C     ;Front half of snake GFX block.
 .alias BLK_CASTLE       $0D     ;Castle GFX block.
@@ -1050,6 +1072,9 @@
 .alias SQ2_DAT_OFFSET   $04     ;Offset for SQ2 data pointer registers. Base is ChnDatPtr.
 .alias TRI_DAT_OFFSET   $08     ;Offset for Triangle data pointer registers. Base is ChnDatPtr.
 .alias NSE_DAT_OFFSET   $0C     ;Offset for Noise data pointer registers. Base is ChnDatPtr.
+
+.alias PPU_NO_UPDATE    $00     ;PPU not awaiting update.
+.alias PPU_DO_UPDATE    $01     ;PPY awaiting update.
 
 .alias ENABLE           $00     ;Enable for various registers.
 .alias DISABLE          $01     ;Disable for various registers.

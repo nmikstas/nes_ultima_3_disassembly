@@ -43,6 +43,7 @@
 .alias  ShowWhoWnd              $B700
 .alias  ShowIntroText           $B800
 .alias  CalcEnDmg               $B900
+.alias  UpdateCstlFall          $BF00
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -201,8 +202,9 @@ LC0E4:  LDA #$10
 LC0E6:  STA $9B
 LC0E8:  JSR LE6D8
 
-LC0EB:* LDA #$01
-LC0ED:  STA $B0
+LC0EB:* LDA #$01                ;No effect.
+LC0ED:  STA UnusedB0            ;
+
 LC0EF:  LDA #$00
 LC0F1:  STA CurPPUConfig1
 LC0F3:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
@@ -227,7 +229,7 @@ LC114:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LC117:  LDA #$18
 LC119:  STA CurPPUConfig1
 LC11B:  LDA #$01
-LC11D:  STA $B0
+LC11D:  STA UnusedB0            ;No effect.
 LC11F:  LDX #$00
 
 LC121:* LDA $C132,X
@@ -308,13 +310,13 @@ LC19C:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties
 LC19F:  LDA #ANIM_ENABLE        ;Enable sprite animations.
 LC1A1:  STA DoAnimations        ;
 
-LC1A3:  LDA #$10
+LC1A3:  LDA #$10                ;Wait 16 frames.
 LC1A5:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 
 LC1A8:  LDA #$00
 LC1AA:  STA $C9
 LC1AC:  LDA #SPRT_HIDE
-LC1AE:  STA $7300
+LC1AE:  STA SpriteBuffer
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -322,7 +324,7 @@ MainGameLoop:
 LC1B1:  LDA #INP_NO_IGNORE      ;React to player's input on the controller.
 LC1B3:  STA IgnoreInput         ;
 
-LC1B5:  STA $B0
+LC1B5:  STA UnusedB0            ;No effect.
 
 LC1B7:  LDA MapProperties
 LC1B9:  AND #MAP_DUNGEON
@@ -341,10 +343,10 @@ LC1CB:  STA IgnoreInput         ;
 
 LC1CD:  JSR BlockAlign          ;($FD1C)Update block aligned position of character 1.
 
-LC1D0:  LDA Pad1Input
-LC1D2:  AND #D_PAD
-LC1D4:  BEQ +
-LC1D6:  JMP LC2AB
+LC1D0:  LDA Pad1Input           ;Is a button on the D pad being pressed?
+LC1D2:  AND #D_PAD              ;If not, branch.
+LC1D4:  BEQ +                   ;
+LC1D6:  JMP ChkNextMove         ;($C2AB)Check if character can be moved to requested position.
 
 LC1D9:* LDA ExodusDead
 LC1DB:  BNE LC227
@@ -386,17 +388,19 @@ LC21C:  STA $9B
 LC21E:  JSR LE6D8
 LC221:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC224:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
-LC227:  LDA $01
+
+LC227:  LDA Increment1
 LC229:  CMP #$10
-LC22B:  BNE LC237
+LC22B:  BNE +
+
 LC22D:  LDA #$00
-LC22F:  STA $01
-LC231:  JSR LFDA3
+LC22F:  STA Increment1
+LC231:  JSR DoCstlCrumble       ;($FDA3)Update Exodus castle crumbling.
 LC234:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
-LC237:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
+LC237:* JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 LC23A:  LDA #$01
-LC23C:  STA $B0
+LC23C:  STA UnusedB0            ;No effect.
 LC23E:  JSR LF447
 LC241:  LDA MapProperties
 LC243:  AND #$03
@@ -450,32 +454,40 @@ LC2A8:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
 ;----------------------------------------------------------------------------------------------------
 
-LC2AB:  LDA #$01
-LC2AD:  STA $B0
+ChkNextMove:
+LC2AB:  LDA #$01                ;No effect.
+LC2AD:  STA UnusedB0            ;
+
 LC2AF:  LDA MapXPos
-LC2B1:  STA $48
+LC2B1:  STA TargetXPos
 LC2B3:  LDA MapYPos
-LC2B5:  STA $47
+LC2B5:  STA TargetYPos
+
 LC2B7:  LDA Pad1Input
 LC2B9:  AND #BTN_RIGHT
-LC2BB:  BEQ LC2C0
-LC2BD:  JMP LC2DE
-LC2C0:  LDA Pad1Input
-LC2C2:  AND #BTN_LEFT
-LC2C4:  BEQ LC2C9
-LC2C6:  JMP LC2FE
-LC2C9:  LDA Pad1Input
-LC2CB:  AND #BTN_DOWN
-LC2CD:  BEQ LC2D2
-LC2CF:  JMP LC33E
+LC2BB:  BEQ +
+LC2BD:  JMP ChkRight            ;($C2DE)Check if characters can move right.
 
-LC2D2:  LDA Pad1Input
+LC2C0:* LDA Pad1Input
+LC2C2:  AND #BTN_LEFT
+LC2C4:  BEQ +
+LC2C6:  JMP ChkLeft             ;($C2FE)Check if characters can move left.
+
+LC2C9:* LDA Pad1Input
+LC2CB:  AND #BTN_DOWN
+LC2CD:  BEQ +
+LC2CF:  JMP ChkDown             ;($C33E)Check if characters can move down.
+
+LC2D2:* LDA Pad1Input
 LC2D4:  AND #BTN_UP
-LC2D6:  BEQ LC2DB
-LC2D8:  JMP LC31E
-LC2DB:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
+LC2D6:  BEQ +
+LC2D8:  JMP ChkUp               ;($C31E)Check if characters can move up.
+
+LC2DB:* JMP MainGameLoop        ;($C1B1)Main game engine loop.
+
+ChkRight:
 LC2DE:  STA Pad1Input
-LC2E0:  INC $48
+LC2E0:  INC TargetXPos
 LC2E2:  LDX #$78
 LC2E4:  JSR LE790
 LC2E7:  BCC LC2EC
@@ -487,9 +499,11 @@ LC2F1:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC2F4:  JSR $AB00
 LC2F7:  PLA
 LC2F8:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LC2FB:  JMP LC35E
+LC2FB:  JMP PostMove            ;($C35E)Do post movement processing.
+
+ChkLeft:
 LC2FE:  STA Pad1Input
-LC300:  DEC $48
+LC300:  DEC TargetXPos
 LC302:  LDX #$76
 LC304:  JSR LE790
 LC307:  BCC LC30C
@@ -501,9 +515,11 @@ LC311:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC314:  JSR $AB80
 LC317:  PLA
 LC318:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LC31B:  JMP LC35E
+LC31B:  JMP PostMove            ;($C35E)Do post movement processing.
+
+ChkUp:
 LC31E:  STA Pad1Input
-LC320:  DEC $47
+LC320:  DEC TargetYPos
 LC322:  LDX #$67
 LC324:  JSR LE790
 LC327:  BCC LC32C
@@ -515,10 +531,11 @@ LC331:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC334:  JSR $AC00
 LC337:  PLA
 LC338:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LC33B:  JMP LC35E
+LC33B:  JMP PostMove            ;($C35E)Do post movement processing.
 
+ChkDown:
 LC33E:  STA Pad1Input
-LC340:  INC $47
+LC340:  INC TargetYPos
 LC342:  LDX #$87
 LC344:  JSR LE790
 LC347:  BCC LC34C
@@ -530,7 +547,9 @@ LC351:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC354:  JSR $AC80
 LC357:  PLA
 LC358:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LC35B:  JMP LC35E
+LC35B:  JMP PostMove            ;($C35E)Do post movement processing.
+
+PostMove:
 LC35E:  LDA OnBoat
 LC360:  AND #$02
 LC362:  BEQ LC3AE
@@ -541,14 +560,16 @@ LC36A:  STA OnBoat
 LC36C:  JSR LoadChrGFX          ;($EE4E)Load the sprite tiles for current party members.
 LC36F:  JSR _SetCharSprites     ;($FCD0)Set character sprites initial properties.
 LC372:  LDY #$00
-LC374:  LDA NPCSprIndex,Y
-LC377:  CMP #$85
+
+LC374:* LDA NPCSprIndex,Y
+LC377:  CMP #NPC_PLR_BOAT+$80
 LC379:  BEQ LC381
 LC37B:  INY
 LC37C:  INY
 LC37D:  INY
 LC37E:  INY
-LC37F:  BNE LC374
+LC37F:  BNE -
+
 LC381:  LDA #$FF
 LC383:  STA NPCSprIndex,Y
 LC386:  LDA NPCOnscreen,Y
@@ -566,39 +587,46 @@ LC3A2:  STA $7305,X
 LC3A5:  STA $7309,X
 LC3A8:  STA $730D,X
 LC3AB:  JMP LC3B4
+
 LC3AE:  LDA OnBoat
 LC3B0:  AND #$04
 LC3B2:  BEQ LC3B4
+
 LC3B4:  JSR LC55F
 LC3B7:  LDA #$00
-LC3B9:  STA $B0
-LC3BB:  LDA ScrollDirAmt
-LC3BD:  BNE LC3BB
+LC3B9:  STA UnusedB0            ;No effect.
+
+LC3BB:* LDA ScrollDirAmt
+LC3BD:  BNE -
+
 LC3BF:  JSR LFC55
 LC3C2:  LDA ExodusDead
 LC3C4:  BEQ LC3E5
+
 LC3C6:  JSR BlockAlign          ;($FD1C)Update block aligned position of character 1.
-LC3C9:  JSR LFDA3
+LC3C9:  JSR DoCstlCrumble       ;($FDA3)Update Exodus castle crumbling.
 LC3CC:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC3CF:  LDA MapYPos
 LC3D1:  CMP #$31
 LC3D3:  BNE LC3E5
 LC3D5:  LDA #$11
-LC3D7:  STA $7506
+LC3D7:  STA BkPalBuffer+6
 LC3DA:  LDA #$75
 LC3DC:  STA $2A
 LC3DE:  LDA #$00
 LC3E0:  STA $29
 LC3E2:  JSR LoadPPUPalData      ;($ED3F)Load palette data into the PPU.
+
 LC3E5:  LDX #$77
 LC3E7:  LDA ScreenBlocks,X
-LC3EA:  CMP #$0D
+
+LC3EA:  CMP #BLK_CASTLE
 LC3EC:  BEQ GetNextMap
-LC3EE:  CMP #$0E
+LC3EE:  CMP #BLK_CAVE
 LC3F0:  BEQ GetNextMap
-LC3F2:  CMP #$0F
+LC3F2:  CMP #BLK_TOWN
 LC3F4:  BEQ GetNextMap
-LC3F6:  CMP #$05
+LC3F6:  CMP #BLK_MOONGATE
 LC3F8:  BNE ChkFloorFight
 LC3FA:  JMP ChkEnterMoongate    ;($C491)Check if player entered a moongate.
 
@@ -731,7 +759,7 @@ LC4C0:  STA MapYPos
 LC4C2:  LDA #$03
 LC4C4:  JSR FlashAndSound       ;($DB2D)Flash screen with SFX.
 LC4C7:  LDA #$01
-LC4C9:  STA $EC
+LC4C9:  STA EntrSndAndFlsh
 LC4CB:  LDA #SFX_MN_GATE_B+INIT 
 LC4CD:  STA ThisSFX
 LC4CF:  JMP LoadNewMap          ;($C175)Load a new map.
@@ -1119,15 +1147,16 @@ LC774:  INY
 LC775:  INY
 LC776:  INY
 LC777:  JMP LC76C
-LC77A:  STY $E6
+LC77A:  STY ThisNPCIndex
 LC77C:  LDA NPCSprIndex,Y
 LC77F:  AND #$7F
 LC781:  CMP #$05
 LC783:  BEQ LC789
 LC785:  CMP #$1E
 LC787:  BNE LC790
+
 LC789:  LDA #$00
-LC78B:  STA $E6
+LC78B:  STA ThisNPCIndex
 LC78D:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
 LC790:  STA EnemyNum
@@ -1256,8 +1285,10 @@ LC879:  INX
 LC87A:  INX
 LC87B:  CPX #$10
 LC87D:  BNE LC86C
-LC87F:  LDA #$08
+
+LC87F:  LDA #$08                ;Choose a random number between 0 and 7.
 LC881:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Accum-1.
+
 LC884:  ASL
 LC885:  TAX
 LC886:  LDA $2E
@@ -1265,6 +1296,7 @@ LC888:  STA EnHPBase,X
 LC88B:  LDA #BANK_NPCS
 LC88D:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC890:  JMP LC903
+
 LC893:  SEC
 LC894:  SBC #$15
 LC896:  ASL
@@ -1320,6 +1352,7 @@ LC8F9:  LDA $2E
 LC8FB:  STA $03F7
 LC8FE:  LDA #BANK_ENEMIES
 LC900:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
+
 LC903:  LDA #$75
 LC905:  STA $2A
 LC907:  LDA #$00
@@ -1516,7 +1549,7 @@ LCA8C:  JMP LD03C
 LCA8F:  LDA #$21
 LCA91:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
 LCA94:  LDA #$B0
-LCA96:  STA $7300
+LCA96:  STA SpriteBuffer
 LCA99:  LDA #$A8
 LCA9B:  STA $7303
 LCA9E:  LDA #$00
@@ -1545,7 +1578,7 @@ LCACD:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LCAD0:  LDA #$08
 LCAD2:  JSR LEFD8
 LCAD5:  LDA #SPRT_HIDE
-LCAD7:  STA $7300
+LCAD7:  STA SpriteBuffer
 LCADA:  LDA CurPieceYVis
 LCADC:  AND #$01
 LCADE:  BNE LCADA
@@ -1866,25 +1899,28 @@ LCD2F:  STA $7304,X
 LCD32:  STA $7308,X
 LCD35:  STA $730C,X
 LCD38:  STA $7310,X
-LCD3B:  LDY #$0B
+LCD3B:  LDY #CHR_COND
 LCD3D:  LDA (Pos1ChrPtr),Y
-LCD3F:  CMP #$03
+LCD3F:  CMP #COND_DEAD
 LCD41:  BCC LCD58
 LCD43:  LDA (Pos2ChrPtr),Y
-LCD45:  CMP #$03
+LCD45:  CMP #COND_DEAD
 LCD47:  BCC LCD58
 LCD49:  LDA (Pos3ChrPtr),Y
-LCD4B:  CMP #$03
+LCD4B:  CMP #COND_DEAD
 LCD4D:  BCC LCD58
 LCD4F:  LDA (Pos4ChrPtr),Y
-LCD51:  CMP #$03
+LCD51:  CMP #COND_DEAD
 LCD53:  BCC LCD58
 LCD55:  JMP LD315
-LCD58:  LDA #$29
-LCD5A:  STA $30
+
+LCD58:  LDA #$29                ;CHARACTER IS KILLED text.
+LCD5A:  STA TextIndex           ;
 LCD5C:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
+
 LCD5F:  JMP LD178
-LCD62:  LDA #$24
+
+LCD62:  LDA #$24                ;MISSED text.
 LCD64:  JMP LCD0A
 
 BattleWon:
@@ -1911,7 +1947,7 @@ LCD8E:  JMP LCE17
 LCD91:  LDA OnBoat
 LCD93:  BEQ LCD98
 LCD95:  JMP LCE45
-LCD98:  LDY $E6
+LCD98:  LDY ThisNPCIndex
 LCD9A:  LDA NPCOnscreen,Y
 LCD9D:  BEQ LCDBF
 LCD9F:  TAX
@@ -1968,7 +2004,7 @@ LCE17:  CMP #$14
 LCE19:  BEQ LCE45
 LCE1B:  CMP #$15
 LCE1D:  BEQ LCE45
-LCE1F:  LDY $E6
+LCE1F:  LDY ThisNPCIndex
 LCE21:  LDA NPCXPos,Y
 LCE24:  STA $48
 LCE26:  PHA
@@ -2014,7 +2050,7 @@ LCE77:  LDA MapYPos
 LCE79:  CLC
 LCE7A:  ADC #$0A
 LCE7C:  STA $47
-LCE7E:  LDA $E6
+LCE7E:  LDA ThisNPCIndex
 LCE80:  STA $19
 LCE82:  LDA ThisMap
 LCE84:  CMP #MAP_AMBROSIA
@@ -2024,7 +2060,7 @@ LCE8A:  CMP #$1C
 LCE8C:  BEQ LCE91
 LCE8E:  JSR LF641
 LCE91:  LDA #$00
-LCE93:  STA $E6
+LCE93:  STA ThisNPCIndex
 LCE95:  LDA #$FF
 LCE97:  STA $D2
 LCE99:  LDA PrevMapProp
@@ -2057,9 +2093,12 @@ LCF08:  STA $EE
 LCF0A:  LDA #SFX_EN_MJ_SPL+INIT
 LCF0C:  STA ThisSFX
 LCF0E:  JSR Flash8              ;($DB36)Repeat screen flashing routine 8 times.
-LCF11:  LDA #$04
+
+LCF11:  LDA #$04                ;Choose a number between 0 and 3, inclusive.
 LCF13:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Accum-1.
+
 LCF16:  STA $2E
+
 LCF18:  INC $2E
 LCF1A:  LDA $2E
 LCF1C:  AND #$03
@@ -2070,18 +2109,21 @@ LCF22:  LDA ChrPtrBaseLB,X
 LCF24:  STA CrntChrPtrLB
 LCF26:  LDA ChrPtrBaseUB,X
 LCF28:  STA CrntChrPtrUB
-LCF2A:  LDY #$0B
+LCF2A:  LDY #CHR_COND
 LCF2C:  LDA (CrntChrPtr),Y
-LCF2E:  CMP #$03
+LCF2E:  CMP #COND_DEAD
 LCF30:  BCS LCF18
-LCF32:  LDA #$64
+
+LCF32:  LDA #100                ;Choose a number between 0 and 99, inclusive.
 LCF34:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Accum-1.
-LCF37:  CMP #$4B
+LCF37:  CMP #75
 LCF39:  BCC LCF43
+
 LCF3B:  LDA $EE
 LCF3D:  BNE LCF43
-LCF3F:  LDA #$01
+LCF3F:  LDA #COND_POIS
 LCF41:  STA (CrntChrPtr),Y
+
 LCF43:  JMP LCBE4
 LCF46:  LDA $C9
 LCF48:  BMI LCF01
@@ -2167,11 +2209,11 @@ LCFE0:  CLC
 LCFE1:  ADC $47
 LCFE3:  TAX
 LCFE4:  LDA ScreenBlocks,X
-LCFE7:  CMP #$08
+LCFE7:  CMP #BLK_HWALL
 LCFE9:  BEQ LD038
-LCFEB:  CMP #$0C
+LCFEB:  CMP #BLK_VWALL
 LCFED:  BEQ LD038
-LCFEF:  CMP #$03
+LCFEF:  CMP #BLK_WATER
 LCFF1:  BNE LD007
 LCFF3:  LDA FightTurnIndex
 LCFF5:  CMP #$04
@@ -2228,9 +2270,11 @@ LD052:  BEQ LD064
 LD054:  LDY #$F0
 LD056:  CMP #$08
 LD058:  BEQ LD064
-LD05A:  LDA #$27
-LD05C:  STA $30
+
+LD05A:  LDA #$27                ;Blank text.
+LD05C:  STA TextIndex           ;
 LD05E:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
+
 LD061:  JMP LCA7D
 LD064:  STX $2A
 LD066:  STY $29
@@ -2268,9 +2312,11 @@ LD0A0:  STA ScrollDirAmt
 LD0A2:  LDA ScrollDirAmt
 LD0A4:  BNE LD0A2
 LD0A6:  JMP LCAD0
-LD0A9:  LDA #$2C
-LD0AB:  STA $30
+
+LD0A9:  LDA #$2C                ;YOU CANT'T GO THAT DIRECTION text.
+LD0AB:  STA TextIndex           ;
 LD0AD:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
+
 LD0B0:  JMP LCA7D
 LD0B3:  LDA ThisMap
 LD0B5:  CMP #MAP_EXODUS
@@ -2335,12 +2381,16 @@ LD125:  LDY #$34
 LD127:  LDA #$00
 LD129:  STA (CrntChrPtr),Y
 LD12B:  JMP LD0DD
-LD12E:  LDA #$02
+
+LD12E:  LDA #$02                ;NO ONE IS HERE text.
 LD130:  JMP LD173
+
 LD133:  STA $30
-LD135:  LDA #$C8
+
+LD135:  LDA #200                ;Choose a number between 0-199, inclusive.
 LD137:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Accum-1.
-LD13A:  LDY #$08
+
+LD13A:  LDY #CHR_DEX
 LD13C:  LDA (CrntChrPtr),Y
 LD13E:  SEC
 LD13F:  ADC #$64
@@ -2370,14 +2420,17 @@ LD16B:  BCS LD170
 LD16D:  JMP LCAD0
 LD170:  JMP BattleWon           ;($CD67)Enemy battle has been won.
 
-LD173:  STA $30
+LD173:  STA TextIndex
 LD175:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
+
 LD178:  LDA DelayConst
 LD17A:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
 LD17D:  JMP LCAD0
+
 LD180:  LDA #SFX_PLYR_MISS+INIT
 LD182:  STA ThisSFX
-LD184:  LDA #$24
+
+LD184:  LDA #$24                ;MISSED text.
 LD186:  JMP LD173
 
 LD189:  .byte $00, $00, $00, $01, $00, $01, $00, $00, $00, $01, $00, $00, $00, $01, $00, $00
@@ -2393,6 +2446,7 @@ LD1A4:* JMP BattleWon           ;($CD67)Enemy battle has been won.
 LD1A7:  JSR LDB5F
 LD1AA:  JSR LD1B0
 LD1AD:  JMP LCACD
+
 LD1B0:  LDA #$14
 LD1B2:  STA $2A
 LD1B4:  LDA #$14
@@ -2402,6 +2456,7 @@ LD1BA:  STA $2E
 LD1BC:  LDA #$08
 LD1BE:  STA $2D
 LD1C0:  JSR ShowWindow          ;($F42A)Show a window on the display.
+
 LD1C3:  JSR LFAE3
 LD1C6:  RTS
 
@@ -2516,8 +2571,10 @@ LD265:  CPY #$08
 LD267:  BNE LD24E
 LD269:  SEC
 LD26A:  RTS
-LD26B:  LDA #$26
+
+LD26B:  LDA #$26                ;DIRECTION text.
 LD26D:  JSR ShowCmbtSideMsg     ;($D2BA)Show message in combat side window.
+
 LD270:  LDA #$00
 LD272:  STA $19
 LD274:  STA $18
@@ -2566,7 +2623,7 @@ LD2BB:  LDA #$D4
 LD2BD:  STA HideUprSprites
 
 LD2BF:  PLA
-LD2C0:  STA $30
+LD2C0:  STA TextIndex
 
 LD2C2:  LDA #$15
 LD2C4:  STA $2A
@@ -2766,7 +2823,7 @@ LD3F0:  LDA #$00
 LD3F2:  STA $9D
 LD3F4:  LDA #$02
 LD3F6:  STA NumMenuItems
-LD3F8:  LDA #$19
+LD3F8:  LDA #$19                ;CLERIC WIZARD text.
 LD3FA:  STA TextIndex2
 LD3FD:  LDA #$0A
 LD3FF:  STA Wnd2XPos
@@ -3145,7 +3202,7 @@ LD5D9:  BEQ LD5E7
 LD5DB:  JSR LDB0E
 LD5DE:  DEC DungeonLevel
 LD5E0:  DEC MapDatPtrUB
-LD5E2:  LDA #$1C
+LD5E2:  LDA #$1C                ;MOVE UP text.
 LD5E4:  JMP LD5EA
 LD5E7:  JMP LD7E9
 LD5EA:  STA TextIndex
@@ -3247,7 +3304,7 @@ LD698:  JMP LD378
 DoPoison:
 LD69B:  LDA #$32
 LD69D:  JSR CastSpell           ;($DA62)Update MP and flash screen.
-LD6A0:  LDA #$4B
+LD6A0:  LDA #75                 ;75 is the base damage of the spell.
 LD6A2:  JMP LD4FD
 
 DoKill:
@@ -3328,7 +3385,7 @@ LD72B:  LDA #GME_EX_DEAD
 LD72D:  STA ExodusDead
 LD72F:  LDA #$4B
 LD731:  JSR CastSpell           ;($DA62)Update MP and flash screen.
-LD734:  LDA #$FF
+LD734:  LDA #255                ;255 is the base damage of the spell.
 LD736:  JMP LD4FD
 
 DoUndead:
@@ -3339,20 +3396,21 @@ LD73E:  BEQ LD74E
 LD740:  CMP #EN_GHOUL
 LD742:  BEQ LD74E
 
-LD744:  LDX #$17
-LD746:  STX TextIndex
+LD744:  LDX #$17                ;FAILED text.
+LD746:  STX TextIndex           ;
 LD748:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
+
 LD74B:  LDA #$00
 LD74D:  RTS
 LD74E:  LDX #$24
 LD750:  LDA $00
 LD752:  AND #$10
 LD754:  BEQ LD746
-LD756:  LDA #$FF
+LD756:  LDA #255                ;255 is the base damage of the spell.
 LD758:  JMP LD4FD
 
 DoOpen:
-LD75B:  LDA #$05
+LD75B:  LDA #$05                ;5MP to cast the spell.
 LD75D:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD760:  LDA $00
 LD762:  AND #$05
@@ -3375,7 +3433,7 @@ DoHeal:
 LD783:  LDA #$0A
 LD785:  JSR LDA2B
 LD788:  BCS LD797
-LD78A:  LDA #$1E
+LD78A:  LDA #30                 ;Choose a number between 0 and 29, inclusive.
 LD78C:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Accum-1.
 LD78F:  CLC
 LD790:  ADC #$14
@@ -3385,7 +3443,7 @@ LD797:  LDA #$00
 LD799:  RTS
 
 DoGlow:
-LD79A:  LDA #$05
+LD79A:  LDA #$05                ;5MP to cast the spell.
 LD79C:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD79F:  JMP DoLight             ;($D5A0)Light dungeon.
 
@@ -3414,9 +3472,9 @@ LD7C4:  BCS LD7DC
 LD7C6:  LDY #CHR_COND
 LD7C8:  LDA (CrntChrPtr),Y
 LD7CA:  TAX
-LD7CB:  CMP #$02
+LD7CB:  CMP #COND_COLD
 LD7CD:  BCS LD7D3
-LD7CF:  LDA #$00
+LD7CF:  LDA #COND_GOOD
 LD7D1:  STA (CrntChrPtr),Y
 LD7D3:  TXA
 LD7D4:  LDA $D7DF,X
@@ -3428,11 +3486,13 @@ LD7DE:  RTS
 LD7DF:  .byte $17, $42, $17, $43, $44
 
 DoSurface:
-LD7E4:  LDA #$28
+LD7E4:  LDA #40                 ;40MP to cast the spell.
 LD7E6:  JSR CastSpell           ;($DA62)Update MP and flash screen.
-LD7E9:  LDA #$1F
-LD7EB:  STA TextIndex
+
+LD7E9:  LDA #$1F                ;RETURNING TO GROUND LEVEL text.
+LD7EB:  STA TextIndex           ;
 LD7ED:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
+
 LD7F0:  LDA #$00
 LD7F2:  STA CurPPUConfig1
 LD7F4:  STA PPUControl1
@@ -3441,7 +3501,7 @@ LD7F9:  LDA #$00
 LD7FB:  RTS
 
 DoStar:
-LD7FC:  LDA #$05
+LD7FC:  LDA #$05                ;5MP to cast the spell.
 LD7FE:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD801:  JMP DoBright            ;($D653)Light a dungeon for a longer period of time.
 
@@ -3459,7 +3519,7 @@ LD818:  LDA #$00
 LD81A:  RTS
 
 DoMap:
-LD81B:  LDA #$37
+LD81B:  LDA #55                 ;Spell costs 55MP.
 LD81D:  JSR CastSpell           ;($DA62)Update MP and flash screen.
 LD820:  LDA MapProperties
 LD822:  AND #MAP_DUNGEON
@@ -3468,8 +3528,8 @@ LD826:  LDA ThisMap
 LD828:  BEQ LD853
 LD82A:  CMP #MAP_AMBROSIA
 LD82C:  BEQ LD853
-LD82E:  LDA #$17
-LD830:  STA TextIndex
+LD82E:  LDA #$17                ;FAILED text.
+LD830:  STA TextIndex           ;
 LD832:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD835:  LDA #$00
 LD837:  RTS
@@ -3507,16 +3567,20 @@ LD86A:  LDA #$00
 LD86C:  STA CurPPUConfig1
 LD86E:  STA PPUControl1
 LD871:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
+
 LD874:  LDA #$04
 LD876:  STA $0600
 LD879:  LDX #$9F
 LD87B:  LDY #$00
+
 LD87D:  LDA ThisMap
 LD87F:  BEQ LD88A
+
 LD881:  LDA #$27
 LD883:  STA $0600
 LD886:  LDX #$AF
 LD888:  LDY #$00
+
 LD88A:  STX $2A
 LD88C:  STY $29
 LD88E:  LDA $01
@@ -3534,10 +3598,12 @@ LD8A5:  LDX #$00
 LD8A7:  LDY #$40
 LD8A9:  JSR LC705
 LD8AC:  LDX #$00
-LD8AE:  LDA $0600
+
+LD8AE:* LDA $0600
 LD8B1:  STA ScreenBlocks,X
 LD8B4:  INX
-LD8B5:  BNE LD8AE
+LD8B5:  BNE -
+
 LD8B7:  LDA #$07
 LD8B9:  STA $2A
 LD8BB:  LDA #$00
@@ -3551,6 +3617,7 @@ LD8C9:  STA $2E
 LD8CB:  LDA #$00
 LD8CD:  STA $2D
 LD8CF:  JSR LoadPPU             ;($EFE3)Load values into PPU.
+
 LD8D2:  LDA #$00
 LD8D4:  STA $30
 LD8D6:  JSR LD92B
@@ -3562,10 +3629,12 @@ LD8E2:  JSR LD92B
 LD8E5:  INC $2C
 LD8E7:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LD8EA:  LDX #$00
-LD8EC:  LDA $0600
+
+LD8EC:* LDA $0600
 LD8EF:  STA ScreenBlocks,X
 LD8F2:  INX
-LD8F3:  BNE LD8EC
+LD8F3:  BNE -
+
 LD8F5:  INC $2C
 LD8F7:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 LD8FA:  LDA #$FF
@@ -3577,7 +3646,7 @@ LD905:  LDA MapYPos
 LD907:  ASL
 LD908:  CLC
 LD909:  ADC #$3C
-LD90B:  STA $7300
+LD90B:  STA SpriteBuffer
 LD90E:  LDA MapXPos
 LD910:  ASL
 LD911:  CLC
@@ -3594,27 +3663,31 @@ LD925:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LD928:  LDA #$01
 LD92A:  RTS
 LD92B:  LDX #$00
-LD92D:  LDA $0600
+
+LD92D:* LDA $0600
 LD930:  STA ScreenBlocks,X
 LD933:  INX
 LD934:  TXA
 LD935:  AND #$1F
 LD937:  CMP #$08
-LD939:  BNE LD92D
-LD93B:  LDA $30
+LD939:  BNE -
+
+LD93B:* LDA $30
 LD93D:  STA ScreenBlocks,X
 LD940:  INC $30
 LD942:  INX
 LD943:  TXA
 LD944:  AND #$1F
 LD946:  CMP #$18
-LD948:  BNE LD93B
-LD94A:  LDA $0600
+LD948:  BNE -
+
+LD94A:* LDA $0600
 LD94D:  STA ScreenBlocks,X
 LD950:  INX
 LD951:  TXA
 LD952:  AND #$1F
-LD954:  BNE LD94A
+LD954:  BNE -
+
 LD956:  TXA
 LD957:  BNE LD92D
 LD959:  RTS
@@ -3642,13 +3715,13 @@ LD97B:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Acc
 LD97E:  LDX #$05
 LD980:  CMP #$4B
 LD982:  BCS LD99C
-LD984:  LDA #$00
+LD984:  LDA #COND_GOOD
 LD986:  STA (CrntChrPtr),Y
 LD988:  LDY #CHR_HIT_PNTS
 LD98A:  LDA #$96
 LD98C:  STA (CrntChrPtr),Y
 LD98E:  LDY #CHR_MAG_PNTS
-LD990:  LDA #$00
+LD990:  LDA #COND_GOOD
 LD992:  STA (CrntChrPtr),Y
 LD994:  JSR LEF13
 LD997:  LDX #$03
@@ -3661,14 +3734,15 @@ LD9A5:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LD9A8:  LDA #$00
 LD9AA:  RTS
 
+RaiseMsgTbl:
 LD9AB:  .byte $17, $17, $17, $46, $17, $47   
 
 DoDestroy:
 LD9B1:  LDA #GME_EX_DEAD
 LD9B3:  STA ExodusDead
-LD9B5:  LDA #$46
+LD9B5:  LDA #70                 ;70MP to cast the spell.
 LD9B7:  JSR CastSpell           ;($DA62)Update MP and flash screen.
-LD9BA:  LDA #$FF
+LD9BA:  LDA #255                ;255 is the base damage of the spell.
 LD9BC:  JMP LD4FD
 
 DoRecall:
@@ -3785,11 +3859,11 @@ LDA77:  LDA $18
 LDA79:  PHA
 LDA7A:  LDA MapProperties
 LDA7C:  AND #MAP_DUNGEON
-LDA7E:  BNE LDA83
+LDA7E:  BNE +
 
 LDA80:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 
-LDA83:  PLA
+LDA83:* PLA
 LDA84:  STA $18
 LDA86:  PLA
 LDA87:  STA $19
@@ -4082,6 +4156,7 @@ LDC7D:  LDA #SFX_OPEN_DOOR+INIT
 LDC7F:  STA ThisSFX
 LDC81:  LDA #$3E
 LDC83:  JMP LDC23
+
 LDC86:  LDY #$23
 LDC88:  LDA (CrntChrPtr),Y
 LDC8A:  CLC
@@ -4235,7 +4310,7 @@ LDDA4:  CMP #$0B
 LDDA6:  BEQ LDDD9
 LDDA8:  BNE LDDD0
 LDDAA:  LDA #$00
-LDDAC:  STA NumMenuItems
+LDDAC:  STA $9C
 LDDAE:  STA $9D
 LDDB0:  LDA CharBlock
 LDDB3:  AND #$1F
@@ -4251,9 +4326,11 @@ LDDC6:  BNE LDDCB
 LDDC8:  JMP LDEB5
 LDDCB:  JSR LDECF
 LDDCE:  BCC LDDD9
-LDDD0:  LDA #$0F
-LDDD2:  STA TextIndex
+
+LDDD0:  LDA #$0F                ;NOTHING HERE text.
+LDDD2:  STA TextIndex           ;
 LDDD4:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
+
 LDDD7:  SEC
 LDDD8:  RTS
 LDDD9:  CLC
@@ -4281,9 +4358,9 @@ LDE01:  BNE LDE27
 LDE03:  LDA MapYPos
 LDE05:  CMP #$15
 LDE07:  BNE LDE27
-LDE09:  LDA NumMenuItems
+LDE09:  LDA $9C
 LDE0B:  BEQ LDE27
-LDE0D:  LDY #$27
+LDE0D:  LDY #CHR_GLD_PICK
 LDE0F:  LDA (Pos1ChrPtr),Y
 LDE11:  ORA (Pos2ChrPtr),Y
 LDE13:  ORA (Pos3ChrPtr),Y
@@ -4318,6 +4395,7 @@ LDE4D:  ORA (Pos3ChrPtr),Y
 LDE4F:  ORA (Pos4ChrPtr),Y
 LDE51:  BNE LDE56
 LDE53:  JMP LDE1B
+
 LDE56:  LDA #$46
 LDE58:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Accum-1.
 LDE5B:  CLC
@@ -4365,7 +4443,7 @@ LDEAA:  .byte $00, $00, $00, $80, $00, $40, $00, $40, $00, $40, $40
 
 LDEB5:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LDEB8:  BCS LDECD
-LDEBA:  LDX #$6D
+LDEBA:  LDX #$6D                ;CHARACTER ALREADY HAS THE FLOWER text.
 LDEBC:  LDY #CHR_FLOWER
 LDEBE:  LDA (CrntChrPtr),Y
 LDEC0:  BNE LDEC8
@@ -4376,14 +4454,15 @@ LDEC8:  STX TextIndex
 LDECA:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDECD:  SEC
 LDECE:  RTS
+
 LDECF:  JSR GetFrontBlock       ;($E739)Get the block in front of character 1.
-LDED2:  CMP #$09
+LDED2:  CMP #BLK_COUNTER
 LDED4:  BNE LDF0E
-LDED6:  LDA $E75F,X
+LDED6:  LDA FrntBlkOfstTbl,X
 LDED9:  CLC
 LDEDA:  ADC $19
 LDEDC:  STA $19
-LDEDE:  LDA $E760,X
+LDEDE:  LDA FrntBlkOfstTbl+1,X
 LDEE1:  CLC
 LDEE2:  ADC $18
 LDEE4:  STA $18
@@ -4397,7 +4476,7 @@ LDEED:  ADC $18
 LDEEF:  TAY
 LDEF0:  LDA ScreenBlocks,Y
 LDEF3:  AND #$1F
-LDEF5:  CMP #$0A
+LDEF5:  CMP #BLK_CHEST
 LDEF7:  BNE LDF0E
 LDEF9:  STY $EB
 LDEFB:  LDX Ch1Dir
@@ -4405,11 +4484,12 @@ LDEFD:  LDA DirConvTbl,X
 LDF00:  ASL
 LDF01:  TAX
 LDF02:  LDA $DF10,X
-LDF05:  STA NumMenuItems
+LDF05:  STA $9C
 LDF07:  LDA $DF11,X
 LDF0A:  STA $9D
 LDF0C:  CLC
 LDF0D:  RTS
+
 LDF0E:  SEC
 LDF0F:  RTS
 
@@ -4431,14 +4511,18 @@ LDF2F:  LDA #$FF
 LDF31:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Accum-1.
 LDF34:  CMP $30
 LDF36:  RTS
+
 LDF37:  CLC
 LDF38:  RTS
+
 LDF39:  JSR LDF18
 LDF3C:  BCS LDF48
-LDF3E:  LDA #$2F
-LDF40:  STA TextIndex
+
+LDF3E:  LDA #$2F                ;ARGH! TRAP! BUT CHARACTER AVOIDED IT text.
+LDF40:  STA TextIndex           ;
 LDF42:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDF45:  JMP LE00C
+
 LDF48:  LDA #$64
 LDF4A:  JSR GenRandomNum        ;($E64E)Generate random number between 0 and Accum-1.
 LDF4D:  CMP #$14
@@ -4515,22 +4599,27 @@ LDFD5:  INX
 LDFD6:  CPX #$08
 LDFD8:  BNE LDFB3
 LDFDA:  JMP LE00C
+
 LDFDD:  LDX #$00
 LDFDF:  LDA ChrPtrBaseLB,X
 LDFE1:  STA CrntChrPtrLB
 LDFE3:  LDA ChrPtrBaseUB,X
 LDFE5:  STA CrntChrPtrUB
+
 LDFE7:  TXA
 LDFE8:  PHA
 LDFE9:  LDY #CHR_COND
 LDFEB:  LDA (CrntChrPtr),Y
-LDFED:  CMP #$02
+LDFED:  CMP #COND_COLD
 LDFEF:  BCS LDFFC
-LDFF1:  LDA #$01
+
+LDFF1:  LDA #COND_POIS
 LDFF3:  STA (CrntChrPtr),Y
-LDFF5:  LDA #$2E
-LDFF7:  STA TextIndex
+
+LDFF5:  LDA #$2E                ;POISON TRAP! CHARACTER IS POISONED text.
+LDFF7:  STA TextIndex           ;
 LDFF9:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
+
 LDFFC:  PLA
 LDFFD:  TAX
 LDFFE:  INX
@@ -4540,10 +4629,11 @@ LE002:  BNE LDFDF
 LE004:  JMP LE00C
 LE007:  STA TextIndex
 LE009:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
+
 LE00C:  LDA MapProperties
 LE00E:  AND #MAP_DUNGEON
 LE010:  BNE LE082
-LE012:  LDA NumMenuItems
+LE012:  LDA $9C
 LE014:  BNE LE047
 LE016:  JSR LE090
 LE019:  PHA
@@ -4573,14 +4663,16 @@ LE040:  AND #$F0
 LE042:  ORA #$0B
 LE044:  STA ($43),Y
 LE046:  RTS
+
 LE047:  LDA MapXPos
-LE049:  STA $48
+LE049:  STA TargetXPos
 LE04B:  LDA MapYPos
-LE04D:  STA $47
+LE04D:  STA TargetYPos
+
 LE04F:  JSR LF5B0
 LE052:  CLC
 LE053:  LDA $43
-LE055:  ADC NumMenuItems
+LE055:  ADC $9C
 LE057:  STA $43
 LE059:  LDA $44
 LE05B:  ADC $9D
@@ -4590,21 +4682,26 @@ LE061:  STA $30
 LE063:  LDA MapXPos
 LE065:  AND #$01
 LE067:  BNE LE072
+
 LE069:  LDA $30
 LE06B:  AND #$0F
 LE06D:  ORA #$B0
 LE06F:  JMP LE078
+
 LE072:  LDA $30
 LE074:  AND #$F0
 LE076:  ORA #$0B
+
 LE078:  STA ($43),Y
 LE07A:  LDY $EB
 LE07C:  LDA #$8B
 LE07E:  STA ScreenBlocks,Y
 LE081:  RTS
+
 LE082:  JSR GetDngnXYData       ;($F974)Get the dungeon data for character's current location.
-LE085:  LDA #$0D
-LE087:  STA (MapDatPtr),Y
+LE085:  LDA #___                ;Set current dungeon coordinates to empty floor.
+LE087:  STA (MapDatPtr),Y       ;
+
 LE089:  LDA DisNPCMovement
 LE08B:  ORA #$80
 LE08D:  STA DisNPCMovement
@@ -5162,7 +5259,7 @@ LE457:  STA $30
 LE459:  JSR DisplayText         ;($F0BE)Display text on the screen.
 
 LE45C:  LDA #$40
-LE45E:  STA $7300
+LE45E:  STA SpriteBuffer
 LE461:  LDA #$18
 LE463:  STA $7303
 LE466:  LDA #$01
@@ -5209,6 +5306,7 @@ LE4A2:  JMP LE4A9
 
 LE4A5:  LDA #$9C
 LE4A7:  LDX #$8E
+
 LE4A9:  PHA
 LE4AA:  TXA
 LE4AB:  PHA
@@ -5238,7 +5336,7 @@ LE4DA:  LDA #$FF
 LE4DC:  STA $30
 LE4DE:  JSR DisplayText         ;($F0BE)Display text on the screen.
 LE4E1:  LDA #$A0
-LE4E3:  STA $7300
+LE4E3:  STA SpriteBuffer
 LE4E6:  LDA #$18
 LE4E8:  STA $7303
 LE4EB:  LDA #$01
@@ -5316,7 +5414,7 @@ LE56F:  ADC $2E
 LE571:  ASL
 LE572:  ASL
 LE573:  ASL
-LE574:  STA $7300
+LE574:  STA SpriteBuffer
 LE577:  LDA Wnd2XPos
 LE57A:  CLC
 LE57B:  ADC #$01
@@ -5507,7 +5605,7 @@ LE6A9:  TAX
 LE6AA:  BEQ LE6C7
 LE6AC:  JMP LE69E
 
-LE6AF:  LDA $7300
+LE6AF:  LDA SpriteBuffer
 LE6B2:  STA $7300,X
 LE6B5:  LDA $7301
 LE6B8:  STA $7301,X
@@ -5516,7 +5614,7 @@ LE6BE:  STA $7302,X
 LE6C1:  LDA $7303
 LE6C4:  STA $7303,X
 LE6C7:  LDA #SPRT_HIDE
-LE6C9:  STA $7300
+LE6C9:  STA SpriteBuffer
 LE6CC:  PLA
 LE6CD:  TAX
 LE6CE:  PLA
@@ -5763,10 +5861,11 @@ LE827:  LDA DirConvTbl,X
 LE82A:  CLC
 LE82B:  ADC $30
 LE82D:  TAX
-LE82E:  LDA $EA20,X
-LE831:  BEQ LE836
+LE82E:  LDA BoatWindTbl,X
+LE831:  BEQ +
 LE833:  JSR WaitSomeFrames      ;($E6D0)Wait some frames before continuing.
-LE836:  JMP LE7D5
+
+LE836:* JMP LE7D5
 LE839:  CMP #$3F
 LE83B:  BNE LE846
 LE83D:  LDA $48
@@ -6009,6 +6108,7 @@ LEA17:  .byte $00, $02, $03, $01, $00, $01, $01, $01, $01
 
 ;----------------------------------------------------------------------------------------------------
 
+BoatWindTbl:
 LEA20:  .byte $10, $30, $00, $00, $00, $00, $30, $10, $30, $10, $00, $00, $00, $00, $10, $30
 
 ;----------------------------------------------------------------------------------------------------
@@ -6954,7 +7054,7 @@ LF090:  CMP #$20                ;If so, branch to update buffer length.
 LF092:  BCC UpdatePPUBufLen     ;
 
 WaitForPPUUpdate:
-LF094:  LDA #$01                ;Indicate the PPU needs to update.
+LF094:  LDA #PPU_DO_UPDATE      ;Indicate the PPU needs to update.
 LF096:  STA UpdatePPU           ;
 
 LF098:* LDA UpdatePPU           ;Wait until the PPU is updated.
@@ -6983,7 +7083,7 @@ LF0B3:  RTS                     ;
 SetPPUUpdate:
 LF0B4:  LDA PPUBufLength        ;
 LF0B7:  BEQ +                   ;Is there data in the PPU buffer?
-LF0B9:  LDA #$01                ;If so, set the flag indicating the PPU needs to be updated.
+LF0B9:  LDA #PPU_DO_UPDATE      ;If so, set the flag indicating the PPU needs to be updated.
 LF0BB:  STA UpdatePPU           ;
 LF0BD:* RTS                     ;
 
@@ -7125,41 +7225,53 @@ LF192:  JMP LF2BE
 
 LF195:  LDA (TextCharPtr),Y
 LF197:  CMP #TXT_END
-LF199:  BNE LF19E
+LF199:  BNE +
 LF19B:  JMP LF2BA
-LF19E:  CMP #TXT_NEWLINE
-LF1A0:  BNE LF1A5
+
+LF19E:* CMP #TXT_NEWLINE
+LF1A0:  BNE +
 LF1A2:  JMP LF2BE
-LF1A5:  CMP #TXT_ONE
+
+LF1A5:* CMP #TXT_ONE
 LF1A7:  BNE LF1AC
 LF1A9:  JMP LF2C4
+
 LF1AC:  CMP #TXT_YN 
 LF1AE:  BNE LF1B3
 LF1B0:  JMP LF2C7
+
 LF1B3:  CMP #TXT_NONE_F8
 LF1B5:  BNE LF1BA
 LF1B7:  JMP LF2D0
+
 LF1BA:  CMP #TXT_NONE_F9
 LF1BC:  BNE LF1C1
 LF1BE:  JMP LF2E5
+
 LF1C1:  CMP #TXT_PRAY
 LF1C3:  BNE LF1C8
 LF1C5:  JMP LF2EC
+
 LF1C8:  CMP #TXT_BRIB
 LF1CA:  BNE LF1CF
 LF1CC:  JMP LF2F6
+
 LF1CF:  CMP #TXT_NAME
 LF1D1:  BNE LF1D6
 LF1D3:  JMP LF300
+
 LF1D6:  CMP #TXT_ENMY
 LF1D8:  BNE LF1DD
 LF1DA:  JMP LF31B
+
 LF1DD:  CMP #TXT_AMNT
 LF1DF:  BNE LF1E4
 LF1E1:  JMP LF352
+
 LF1E4:  CMP #TXT_AMNT
 LF1E6:  BNE LF1EB
 LF1E8:  JMP LF352
+
 LF1EB:  INC $AD
 LF1ED:  INY
 LF1EE:  INX
@@ -7215,7 +7327,7 @@ LF252:  BEQ LF2B1
 LF254:  LDA $17
 LF256:  BNE LF2B1
 LF258:  LDA #$C0
-LF25A:  STA $7300
+LF25A:  STA SpriteBuffer
 LF25D:  LDX #$A0
 LF25F:  LDA MapProperties
 LF261:  AND #MAP_TURN
@@ -7227,7 +7339,7 @@ LF26D:  LDA #$FF
 LF26F:  STA $9B
 LF271:  JSR LE6D8
 LF274:  LDA #SPRT_HIDE
-LF276:  STA $7300
+LF276:  STA SpriteBuffer
 LF279:  LDA $1A
 LF27B:  CLC
 LF27C:  ADC #$06
@@ -7269,9 +7381,12 @@ LF2B9:  RTS
 
 LF2BA:  LDA #$01
 LF2BC:  STA $17
+
 LF2BE:  JSR LF400
 LF2C1:  JMP LF20E
+
 LF2C4:  JMP LF195
+
 LF2C7:  JSR LF400
 LF2CA:  PLA
 LF2CB:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -7424,7 +7539,7 @@ LF3C3:  PHA
 LF3C4:  STX $2E
 LF3C6:  LDA #$00
 LF3C8:  STA $2D
-LF3CA:  LDY #$06
+LF3CA:  LDY #CHR_CLASS
 LF3CC:  LDA (Pos1ChrPtr),Y
 LF3CE:  TAX
 LF3CF:  LDA $F411,X
@@ -7445,6 +7560,7 @@ LF3EC:  TAX
 LF3ED:  LDA $F411,X
 LF3F0:  AND $2E
 LF3F2:  ORA $2D
+
 LF3F4:  LDA $2D
 LF3F6:  TAX
 LF3F7:  PLA
@@ -7454,6 +7570,8 @@ LF3FB:  STA $2E
 LF3FD:  PLA
 LF3FE:  TAY
 LF3FF:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LF400:  LDA #$00
 LF402:  INX
@@ -7671,10 +7789,10 @@ LF559:  STY $29
 LF55B:  JSR LED33
 LF55E:  LDA #$1E
 LF560:  STA CurPPUConfig1
-LF562:  LDA $EC
+LF562:  LDA EntrSndAndFlsh
 LF564:  BEQ LF56F
 LF566:  LDA #$00
-LF568:  STA $EC
+LF568:  STA EntrSndAndFlsh
 LF56A:  LDA #$03
 LF56C:  JSR FlashAndSound       ;($DB2D)Flash screen with SFX.
 LF56F:  RTS
@@ -8085,6 +8203,9 @@ LF862:  LDA #$0D
 LF864:  STA (MapDatPtr),Y
 LF866:  JMP LF86C
 LF869:  JMP LF8B5
+
+;----------------------------------------------------------------------------------------------------
+
 LF86C:  JSR ResetNameTableF1    ;($FBDC)Reset nametable offsets and select nametable 0.
 LF86F:  LDA ThisMap
 LF871:  BNE LF876
@@ -8173,13 +8294,16 @@ LF92C:  BEQ LF96B
 LF92E:  STX $D2
 LF930:  TXA
 LF931:  BNE LF93E
+
 LF933:  LDA #$90
 LF935:  STA $2A
 LF937:  LDA #$00
 LF939:  STA $29
 LF93B:  JMP LF955
+
 LF93E:  CPX #$02
 LF940:  BEQ LF94D
+
 LF942:  LDA #$96
 LF944:  STA $2A
 LF946:  LDA #$00
@@ -8190,14 +8314,15 @@ LF94D:  LDA #$9B
 LF94F:  STA $2A
 LF951:  LDA #$00
 LF953:  STA $29
+
 LF955:  LDA #$1A
 LF957:  STA $2C
 LF959:  LDA #$40
 LF95B:  STA $2B
 LF95D:  LDA #$05
-LF95F:  STA $2E
+LF95F:  STA PPUByteCntUB
 LF961:  LDA #$00
-LF963:  STA $2D
+LF963:  STA PPUByteCntLB
 LF965:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 LF968:  JSR LF981
@@ -8233,9 +8358,12 @@ LF989:  JSR $B380
 LF98C:  PLA
 LF98D:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF990:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LF991:  LDA #SPRT_HIDE
 LF993:  LDX #$00
-LF995:  STA $7300,X
+LF995:  STA SpriteBuffer,X
 LF998:  INX
 LF999:  INX
 LF99A:  INX
@@ -8251,6 +8379,7 @@ LF9AB:  LDA #$00
 LF9AD:  STA ScreenBlocks,X
 LF9B0:  INX
 LF9B1:  BNE LF9AD
+
 LF9B3:  LDA #$07
 LF9B5:  STA $2A
 LF9B7:  LDA #$00
@@ -8262,6 +8391,7 @@ LF9C1:  STA $2D
 LF9C3:  LDA #$08
 LF9C5:  STA $30
 LF9C7:  JSR LoadPPU             ;($EFE3)Load values into PPU.
+
 LF9CA:  INC $2C
 LF9CC:  DEC $30
 LF9CE:  BNE LF9C7
@@ -8365,7 +8495,7 @@ LFA93:  JSR $BC00
 LFA96:  PLA
 LFA97:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFA9A:  LDA #SPRT_HIDE
-LFA9C:  STA $7300
+LFA9C:  STA SpriteBuffer
 LFA9F:  JMP LF86C
 LFAA2:  STA $2E
 LFAA4:  JSR SetPPUBufNewSize    ;($F079)Update length of data in PPU buffer.
@@ -8663,11 +8793,14 @@ LFC50:  PLA
 LFC51:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFC54:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 LFC55:  LDA CurPRGBank
 LFC57:  PHA
 LFC58:  LDA #BANK_HELPERS2
 LFC5A:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFC5D:  JSR $8600
+
 LFC60:  LDA MapProperties
 LFC62:  AND #MAP_TURN
 LFC64:  BNE LFC71
@@ -8689,7 +8822,7 @@ LFC82:  LDA $00
 LFC84:  AND #$03
 LFC86:  STA $D5
 LFC88:  INC FirstMoonPhase
-LFC8A:  INC $D4
+LFC8A:  INC SecondMoonPhase
 LFC8C:  LDA FirstMoonPhase
 LFC8E:  AND #$0F
 LFC90:  CMP #$0C
@@ -8717,6 +8850,8 @@ LFCB8:  JSR LFCC0
 LFCBB:  PLA
 LFCBC:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFCBF:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LFCC0:  LDA CurPRGBank
 LFCC2:  PHA
@@ -8868,15 +9003,21 @@ LFDA2:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
+DoCstlCrumble:
 LFDA3:  LDA CurPRGBank
 LFDA5:  PHA
+
 LFDA6:  LDA #BANK_HELPERS1
 LFDA8:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
-LFDAB:  JSR $BF00
+LFDAB:  JSR UpdateCstlFall      ;($BF00)Update exodus castle falling aart after Exodus death.
+
 LFDAE:  PLA
 LFDAF:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LFDB2:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+;Unused.
 LFDB3:  .byte $C0
 
 ;----------------------------------------------------------------------------------------------------

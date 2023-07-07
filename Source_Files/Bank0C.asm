@@ -2934,257 +2934,386 @@ L91C1:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 DoReadyMade:
-L91C2:  JSR L9421
-L91C5:  BCC L91C8
-L91C7:  RTS
-L91C8:  LDA #CLS_UNCHOSEN
-L91CA:  STA Ch1Class
-L91CC:  STA Ch2Class
-L91CE:  STA Ch3Class
-L91D0:  STA Ch4Class
-L91D2:  STA ValidGamesFlags
-L91D4:  JSR InitPPU             ;($990C)Initialize the PPU.
-L91D7:  LDA #$00
-L91D9:  STA CurPPUConfig1
+L91C2:  JSR Find4EmptySlots     ;($9421)Check to see if there are at least 4 empty character slots.
+L91C5:  BCC +                   ;Have 4 empty slots been found? If so, branch to continue.
+L91C7:  RTS                     ;Else exit.
 
-L91DB:  LDA #$04
-L91DD:  STA $2A
-L91DF:  LDA #$04
-L91E1:  STA $29
-L91E3:  LDA #$14
-L91E5:  STA $2E
-L91E7:  LDA #$01
-L91E9:  STA $2D
-L91EB:  LDA #$0F
-L91ED:  STA TextIndex
+L91C8:* LDA #CLS_UNCHOSEN       ;
+L91CA:  STA Ch1Class            ;
+L91CC:  STA Ch2Class            ;Clear the character classes of the 4 characters.
+L91CE:  STA Ch3Class            ;
+L91D0:  STA Ch4Class            ;
+
+L91D2:  STA RdyMdSelection      ;Indicate no character chosen.
+L91D4:  JSR InitPPU             ;($990C)Initialize the PPU.
+
+L91D7:  LDA #SCREEN_OFF         ;Turn the screen off.
+L91D9:  STA CurPPUConfig1       ;
+
+L91DB:  LDA #$04                ;
+L91DD:  STA TXTXPos             ;Text will be located at tile coords X,Y=4,4.
+L91DF:  LDA #$04                ;
+L91E1:  STA TXTYPos             ;
+
+L91E3:  LDA #$14                ;
+L91E5:  STA TXTClrCols          ;Clear 20 columns and 1 row for the text string.
+L91E7:  LDA #$01                ;
+L91E9:  STA TXTClrRows          ;
+
+L91EB:  LDA #$0F                ;SELECT CHARACTERS text.
+L91ED:  STA TextIndex           ;
 L91EF:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L91F2:  LDA #$04
-L91F4:  STA $2A
-L91F6:  LDA #$0C
-L91F8:  STA $29
-L91FA:  LDA #$16
-L91FC:  STA $2E
-L91FE:  LDA #$10
-L9200:  STA $2D
+L91F2:  LDA #$04                ;
+L91F4:  STA WndXPos             ;Window will be located at tile coords X,Y=4,13
+L91F6:  LDA #$0C                ;
+L91F8:  STA WndYPos             ;
+
+L91FA:  LDA #$16                ;
+L91FC:  STA WndWidth            ;Window will be 22 tiles wide and 16 tiles tall.
+L91FE:  LDA #$10                ;
+L9200:  STA WndHeight           ;
+
 L9202:  JSR DrawWndBrdr         ;($97A9)Draw window border.
-L9205:  LDA #$00
-L9207:  STA CurPPUConfig1
-L9209:  LDA #$E0
-L920B:  STA HideUprSprites
-L920D:  LDA $00
-L920F:  AND #$07
-L9211:  CMP #$06
-L9213:  BCC L9218
-L9215:  SEC
-L9216:  SBC #$04
-L9218:  TAX
-L9219:  STX $33
-L921B:  LDA $9367,X
-L921E:  PHA
-L921F:  TXA
-L9220:  ASL
-L9221:  TAX
-L9222:  LDA $936D,X
-L9225:  STA $31
-L9227:  STA $2D
-L9229:  LDA $936E,X
-L922C:  STA $32
-L922E:  STA $2C
-L9230:  LDA #$FF
-L9232:  STA $30
-L9234:  STA $2E
+
+LoadRMScreen:
+L9205:  LDA #SCREEN_OFF         ;Turn the screen off.
+L9207:  STA CurPPUConfig1       ;
+
+L9209:  LDA #$E0                ;Hide upper 8 sprites.
+L920B:  STA HideUprSprites      ;
+
+L920D:  LDA Increment0          ;Get lower 3 bits of counter. used to select character pair.
+L920F:  AND #$07                ;
+L9211:  CMP #$06                ;Is value above 5?
+L9213:  BCC +                   ;If not, branch.
+
+L9215:  SEC                     ;Subtract 4 to put number in useful range.
+L9216:  SBC #$04                ;
+
+L9218:* TAX                     ;Use number as index into table below.
+L9219:  STX RdyMadeIndex        ;
+
+L921B:  LDA RMTextTbl,X         ;Get text corresponding to ready-made character pair.
+L921E:  PHA                     ;
+
+L921F:  TXA                     ;
+L9220:  ASL                     ;*2. 2 bytes per entry in RMClassTbl.
+L9221:  TAX                     ;
+
+L9222:  LDA RMClassTbl,X        ;
+L9225:  STA RdyMadeChr1         ;Get the first ready-made character to choose from.
+L9227:  STA RdyMadeChr1_        ;
+
+L9229:  LDA RMClassTbl+1,X      ;
+L922C:  STA RdyMadeChr2         ;Get the second ready-made character to choose from.
+L922E:  STA RdyMadeChr2_        ;
+
+L9230:  LDA #CLS_UNCHOSEN       ;Only 2 characters on ready-made screen. Make sure only 2 appear.
+L9232:  STA Ch1StClass          ;
+L9234:  STA Ch2StClass          ;
 L9236:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character class portraits.
-L9239:  LDA #$20
-L923B:  STA $2A
-L923D:  LDA #$C4
-L923F:  STA $29
-L9241:  LDA #$B8
-L9243:  STA $2D
+
+L9239:  LDA #PPU_NT0_UB         ;
+L923B:  STA NTDestAdrUB         ;First character will appear on name table 0
+L923D:  LDA #PPU_NT0_LB+$C4     ;starting at address $20C4.
+L923F:  STA NTDestAdrLB         ;
+
+L9241:  LDA #$B8                ;Tile patterns for character 1 will appear in the
+L9243:  STA PTStartTile         ;pattern table starting at tile $B8.
 L9245:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
-L9248:  LDA #$20
-L924A:  STA $2A
-L924C:  LDA #$D2
-L924E:  STA $29
-L9250:  LDA #$DC
-L9252:  STA $2D
+
+L9248:  LDA #PPU_NT0_UB         ;
+L924A:  STA NTDestAdrUB         ;Second character will appear on name table 0
+L924C:  LDA #PPU_NT0_LB+$D2     ;starting at address $20D2.
+L924E:  STA NTDestAdrLB         ;
+
+L9250:  LDA #$DC                ;Tile patterns for character 2 will appear in the
+L9252:  STA PTStartTile         ;pattern table starting at tile $DC.
 L9254:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
 L9257:  LDA #$40                ;Prepare to load 64 bytes into PPU buffer.
 L9259:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
-L925C:  LDA #$23
-L925E:  STA PPUBufBase,X
-L9261:  INX
-L9262:  LDA #$C0
-L9264:  STA PPUBufBase,X
-L9267:  INX
-L9268:  LDY #$00
-L926A:  LDA $B521,Y
-L926D:  STA PPUBufBase,X
-L9270:  INX
-L9271:  INY
-L9272:  CPY #$40
-L9274:  BNE L926A
-L9276:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
-L9279:  LDA #$05
-L927B:  STA $2C
-L927D:  LDA #$04
-L927F:  STA $2B
-L9281:  LDA $31
-L9283:  JSR LoadLgChrPalettes   ;($9701)Load palette data for individual character portraits.
-L9286:  LDA #$05
-L9288:  STA $2C
-L928A:  LDA #$08
-L928C:  STA $2B
-L928E:  LDA $32
-L9290:  TAX
-L9291:  JSR L970F
-L9294:  PLA
-L9295:  STA $30
-L9297:  LDA #$00
-L9299:  STA ValidGamesFlags
 
-L929B:  LDA #$06
-L929D:  STA $2A
-L929F:  LDA #$0E
-L92A1:  STA $29
-L92A3:  LDA #$13
-L92A5:  STA $2E
-L92A7:  LDA #$07
-L92A9:  STA $2D
+L925C:  LDA #PPU_AT0_UB         ;
+L925E:  STA PPUBufBase,X        ;
+L9261:  INX                     ;Prepare to write data to attribute table 0.
+L9262:  LDA #PPU_AT0_LB         ;
+L9264:  STA PPUBufBase,X        ;
+
+L9267:  INX                     ;Move to next empty slot in PPU buffer.
+L9268:  LDY #$00                ;Zero out index.
+
+L926A:* LDA RdyMadeATDat,Y      ;
+L926D:  STA PPUBufBase,X        ;
+L9270:  INX                     ;Write 64 bytes of attribute table data to the PPU buffer.
+L9271:  INY                     ;
+L9272:  CPY #$40                ;
+L9274:  BNE -                   ;
+
+L9276:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
+
+L9279:  LDA #>AttribBuffer      ;
+L927B:  STA PPUDstPtrUB         ;Set destination pointer to first character's palette data.
+L927D:  LDA #<AttribBuffer+$04  ;
+L927F:  STA PPUDstPtrLB         ;
+
+L9281:  LDA RdyMadeChr1         ;Get class for first character.
+L9283:  JSR LoadLgChrPalettes   ;($9701)Load palette and attrib table data for character portrait.
+
+L9286:  LDA #>AttribBuffer      ;
+L9288:  STA PPUDstPtrUB         ;Set destination pointer to second character's palette data.
+L928A:  LDA #<AttribBuffer+$08  ;
+L928C:  STA PPUDstPtrLB         ;
+
+L928E:  LDA RdyMadeChr2         ;Get class for second character.
+L9290:  TAX                     ;
+L9291:  JSR LoadLgChrAttrib     ;(L970F)Load attribute table data for 2nd character portrait.
+
+L9294:  PLA                     ;Restore text index for the character pair from the stack.
+L9295:  STA TextIndex           ;
+
+L9297:  LDA #$00                ;Set selector sprite to first character by default.
+L9299:  STA RdyMdSelection      ;
+
+L929B:  LDA #$06                ;
+L929D:  STA TXTXPos             ;Text will be located at tile coords X,Y=6,14.
+L929F:  LDA #$0E                ;
+L92A1:  STA TXTYPos             ;
+
+L92A3:  LDA #$13                ;
+L92A5:  STA TXTClrCols          ;Clear 19 columns and 7 rows for the text string.
+L92A7:  LDA #$07                ;
+L92A9:  STA TXTClrRows          ;
+
 L92AB:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L92AE:  LDA #$1E
-L92B0:  STA CurPPUConfig1
-L92B2:  JSR L9352
+L92AE:  LDA #SCREEN_ON          ;Turn the screen on.
+L92B0:  STA CurPPUConfig1       ;
+
+L92B2:  JSR RMUpdateSelector    ;($9352)Update position of selector sprite on ready-made screen.
+
+RMInputLoop:
 L92B5:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L92B8:  LDA Pad1Input
-L92BA:  CMP #$01
-L92BC:  BNE L92CA
-L92BE:  LDA ValidGamesFlags
-L92C0:  BNE L92B5
-L92C2:  INC ValidGamesFlags
-L92C4:  JSR L9352
-L92C7:  JMP L92B5
-L92CA:  CMP #$02
-L92CC:  BNE L92DC
-L92CE:  LDA ValidGamesFlags
-L92D0:  CMP #$01
-L92D2:  BNE L92B5
-L92D4:  DEC ValidGamesFlags
-L92D6:  JSR L9352
-L92D9:  JMP L92B5
-L92DC:  CMP #$08
-L92DE:  BNE L92F5
-L92E0:  LDA ValidGamesFlags
-L92E2:  CMP #$03
-L92E4:  BEQ L92ED
-L92E6:  CMP #$04
-L92E8:  BEQ L92ED
-L92EA:  JMP L92B5
-L92ED:  DEC ValidGamesFlags
-L92EF:  JSR L9352
-L92F2:  JMP L92B5
-L92F5:  CMP #$04
-L92F7:  BNE L930E
-L92F9:  LDA ValidGamesFlags
-L92FB:  CMP #$02
-L92FD:  BEQ L9306
-L92FF:  CMP #$03
-L9301:  BEQ L9306
-L9303:  JMP L92B5
-L9306:  INC ValidGamesFlags
-L9308:  JSR L9352
-L930B:  JMP L92B5
-L930E:  CMP #$80
-L9310:  BEQ L9315
-L9312:  JMP L9344
-L9315:  LDX $31
-L9317:  LDA ValidGamesFlags
-L9319:  BEQ L931D
-L931B:  LDX $32
-L931D:  LDY #$00
-L931F:  LDA $007E,Y
-L9322:  CMP #$FF
-L9324:  BEQ L932D
-L9326:  INY
-L9327:  CPY #$04
-L9329:  BNE L931F
-L932B:  CLC
-L932C:  RTS
-L932D:  TXA
-L932E:  STA $007E,Y
-L9331:  CPY #$03
-L9333:  BEQ L933F
-L9335:  JSR L9352
-L9338:  LDA #$FF
-L933A:  STA ValidGamesFlags
-L933C:  JMP L9205
-L933F:  JSR L9379
-L9342:  CLC
-L9343:  RTS
-L9344:  CMP #$40
-L9346:  BEQ L934B
-L9348:  JMP L92B5
-L934B:  LDA #$FF
-L934D:  STA ValidGamesFlags
-L934F:  JMP L9205
-L9352:  LDA ValidGamesFlags
-L9354:  ASL
-L9355:  TAX
-L9356:  LDA $9363,X
-L9359:  STA SpriteBuffer
-L935C:  LDA $9364,X
-L935F:  STA $7303
-L9362:  RTS
+L92B8:  LDA Pad1Input           ;
 
-L9363:  .byte $70, $28, $70, $90, $10, $11, $12, $13, $14, $15, $00, $0A, $01, $08, $03, $07
-L9373:  .byte $02, $09, $04, $06, $00, $05
+L92BA:  CMP #BTN_RIGHT          ;Was the right button pressed?
+L92BC:  BNE RMChkLeft           ;If not, branch to check the next button.
 
-L9379: LDA #$00
-L937B: STA $30
-L937D: LDA $30
-L937F: ASL
-L9380: TAX
-L9381: LDA $91,X
-L9383: STA SGCharPtrLB
-L9385: LDA $92,X
-L9387: STA SGCharPtrUB
-L9389: LDX $30
-L938B: LDA Ch1Class,X
-L938D: ASL
-L938E: ASL
-L938F: ASL
-L9390: TAX
-L9391: LDA $93C9,X
-L9394: LDY #CHR_CLASS
-L9396: STA (CrntChrPtr),Y
-L9398: INX
-L9399: LDA $93C9,X
-L939C: LDY #CHR_RACE
-L939E: STA (CrntChrPtr),Y
-L93A0: INX
-L93A1: LDA $93C9,X
-L93A4: LDY #CHR_STR
-L93A6: STA (CrntChrPtr),Y
-L93A8: INX
-L93A9: LDA $93C9,X
-L93AC: LDY #CHR_DEX
-L93AE: STA (CrntChrPtr),Y
-L93B0: INX
-L93B1: LDA $93C9,X
-L93B4: LDY #CHR_INT
-L93B6: STA (CrntChrPtr),Y
-L93B8: INX
-L93B9: LDA $93C9,X
-L93BC: LDY #CHR_WIS
-L93BE: STA (CrntChrPtr),Y
-L93C0: INC $30
-L93C2: LDA $30
-L93C4: CMP #$04
-L93C6: BNE L937D
-L93C8: RTS
+L92BE:  LDA RdyMdSelection      ;Is second character already selected?
+L92C0:  BNE RMInputLoop         ;If so, branch to ignore button press.
 
+L92C2:  INC RdyMdSelection      ;Move selector to second character.
+L92C4:  JSR RMUpdateSelector    ;($9352)Update position of selector sprite on ready-made screen.
+L92C7:  JMP RMInputLoop         ;($92B5)Input loop for ready-made character selection.
+
+RMChkLeft:
+L92CA:  CMP #BTN_LEFT           ;Was the left button pressed?
+L92CC:  BNE RMChkUp             ;If not, branch to check the next button.
+
+L92CE:  LDA RdyMdSelection      ;Is the first character selected?
+L92D0:  CMP #$01                ;If so, branch to ignore input.
+L92D2:  BNE RMInputLoop         ;
+
+L92D4:  DEC RdyMdSelection      ;Move selector to first character.
+L92D6:  JSR RMUpdateSelector    ;($9352)Update position of selector sprite on ready-made screen.
+L92D9:  JMP RMInputLoop         ;($92B5)Input loop for ready-made character selection.
+
+RMChkUp:
+L92DC:  CMP #BTN_UP             ;Was the up button pressed?
+L92DE:  BNE RMChkDn             ;If not, branch to check the next button.
+
+L92E0:  LDA RdyMdSelection      ;
+L92E2:  CMP #$03                ;
+L92E4:  BEQ +                   ;This code has no function.
+L92E6:  CMP #$04                ;
+L92E8:  BEQ +                   ;
+
+L92EA:  JMP RMInputLoop         ;($92B5)Input loop for ready-made character selection.
+
+L92ED:* DEC RdyMdSelection      ;Should never get here.
+L92EF:  JSR RMUpdateSelector    ;($9352)Update position of selector sprite on ready-made screen.
+L92F2:  JMP RMInputLoop         ;($92B5)Input loop for ready-made character selection.
+
+RMChkDn:
+L92F5:  CMP #BTN_DOWN           ;Was the down button pressed?
+L92F7:  BNE RMChkA              ;If not, branch to check the next button.
+
+L92F9:  LDA RdyMdSelection      ;
+L92FB:  CMP #$02                ;
+L92FD:  BEQ +                   ;This code has no function.
+L92FF:  CMP #$03                ;
+L9301:  BEQ +                   ;
+
+L9303:  JMP RMInputLoop         ;($92B5)Input loop for ready-made character selection.
+
+L9306:* INC RdyMdSelection      ;Should never get here.
+L9308:  JSR RMUpdateSelector    ;($9352)Update position of selector sprite on ready-made screen.
+L930B:  JMP RMInputLoop         ;($92B5)Input loop for ready-made character selection.
+
+RMChkA:
+L930E:  CMP #BTN_A              ;Was A button pressed?
+L9310:  BEQ +                   ;If so, branch to process button press.
+
+L9312:  JMP RMChkB              ;($9344)Check if B button was pressed.
+
+L9315:* LDX RdyMadeChr1         ;Assume character 1 wwas chosen?
+L9317:  LDA RdyMdSelection      ;Was character 1 chosen?
+L9319:  BEQ +                   ;If so, branch.
+
+L931B:  LDX RdyMadeChr2         ;Set character 2 as selected.
+
+L931D:* LDY #$00                ;Zero out the indexes.
+
+L931F:* LDA ChClasses,Y         ;Is current character slot open?
+L9322:  CMP #CHR_EMPTY_SLOT     ;If so, branch.
+L9324:  BEQ RMSlotFound         ;
+
+L9326:  INY                     ;Have 4 character slots been checked?
+L9327:  CPY #$04                ;If not, branch to check the next one.
+L9329:  BNE -                   ;
+
+L932B:  CLC                     ;Could not find an open slot for the new character.
+L932C:  RTS                     ;
+
+RMSlotFound:
+L932D:  TXA                     ;Store the chosen class of the character to fill the slot.
+L932E:  STA ChClasses,Y         ;
+
+L9331:  CPY #$03                ;Have all 4 characters been set?
+L9333:  BEQ RMChrsComplete      ;If so, branch to finish ready-made characters.
+
+L9335:  JSR RMUpdateSelector    ;($9352)Update position of selector sprite on ready-made screen.
+
+L9338:  LDA #CLS_UNCHOSEN       ;Prepare to choose a new pair of characters to display.
+L933A:  STA RdyMdSelection      ;
+
+L933C:  JMP LoadRMScreen        ;($9205)Show the ready-made character screen.
+
+RMChrsComplete:
+L933F:  JSR SetPremadeChrs      ;($9379)Save the selected 4 characters in the player's save game.
+
+L9342:  CLC                     ;Indicate 4 characters successfully created and exit.
+L9343:  RTS                     ;
+
+RMChkB:
+L9344:  CMP #BTN_B              ;Was B button pressed?If so, branch to process input.
+L9346:  BEQ +                   ;Else jump to ignore other inputs.
+L9348:  JMP RMInputLoop         ;($92B5)Input loop for ready-made character selection.
+
+L934B:* LDA #CLS_UNCHOSEN       ;Prepare to choose a new pair of characters to display.
+L934D:  STA RdyMdSelection      ;
+L934F:  JMP LoadRMScreen        ;($9205)Show the ready-made character screen.
+
+;----------------------------------------------------------------------------------------------------
+
+RMUpdateSelector:
+L9352:  LDA RdyMdSelection      ;
+L9354:  ASL                     ;*2. 2 bytes for X,Y sprite coordinates.
+L9355:  TAX                     ;
+
+L9356:  LDA RdyMadeTbl,X        ;
+L9359:  STA SpriteBuffer        ;Update Y position of selection sprite.
+L935C:  LDA RdyMadeTbl+1,X      ;
+L935F:  STA SpriteBuffer+3      ;Update X position of selection sprite.
+L9362:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table contains the Y,X coordinates of the selector sprite on the ready-made
+;screen. The player can select 1 of 2 characters.
+
+RdyMadeTbl:
+L9363:  .byte $70, $28
+L9365:  .byte $70, $90
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table contains the text indexes for the approprate pairs of characters
+;displayed on the ready-made screen. each entyr below corresponds to the entry pair
+;in RMClassTbl
+
+RMTextTbl:
+L9367:  .byte $10               ;FIGHTER RANGER text.
+L9368:  .byte $11               ;CLERIC DRUID text.
+L9369:  .byte $12               ;THIEF ILLUSIONIST text.
+L936A:  .byte $13               ;WIZARD ALCHEMIST text.
+L936B:  .byte $14               ;PALADIN LARK text.
+L936C:  .byte $15               ;FIGHTER BARBARIAN text.
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table is the class pairs that show up when creating ready-made characters.
+
+RMClassTbl:
+L936D:  .byte CLS_FIGHTER, CLS_RANGER
+L936F:  .byte CLS_CLERIC,  CLS_DRUID
+L9371:  .byte CLS_THIEF,   CLS_ILLUSIONIST
+L9373:  .byte CLS_WIZARD,  CLS_ALCHEMIST
+L9375:  .byte CLS_PALADIN, CLS_LARK
+L9377:  .byte CLS_FIGHTER, CLS_BARBARIAN
+
+;----------------------------------------------------------------------------------------------------
+
+SetPremadeChrs:
+L9379: LDA #$00                 ;Zero out the character counter.
+L937B: STA GenByte30            ;
+
+SetPremadeLoop:
+L937D: LDA GenByte30            ;
+L937F: ASL                      ;Get index to next character pointer.
+L9380: TAX                      ;
+
+L9381: LDA PosChrPtrLB,X        ;
+L9383: STA SGCharPtrLB          ;Get a pointer to the character data in the selected save game.
+L9385: LDA PosChrPtrUB,X        ;
+L9387: STA SGCharPtrUB          ;
+
+L9389: LDX GenByte30            ;Get the class of the current character.
+L938B: LDA Ch1Class,X           ;
+
+L938D: ASL                      ;
+L938E: ASL                      ;*8. 8 bytes per row in PremadeChrTbl below.
+L938F: ASL                      ;
+L9390: TAX                      ;
+
+L9391: LDA PremadeChrTbl,X      ;
+L9394: LDY #CHR_CLASS           ;
+L9396: STA (CrntChrPtr),Y       ;
+L9398: INX                      ;
+L9399: LDA PremadeChrTbl,X      ;
+L939C: LDY #CHR_RACE            ;
+L939E: STA (CrntChrPtr),Y       ;
+L93A0: INX                      ;
+L93A1: LDA PremadeChrTbl,X      ;
+L93A4: LDY #CHR_STR             ;
+L93A6: STA (CrntChrPtr),Y       ;
+L93A8: INX                      ;Copy the data row from the table
+L93A9: LDA PremadeChrTbl,X      ;below into the character data slot.
+L93AC: LDY #CHR_DEX             ;
+L93AE: STA (CrntChrPtr),Y       ;
+L93B0: INX                      ;
+L93B1: LDA PremadeChrTbl,X      ;
+L93B4: LDY #CHR_INT             ;
+L93B6: STA (CrntChrPtr),Y       ;
+L93B8: INX                      ;
+L93B9: LDA PremadeChrTbl,X      ;
+L93BC: LDY #CHR_WIS             ;
+L93BE: STA (CrntChrPtr),Y       ;
+
+L93C0: INC GenByte30            ;Have the 4 ready-made characters been
+L93C2: LDA GenByte30            ;transferred into the player's save game?
+L93C4: CMP #$04                 ;If not, branch to copy another's character
+L93C6: BNE SetPremadeLoop       ;data into the save game.
+L93C8: RTS                      ;
+
+;----------------------------------------------------------------------------------------------------
+
+;The following table contains the stats of the ready-made characters. The first 2 bytes
+;are the character's class and race. The following 4 bytes are the character's strength,
+;dexterity, intelligence and wisdom, respectively. The last 2 bytes are unused.
+
+PremadeChrTbl:
 L93C9:  .byte CLS_FIGHTER,     RC_DWARF,  25, 15, 05, 05, $00, $00
 L93D1:  .byte CLS_CLERIC,      RC_DWARF,  05, 15, 05, 25, $00, $00
 L93D9:  .byte CLS_WIZARD,      RC_FUZZY,  05, 15, 25, 05, $00, $00
@@ -3197,64 +3326,87 @@ L9409:  .byte CLS_DRUID,       RC_BOBBIT, 05, 05, 20, 20, $00, $00
 L9411:  .byte CLS_ALCHEMIST,   RC_ELF,    05, 20, 20, 05, $00, $00
 L9419:  .byte CLS_RANGER,      RC_HUMAN,  25, 15, 05, 05, $00, $00                                             
 
-L9421:  LDA SGDatPtrLB
-L9423:  STA $29
-L9425:  LDA SGDatPtrUB
-L9427:  STA $2A
-L9429:  INC $2A
-L942B:  LDA #$00
-L942D:  STA $30
-L942F:  STA $2E
-L9431:  LDY #$00
-L9433:  LDA ($29),Y
-L9435:  CMP #$FF
-L9437:  BEQ L9450
-L9439:  CLC
-L943A:  LDA $29
-L943C:  ADC #$40
-L943E:  STA $29
-L9440:  LDA $2A
-L9442:  ADC #$00
-L9444:  STA $2A
-L9446:  INC $30
-L9448:  LDA $30
-L944A:  CMP #$14
-L944C:  BNE L9431
-L944E:  SEC
-L944F:  RTS
-L9450:  LDA $2E
-L9452:  CLC
-L9453:  ADC #$10
-L9455:  TAY
-L9456:  LDA $30
-L9458:  STA (SGDatPtr),Y
-L945A:  LDA $2E
-L945C:  ASL
-L945D:  TAX
-L945E:  LDA $29
-L9460:  STA $91,X
-L9462:  LDA $2A
-L9464:  STA $92,X
-L9466:  INC $2E
-L9468:  LDA $2E
-L946A:  CMP #$04
-L946C:  BNE L9439
-L946E:  CLC
-L946F:  RTS
+;----------------------------------------------------------------------------------------------------
+
+Find4EmptySlots:
+L9421:  LDA SGDatPtrLB          ;
+L9423:  STA ChrDatPtrLB_        ;
+L9425:  LDA SGDatPtrUB          ;Get a pointer to the character data in the selected save game.
+L9427:  STA ChrDatPtrUB_        ;
+L9429:  INC ChrDatPtrUB_        ;
+
+L942B:  LDA #$00                ;
+L942D:  STA GenByte30           ;Zero out the character data index and empty slot counter.
+L942F:  STA GenByte2E           ;
+
+ChkEmptyLoop:
+L9431:  LDY #$00                ;
+L9433:  LDA (ChrDatPtr_),Y      ;Is the current character slot empty?
+L9435:  CMP #CHR_EMPTY_SLOT     ;If so, branch.
+L9437:  BEQ EmptySlotFound      ;
+
+ChkNextEmpty:
+L9439:  CLC                     ;
+L943A:  LDA ChrDatPtrLB_        ;
+L943C:  ADC #$40                ;
+L943E:  STA ChrDatPtrLB_        ;Increment the pointer to the next character slot.
+L9440:  LDA ChrDatPtrUB_        ;
+L9442:  ADC #$00                ;
+L9444:  STA ChrDatPtrUB_        ;
+
+L9446:  INC GenByte30           ;
+L9448:  LDA GenByte30           ;Have all 20 character slots been checked?
+L944A:  CMP #$14                ;If not, branch to check another one.
+L944C:  BNE ChkEmptyLoop        ;
+
+L944E:  SEC                     ;4 slots not found.
+L944F:  RTS                     ;
+
+EmptySlotFound:
+L9450:  LDA GenByte2E           ;
+L9452:  CLC                     ;Calculate index to current character in the save game($10-$13).
+L9453:  ADC #$10                ;
+L9455:  TAY                     ;
+
+L9456:  LDA GenByte30           ;Store the index of the empty character slot.
+L9458:  STA (SGDatPtr),Y        ;
+
+L945A:  LDA GenByte2E           ;
+L945C:  ASL                     ;*2. Pointers are 2 bytes.
+L945D:  TAX                     ;
+
+L945E:  LDA ChrDatPtrLB_        ;
+L9460:  STA PosChrPtrLB,X       ;Save the pointer to the character slot.
+L9462:  LDA ChrDatPtrUB_        ;
+L9464:  STA PosChrPtrUB,X       ;
+
+L9466:  INC GenByte2E           ;
+L9468:  LDA GenByte2E           ;Has a total of 4 empty slots been found?
+L946A:  CMP #$04                ;If not, branch to find another empty slot.
+L946C:  BNE ChkNextEmpty        ;
+
+L946E:  CLC                     ;4 slots found.
+L946F:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 Discard:
 L9470:  JSR InitPPU             ;($990C)Initialize the PPU.
-L9473:  LDA #$02
-L9475:  STA $2A
-L9477:  LDA #$04
-L9479:  STA $29
-L947B:  LDA #$1C
-L947D:  STA $2E
-L947F:  LDA #$01
-L9481:  STA $2D
-L9483:  LDA #$1B
-L9485:  STA TextIndex
+
+L9473:  LDA #$02                ;
+L9475:  STA TXTXPos             ;Text will be located at tile coords X,Y=2,4.
+L9477:  LDA #$04                ;
+L9479:  STA TXTYPos             ;
+
+L947B:  LDA #$1C                ;
+L947D:  STA TXTClrCols          ;Clear 28 columns and 1 row for the text string.
+L947F:  LDA #$01                ;
+L9481:  STA TXTClrRows          ;
+
+L9483:  LDA #$1B                ;DISCARD THE CHARACTER text.
+L9485:  STA TextIndex           ;
 L9487:  JSR ShowTextString      ;($995C)Show a text string on the screen.
+
 L948A:  LDX SGDatPtrLB
 L948C:  STX SGCharPtrLB
 L948E:  LDX SGDatPtrUB
@@ -3266,12 +3418,14 @@ L9496:  LDA #$10
 L9498:  STA $2A
 L949A:  LDA #$1A
 L949C:  STA $29
+
 L949E:  LDA #$0A
 L94A0:  STA $2E
 L94A2:  LDA #$01
 L94A4:  STA $2D
-L94A6:  LDA #$08
-L94A8:  STA TextIndex
+
+L94A6:  LDA #$08                ;END text.
+L94A8:  STA TextIndex           ;
 L94AA:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L94AD:  LDA #$30
@@ -3589,8 +3743,8 @@ L9700:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 LoadLgChrPalettes:
-L9701:  TAX
-L9702:  LDY #$00
+L9701:  TAX                     ;Index to attribute table byte.
+L9702:  LDY #$00                ;Zero out the index.
 
 L9704:* LDA LgChrPalDat,Y       ;
 L9707:  STA AttribBuffer,Y      ;
@@ -3598,27 +3752,31 @@ L970A:  INY                     ;Copy character palette data into the buffer.
 L970B:  CPY #$20                ;
 L970D:  BNE -                   ;
 
-L970F:  LDA LgChrAtribTbl,X
-L9712:  ASL
-L9713:  ASL
-L9714:  CLC
-L9715:  ADC #<SnglChrPalData
-L9717:  STA $29
-L9719:  LDA #$00
-L971B:  ADC #>SnglChrPalData
-L971D:  STA $2A
-L971F:  LDY #$00
+LoadLgChrAttrib:
+L970F:  LDA LgChrAtribTbl,X     ;Get attribute table byte for selected character.
 
-L9721:* LDA ($29),Y
-L9723:  STA ($2B),Y
-L9725:  INY
-L9726:  CPY #$04
-L9728:  BNE -
+L9712:  ASL                     ;*4. 4 bytes of palette data per portrait.
+L9713:  ASL                     ;
 
-L972A:  LDA #>AttribBuffer     ;
-L972C:  STA PPUPyLdPtrUB       ;Prepare to transfer the contents of the
-L972E:  LDA #<AttribBuffer     ;attribute table buffer into the PPU buffer.
-L9730:  STA PPUPyLdPtrLB       ;
+L9714:  CLC                     ;
+L9715:  ADC #<SnglChrPalData    ;
+L9717:  STA PPUSrcPtrLB         ;Get pointer to palette data for portrait.
+L9719:  LDA #$00                ;
+L971B:  ADC #>SnglChrPalData    ;
+L971D:  STA PPUSrcPtrUB         ;
+
+L971F:  LDY #$00                ;Zero out the index.
+
+L9721:* LDA (PPUSrcPtr),Y       ;
+L9723:  STA (PPUDstPtr),Y       ;
+L9725:  INY                     ;Load the 4 bytes of palette data for this portrait.
+L9726:  CPY #$04                ;
+L9728:  BNE -                   ;
+
+L972A:  LDA #>AttribBuffer      ;
+L972C:  STA PPUPyLdPtrUB        ;Prepare to transfer the contents of the
+L972E:  LDA #<AttribBuffer      ;attribute table buffer into the PPU buffer.
+L9730:  STA PPUPyLdPtrLB        ;
 
 L9732:  JSR LoadPPUPalData      ;($9772)Load palette data into PPU buffer.
 L9735:  RTS                     ;
@@ -4382,45 +4540,45 @@ LA019:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character cl
 
 ;Load character 1 large class portrait.
 LA01C:  LDA #$20                ;
-LA01E:  STA GenPtr29UB          ;Image loaded onto NT 0 starting at X,Y=2,4.
+LA01E:  STA NTDestAdrUB         ;Image loaded onto NT 0 starting at X,Y=2,4.
 LA020:  LDA #$82                ;
-LA022:  STA GenPtr29LB          ;
+LA022:  STA NTDestAdrLB         ;
 
 LA024:  LDA #$44                ;Image starts with tile pattern $44.
-LA026:  STA GenByte2D           ;
+LA026:  STA PTStartTile         ;
 
 LA028:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
 ;Load character 2 large class portrait.
 LA02B:  LDA #$20                ;
-LA02D:  STA GenPtr29UB          ;Image loaded onto NT 0 starting at X,Y=9,4
+LA02D:  STA NTDestAdrUB         ;Image loaded onto NT 0 starting at X,Y=9,4
 LA02F:  LDA #$88                ;
-LA031:  STA GenPtr29LB          ;
+LA031:  STA NTDestAdrLB         ;
 
 LA033:  LDA #$68                ;Image starts with tile pattern $68.
-LA035:  STA GenByte2D           ;
+LA035:  STA PTStartTile         ;
 
 LA037:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
 ;Load character 3 large class portrait.
 LA03A:  LDA #$20                ;
-LA03C:  STA GenPtr29UB          ;Image loaded onto NT 0 starting at X,Y=18,4
+LA03C:  STA NTDestAdrUB         ;Image loaded onto NT 0 starting at X,Y=18,4
 LA03E:  LDA #$92                ;
-LA040:  STA GenPtr29LB          ;
+LA040:  STA NTDestAdrLB         ;
 
 LA042:  LDA #$B8                ;Image starts with tile pattern $B8.
-LA044:  STA GenByte2D           ;
+LA044:  STA PTStartTile         ;
 
 LA046:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
 ;Load character 4 large class portrait.
 LA049:  LDA #$20                ;
-LA04B:  STA GenPtr29UB          ;Image loaded onto NT 0 starting at X,Y=24,4
+LA04B:  STA NTDestAdrUB         ;Image loaded onto NT 0 starting at X,Y=24,4
 LA04D:  LDA #$98                ;
-LA04F:  STA GenPtr29LB          ;
+LA04F:  STA NTDestAdrLB         ;
 
 LA051:  LDA #$DC                ;Image starts with tile pattern $DC.
-LA053:  STA GenByte2D           ;
+LA053:  STA PTStartTile         ;
 
 LA055:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
 
@@ -4767,9 +4925,9 @@ LA281:  .byte $F0, $05, $E8, $C8, $4C, $7B, $A2, $E8, $86, $30, $60
 
 StatLoad1Chr:
 LA28C:  LDA #$20                ;
-LA28E:  STA GenPtr29UB          ;Prepare to load character portrait on name table 0 at X,Y=4,6.
+LA28E:  STA NTDestAdrUB         ;Prepare to load character portrait on name table 0 at X,Y=4,6.
 LA290:  LDA #$C4                ;
-LA292:  STA GenPtr29LB          ;
+LA292:  STA NTDestAdrLB         ;
 
 LA294:  LDA #$DC                ;Prepare to load portrait statring at tile $DC.
 LA296:  STA GenPtr2D            ;
@@ -5994,10 +6152,15 @@ LB511:  .byte $88, $C8, $03, $60, $90, $C9, $03, $60, $88, $CA, $03, $68, $90, $
 
 ;----------------------------------------------------------------------------------------------------
 
+;Attribute table data when viewing large portraits on the ready-made character screen.
+
+RdyMadeATDat:
 LB521:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $50, $10, $00, $80, $A0, $00, $00
 LB531:  .byte $00, $55, $11, $00, $88, $AA, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 LB541:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 LB551:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+
+;----------------------------------------------------------------------------------------------------
 
 LB561:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $44, $55, $00
 LB571:  .byte $00, $00, $00, $00, $00, $04, $05, $00, $00, $00, $00, $00, $00, $00, $00, $00
@@ -6475,11 +6638,11 @@ LB985:  STA $730A,Y
 LB988:  STA $730E,Y
 LB98B:  LDY $18
 LB98D:  LDA #$01
-LB98F:  STA $B0
+LB98F:  STA UnusedB0            ;No effect.
 LB991:  LDA #$00
 LB993:  JSR $C03C
 LB996:  LDA #$00
-LB998:  STA $B0
+LB998:  STA UnusedB0            ;No effect.
 LB99A:  PLA
 LB99B:  STA $2B
 LB99D:  PLA
