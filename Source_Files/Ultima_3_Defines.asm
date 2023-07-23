@@ -168,6 +168,9 @@
 .alias RdyMadeChr2      $32     ;Class of the 2nd ready-made character to appear on the screen.
 .alias RdyMadeIndex     $33     ;Index into ready-made characters table(0-5).
 
+.alias HandMadeState    $31     ;Stores the state while making a hand made character.
+.alias HandMadeStatCol  $32     ;Current selected column when entering hand made character stats.
+
 .alias MapDatPtr        $41     ;Map data pointer.
 .alias MapDatPtrLB      $41     ;Map data pointer, lower byte.
 .alias MapDatPtrUB      $42     ;Map data pointer, upper byte.
@@ -197,6 +200,9 @@
 .alias Ch2Dir           $7F     ;Character 2 direction. $00,$04=down, $01=right, $02=left, $08=up.
 .alias Ch3Dir           $80     ;Character 3 direction. $00,$04=down, $01=right, $02=left, $08=up.
 .alias Ch4Dir           $81     ;Character 4 direction. $00,$04=down, $01=right, $02=left, $08=up.
+
+.alias FormPrtyIndex    $007E   ;Through $82. Indexes into character pool of characters 
+                                ;selected while forming a party.
 
 .alias ChClasses        $007E   ;Base address of character classes.
 .alias Ch1Class         $7E     ;Char 1 class while making pre-made characters. $FF=Not chosen yet.
@@ -1132,16 +1138,26 @@
 .alias RC_BOBBIT        $03     ;Bobbit race.
 .alias RC_FUZZY         $04     ;Fuzzy race.
 
+;Hand made character creation state.
+.alias HM_RACE          $00     ;Selecting character's race.
+.alias HM_PROFESSION    $01     ;Selecting character's profession.
+.alias HM_STATS         $02     ;Setting character's stats.
+.alias HM_OK_CANCEL     $03     ;Choosing to accept character or cancel.
+.alias HM_NAME          $04     ;Setting character's name.
+
+;Majic types useable by characters.
 .alias MAGIC_NONE       $00     ;Class cannot use magic.
 .alias MAGIC_CLERIC     $01     ;Class can use cleric magic.
 .alias MAGIC_WIZARD     $02     ;Class can use wizard magic.
 .alias MAGIC_BOTH       $03     ;Class can use both magics.
 
+;Locations where spells can be used.
 .alias SPL_DUNGEON      $01     ;Spell can be used in dungeons.
 .alias SPL_BATTLE       $02     ;Spell can be used in battles.
 .alias SPL_OVRWRLD      $04     ;Spell can be used on the overworld.
 .alias SPL_ALWAYS       $0F     ;Spell can always be used.
 
+;Yes/No selector.
 .alias WND_YES          $00     ;YES selected in dialog box.
 .alias WND_NO           $01     ;NO selected in dialog box.
 

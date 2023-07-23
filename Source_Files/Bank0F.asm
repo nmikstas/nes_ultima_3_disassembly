@@ -1064,18 +1064,24 @@ LC6E9:  JMP (IndJumpPtr)        ;Jump to interactive dialog function above.
 
 ChkValidNPC:
 LC6EC:  JSR GetTargetNPC        ;($E6EF)Check if valid NPC at target.
-LC6EF:  BCS LC704
+LC6EF:  BCS EndChkValidNPC      ;If no valid NPC, branch to exit.
+
 LC6F1:  STA $30
 LC6F3:  LDY #$00
+
 LC6F5:  LDA NPCOnscreen,Y
 LC6F8:  CMP $30
 LC6FA:  BEQ LC703
+
 LC6FC:  INY
 LC6FD:  INY
 LC6FE:  INY
 LC6FF:  INY
 LC700:  JMP LC6F5
+
 LC703:  CLC
+
+EndChkValidNPC:
 LC704:  RTS
 
 ;----------------------------------------------------------------------------------------------------
@@ -4960,26 +4966,35 @@ LE24D:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game en
 ;----------------------------------------------------------------------------------------------------
 
 DoBribeCmd:
-LE250:  LDA BribePray
-LE252:  AND #CMD_BRIBE
-LE254:  BEQ LE2BE
+LE250:  LDA BribePray           ;Does party have the bribe command?
+LE252:  AND #CMD_BRIBE          ;
+LE254:  BEQ BribeExit           ;If not, branch to exit.
+
 LE256:  JSR ChkValidNPC         ;($C6EC)Check if valid NPC in front of player.
-LE259:  LDX #$02
-LE25B:  BCS LE2B5
-LE25D:  LDA NPCSprIndex,Y
-LE260:  AND #$7F
-LE262:  CMP #$05
-LE264:  BEQ LE2BE
-LE266:  CMP #$1E
-LE268:  BEQ LE2BE
-LE26A:  CMP #$15
-LE26C:  BCC LE272
-LE26E:  CMP #$1D
-LE270:  BCC LE2BE
+LE259:  LDX #$02                ;NO ONE IS HERE text.
+LE25B:  BCS ShowBribeText       ;Is an NPC in front of character? If not, branch.
+
+LE25D:  LDA NPCSprIndex,Y       ;Get the NPC type.
+LE260:  AND #$7F                ;
+
+LE262:  CMP #NPC_PLR_BOAT
+LE264:  BEQ BribeExit
+
+LE266:  CMP #NPC_WHIRLPOOL
+LE268:  BEQ BribeExit
+
+LE26A:  CMP #NPC_LND_EN_1
+LE26C:  BCC WhoBribes
+
+LE26E:  CMP #NPC_SHERRY
+LE270:  BCC BribeExit
+
+WhoBribes:
 LE272:  TYA
 LE273:  PHA
 LE274:  JSR ChooseChar          ;($E42F)Select a character from a list.
 LE277:  BCS LE2BD
+
 LE279:  LDY #CHR_GOLD
 LE27B:  LDA (CrntChrPtr),Y
 LE27D:  SEC
@@ -4990,31 +5005,41 @@ LE283:  LDA (CrntChrPtr),Y
 LE285:  SBC #$00
 LE287:  STA $2E
 LE289:  PLA
-LE28A:  BCS LE291
-LE28C:  LDX #$68
-LE28E:  JMP LE2B5
-LE291:  PHA
+LE28A:  BCS +
+
+LE28C:  LDX #$68                ;YOU DON'T HAVE ENOUGH MONEY text.
+LE28E:  JMP ShowBribeText       ;($E2B5)Show bribe command results text.
+
+LE291:* PHA
 LE292:  LDA $2E
 LE294:  STA (CrntChrPtr),Y
 LE296:  DEY
 LE297:  LDA $2D
 LE299:  STA (CrntChrPtr),Y
 LE29B:  PLA
+
 LE29C:  TAY
 LE29D:  LDA NPCSprIndex,Y
-LE2A0:  LDX #$58
-LE2A2:  AND #$7F
-LE2A4:  CMP #$0E
-LE2A6:  BNE LE2B5
-LE2A8:  LDA #$FF
-LE2AA:  STA NPCSprIndex,Y
-LE2AD:  STX TextIndex
+LE2A0:  LDX #$58                ;THANK YOU text.
+
+LE2A2:  AND #$7F                ;Is player bribing a red guard?
+LE2A4:  CMP #NPC_RED_GRD        ;
+LE2A6:  BNE ShowBribeText       ;If not, branch.
+
+LE2A8:  LDA #$FF                ;Hide red guard NPC off screen.
+LE2AA:  STA NPCSprIndex,Y       ;
+
+LE2AD:  STX TextIndex           ;Show THANK YOU text before removing NPC.
 LE2AF:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE2B2:  JMP LoadNewMap          ;($C175)Load a new map.
-LE2B5:  STX TextIndex
+
+ShowBribeText:
+LE2B5:  STX TextIndex           ;Show result of bribe text.
 LE2B7:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE2BA:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
-LE2BD:  PLA
+LE2BD:  PLA                     ;Restore A from stack.
+
+BribeExit:
 LE2BE:  JMP FinishCommand       ;($C293)Post-command cleanup and run the game engine loop.
 
 ;----------------------------------------------------------------------------------------------------

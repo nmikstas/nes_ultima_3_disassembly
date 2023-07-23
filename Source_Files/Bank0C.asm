@@ -2002,127 +2002,139 @@ L8B13:  LDA #$08                ;END text.
 L8B15:  STA TextIndex           ;
 L8B17:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8B1A:  LDA #$30
-L8B1C:  STA SpriteBuffer
+L8B1A:  LDA #$30                ;
+L8B1C:  STA SpriteBuffer        ;Set start position of selector sprite at pixel coords X,Y=32,48.
+L8B1F:  LDA #$20                ;
+L8B21:  STA SpriteBuffer+3      ;
 
-L8B1F:  LDA #$20
-L8B21:  STA SpriteBuffer+3
+L8B24:  LDA #$00                ;Indicate player is forming their party.
+L8B26:  STA IsFormingParty      ;
 
-L8B24:  LDA #$00
-L8B26:  STA IsFormingParty
+L8B28:  LDY #SG_CHR1_INDEX      ;
+L8B2A:  LDA (SGDatPtr),Y        ;
+L8B2C:  CLC                     ;Set index into character pool of character 1.
+L8B2D:  ADC #$01                ;
+L8B2F:  STA Ch1Index_           ;
 
-L8B28:  LDY #$10
-L8B2A:  LDA (SGDatPtr),Y
-L8B2C:  CLC
-L8B2D:  ADC #$01
-L8B2F:  STA Ch1Class
+L8B31:  INY                     ;
+L8B32:  LDA (SGDatPtr),Y        ;
+L8B34:  CLC                     ;Set index into character pool of character 2.
+L8B35:  ADC #$01                ;
+L8B37:  STA Ch2Index_           ;
 
-L8B31:  INY
-L8B32:  LDA (SGDatPtr),Y
-L8B34:  CLC
-L8B35:  ADC #$01
-L8B37:  STA Ch2Class
+L8B39:  INY                     ;
+L8B3A:  LDA (SGDatPtr),Y        ;
+L8B3C:  CLC                     ;Set index into character pool of character 3.
+L8B3D:  ADC #$01                ;
+L8B3F:  STA Ch3Index_           ;
 
-L8B39:  INY
-L8B3A:  LDA (SGDatPtr),Y
-L8B3C:  CLC
-L8B3D:  ADC #$01
-L8B3F:  STA Ch3Class
+L8B41:  INY                     ;
+L8B42:  LDA (SGDatPtr),Y        ;
+L8B44:  CLC                     ;Set index into character pool of character 4.
+L8B45:  ADC #$01                ;
+L8B47:  STA Ch4Index_           ;
 
-L8B41:  INY
-L8B42:  LDA (SGDatPtr),Y
-L8B44:  CLC
-L8B45:  ADC #$01
-L8B47:  STA Ch4Class
-
-L8B49:  JSR L8CF5
-L8B4C:  LDX #$00
-L8B4E:  LDY #$00
+L8B49:  JSR UpdateSelChars      ;($8CF5)Update which characters are selected while forming a party.
+L8B4C:  LDX #$00                ;
+L8B4E:  LDY #$00                ;Set current character at row 1, column 1.
 
 FormPartyInputLoop:
 L8B50:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L8B53:  LDA IsFormingParty
-L8B55:  BNE FormChkBtnA
 
-L8B57:  LDA Pad1Input
-L8B59:  CMP #BTN_RIGHT
-L8B5B:  BNE FormChkBtnLft
+L8B53:  LDA IsFormingParty      ;Is player about to end and is not actively forming a party?
+L8B55:  BNE FormChkBtnA         ;If so, branch.
 
-L8B5D:  CPX #$01
-L8B5F:  BNE +
+L8B57:  LDA Pad1Input           ;Did player push the right d-pad button?
+L8B59:  CMP #BTN_RIGHT          ;
+L8B5B:  BNE FormChkBtnLft       ;If not, branch to check next button press.
+
+L8B5D:  CPX #$01                ;Is selcetor in second column already?
+L8B5F:  BNE +                   ;If not, branch to move selector to second column.
+
 L8B61:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
-L8B64:* INX
-L8B65:  LDA #$98
-L8B67:  STA SpriteBuffer+3
+L8B64:* INX                     ;Indicate selector is in the second column.
+L8B65:  LDA #$98                ;Move selector sprite to second column.
+L8B67:  STA SpriteBuffer+3      ;
 L8B6A:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
 FormChkBtnLft:
-L8B6D:  CMP #BTN_LEFT
-L8B6F:  BNE FormChkBtnUp
+L8B6D:  CMP #BTN_LEFT           ;Did the player push the left button?
+L8B6F:  BNE FormChkBtnUp        ;If not, branch to check other buttons.
 
-L8B71:  CPX #$00
-L8B73:  BNE L8B78
+L8B71:  CPX #$00                ;Is selector in the left most column?
+L8B73:  BNE +                   ;If not branch to update selector sprite position.
+
 L8B75:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
-L8B78:  DEX
-L8B79:  LDA #$20
-L8B7B:  STA SpriteBuffer+3
+
+L8B78:* DEX                     ;Indicate selector sprite is in first column.
+
+L8B79:  LDA #$20                ;Move selector sprite X pixel coordinate to first column.
+L8B7B:  STA SpriteBuffer+3      ;
+
 L8B7E:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
 FormChkBtnUp:
-L8B81:  CMP #BTN_UP
-L8B83:  BNE FormChkBtnDn
+L8B81:  CMP #BTN_UP             ;Did the player push the up button?
+L8B83:  BNE FormChkBtnDn        ;If not, branch to check other buttons.
 
-L8B85:  CPY #$00
-L8B87:  BNE +
+L8B85:  CPY #$00                ;Is selector sprite in top most row?
+L8B87:  BNE +                   ;If not, branch to update its position.
+
 L8B89:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
-L8B8C:* DEY
-L8B8D:  TYA
-L8B8E:  ASL
-L8B8F:  ASL
-L8B90:  ASL
-L8B91:  ASL
-L8B92:  CLC
-L8B93:  ADC #$30
-L8B95:  STA SpriteBuffer
+L8B8C:* DEY                     ;Update row number of selector sprite.
+
+L8B8D:  TYA                     ;
+L8B8E:  ASL                     ;
+L8B8F:  ASL                     ;
+L8B90:  ASL                     ;Convert row number into Y pixel coordinate.
+L8B91:  ASL                     ;
+L8B92:  CLC                     ;
+L8B93:  ADC #$30                ;
+
+L8B95:  STA SpriteBuffer        ;Update pixel location of the selector sprite.
 L8B98:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
 FormChkBtnDn:
-L8B9B:  CMP #BTN_DOWN
-L8B9D:  BNE FormChkBtnA
+L8B9B:  CMP #BTN_DOWN           ;Did the player push the down button?
+L8B9D:  BNE FormChkBtnA         ;If not, branch to check other buttons.
 
-L8B9F:  CPY #$09
-L8BA1:  BNE L8BA6
+L8B9F:  CPY #$09                ;Is selector on the last row?
+L8BA1:  BNE +                   ;If not, branch to update the selector X position.
+
 L8BA3:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
-L8BA6:  INY
-L8BA7:  TYA
-L8BA8:  ASL
-L8BA9:  ASL
-L8BAA:  ASL
-L8BAB:  ASL
-L8BAC:  CLC
-L8BAD:  ADC #$30
-L8BAF:  STA SpriteBuffer
+L8BA6:* INY                     ;Update row number of selector sprite.
+
+L8BA7:  TYA                     ;
+L8BA8:  ASL                     ;
+L8BA9:  ASL                     ;
+L8BAA:  ASL                     ;Convert row number into Y pixel coordinate.
+L8BAB:  ASL                     ;
+L8BAC:  CLC                     ;
+L8BAD:  ADC #$30                ;
+
+L8BAF:  STA SpriteBuffer        ;Update pixel location of the selector sprite.
 L8BB2:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
 FormChkBtnA:
-L8BB5:  LDA Pad1Input
-L8BB7:  CMP #BTN_A
-L8BB9:  BEQ L8BBE
+L8BB5:  LDA Pad1Input           ;Did the player push the A button?
+L8BB7:  CMP #BTN_A              ;
+L8BB9:  BEQ +                   ;If so, branch to process button press.
 
-L8BBB:  JMP L8C6B
+L8BBB:  JMP FormChkBtnB         ;($8C6B)Check if button B was presed.
 
-L8BBE:  LDA IsFormingParty
-L8BC0:  BEQ L8BFF
+L8BBE:* LDA IsFormingParty      ;Is player still forming a party?
+L8BC0:  BEQ UnselectChar        ;If so, branch to unselect current character.
 
-L8BC2:  CMP #$01
-L8BC4:  BEQ PartyNotFormed
+L8BC2:  CMP #$01                ;Should never be 1.
+L8BC4:  BEQ PartyNotFormed      ;
 
-L8BC6:  TYA
-L8BC7:  PHA
-L8BC8:  LDY #$00
+L8BC6:  TYA                     ;Store selector sprite row number on stack.
+L8BC7:  PHA                     ;
+
+L8BC8:  LDY #$00                ;Zero out the index.
 
 L8BCA:*  LDA ChIndex_,Y         ;
 L8BCD:  BEQ PartyNotComplete    ;Have 4 characters been selected?
@@ -2130,302 +2142,374 @@ L8BCF:  INY                     ;If not, branch. Party can't journey onward.
 L8BD0:  CPY #$04                ;
 L8BD2:  BNE -                   ;
 
-L8BD4:  LDY #SG_CHR1_INDEX
-L8BD6:  LDA Ch1Index_
-L8BD8:  SEC
-L8BD9:  SBC #$01
-L8BDB:  STA (SGDatPtr),Y
-L8BDD:  INY
-L8BDE:  LDA Ch2Index_
-L8BE0:  SEC
-L8BE1:  SBC #$01
-L8BE3:  STA (SGDatPtr),Y
-L8BE5:  INY
-L8BE6:  LDA Ch3Index_
-L8BE8:  SEC
-L8BE9:  SBC #$01
-L8BEB:  STA (SGDatPtr),Y
-L8BED:  INY
-L8BEE:  LDA Ch4Index_
-L8BF0:  SEC
-L8BF1:  SBC #$01
-L8BF3:  STA (SGDatPtr),Y
-L8BF5:  PLA
+L8BD4:  LDY #SG_CHR1_INDEX      ;
+L8BD6:  LDA Ch1Index_           ;
+L8BD8:  SEC                     ;Set index to character 1 data in the save game file.
+L8BD9:  SBC #$01                ;
+L8BDB:  STA (SGDatPtr),Y        ;
 
+L8BDD:  INY                     ;
+L8BDE:  LDA Ch2Index_           ;
+L8BE0:  SEC                     ;Set index to character 2 data in the save game file.
+L8BE1:  SBC #$01                ;
+L8BE3:  STA (SGDatPtr),Y        ;
+
+L8BE5:  INY                     ;
+L8BE6:  LDA Ch3Index_           ;
+L8BE8:  SEC                     ;Set index to character 3 data in the save game file.
+L8BE9:  SBC #$01                ;
+L8BEB:  STA (SGDatPtr),Y        ;
+
+L8BED:  INY                     ;
+L8BEE:  LDA Ch4Index_           ;
+L8BF0:  SEC                     ;Set index to character 4 data in the save game file.
+L8BF1:  SBC #$01                ;
+L8BF3:  STA (SGDatPtr),Y        ;
+
+L8BF5:  PLA                     ;
 L8BF6:  CLC                     ;Indicate a valid party has been formed before returning.
 L8BF7:  RTS                     ;
 
 PartyNotComplete:
-L8BF8:  PLA
-L8BF9:  TAY
+L8BF8:  PLA                     ;Restore row number of selector sprite.
+L8BF9:  TAY                     ;
 L8BFA:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
 PartyNotFormed:
-L8BFD:  SEC
-L8BFE:  RTS
+L8BFD:  SEC                     ;Indicate the party has not been successfully formed and exit.
+L8BFE:  RTS                     ;
 
-L8BFF:  STX FormPartyX
-L8C01:  STY FormPartyY
-L8C03:  LDA FormPartyX
-L8C05:  BEQ +
+UnselectChar:
+L8BFF:  STX FormPartyX          ;Save column and row position of selector sprite.
+L8C01:  STY FormPartyY          ;
 
-L8C07:  LDA #$0A
+L8C03:  LDA FormPartyX          ;Is selector sprite in first column?
+L8C05:  BEQ +                   ;If so, branch.
 
-L8C09:* CLC
-L8C0A:  ADC FormPartyY
-L8C0C:  STA ChrSrcPtrUB
-L8C0E:  CLC
-L8C0F:  ADC #$01
-L8C11:  STA $30
-L8C13:  LDA #$00
-L8C15:  STA ChrSrcPtrLB
-L8C17:  LSR ChrSrcPtrUB
-L8C19:  ROR ChrSrcPtrLB
-L8C1B:  LSR ChrSrcPtrUB
-L8C1D:  ROR ChrSrcPtrLB
-L8C1F:  CLC
+L8C07:  LDA #$0A                ;Add 10 to index for characters 11-20.
 
-L8C20:  LDA SGCharPtrLB
-L8C22:  ADC ChrSrcPtrLB
-L8C24:  STA ChrSrcPtrLB
-L8C26:  LDA SGCharPtrUB
-L8C28:  ADC ChrSrcPtrUB
-L8C2A:  STA ChrSrcPtrUB
+L8C09:* CLC                     ;
+L8C0A:  ADC FormPartyY          ;Start forming pointer to character data with character index(0-19).
+L8C0C:  STA ChrSrcPtrUB         ;
 
-L8C2C:  LDY #$00
-L8C2E:  LDA (ChrSrcPtr),Y
-L8C30:  CMP #CHR_EMPTY_SLOT
-L8C32:  BNE L8C3B
+L8C0E:  CLC                     ;
+L8C0F:  ADC #$01                ;Make a copy of character index(1-20).
+L8C11:  STA GenByte30           ;
 
-L8C34:  LDY FormPartyY
-L8C36:  LDX FormPartyX
+L8C13:  LDA #$00                ;
+L8C15:  STA ChrSrcPtrLB         ;
+L8C17:  LSR ChrSrcPtrUB         ;
+L8C19:  ROR ChrSrcPtrLB         ;
+L8C1B:  LSR ChrSrcPtrUB         ;
+L8C1D:  ROR ChrSrcPtrLB         ;Calculate the pointer to the selected character's data.
+L8C1F:  CLC                     ;
+L8C20:  LDA SGCharPtrLB         ;
+L8C22:  ADC ChrSrcPtrLB         ;
+L8C24:  STA ChrSrcPtrLB         ;
+L8C26:  LDA SGCharPtrUB         ;
+L8C28:  ADC ChrSrcPtrUB         ;
+L8C2A:  STA ChrSrcPtrUB         ;
+
+L8C2C:  LDY #$00                ;
+L8C2E:  LDA (ChrSrcPtr),Y       ;Is the selected character slot empty?
+L8C30:  CMP #CHR_EMPTY_SLOT     ;
+L8C32:  BNE ValidChrData        ;If not, branch to process data.
+
+L8C34:  LDY FormPartyY          ;Character slot empty. Restore row/column
+L8C36:  LDX FormPartyX          ;of selector sprite and exit.
 L8C38:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
-L8C3B:  LDY #$00
-L8C3D:  LDA ChIndex_,Y
-L8C40:  CMP $30
-L8C42:  BEQ L8C64
-L8C44:  INY
-L8C45:  CPY #$04
-L8C47:  BNE L8C3D
-L8C49:  LDY #$00
-L8C4B:  LDA ChIndex_,Y
-L8C4E:  BEQ L8C5C
-L8C50:  INY
-L8C51:  CPY #$04
-L8C53:  BNE L8C4B
-L8C55:  LDY FormPartyY
-L8C57:  LDX FormPartyX
+ValidChrData:
+L8C3B:  LDY #$00                ;Prepare to check all 4 chosen character slots.
+
+ChkChosenLoop:
+L8C3D:  LDA ChIndex_,Y          ;Has selected character already been selected?
+L8C40:  CMP GenByte30           ;
+L8C42:  BEQ AlreadyChosen       ;If so, branch to ignore selection.
+
+L8C44:  INY                     ;Check all 4 character slots to make sure
+L8C45:  CPY #$04                ;character has not already been selected.
+L8C47:  BNE ChkChosenLoop       ;
+
+L8C49:  LDY #$00                ;Zero out the index.
+
+L8C4B:* LDA ChIndex_,Y          ;Has current slot been filled witha character index?
+L8C4E:  BEQ SetChindex          ;If not, branch to fill the slot with the selected character.
+
+L8C50:  INY                     ;Have all 4 slots been checked?
+L8C51:  CPY #$04                ;
+L8C53:  BNE -                   ;If not, branch to check the next slot.
+
+L8C55:  LDY FormPartyY          ;Restore row/column selector position before exiting.
+L8C57:  LDX FormPartyX          ;
 L8C59:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
-L8C5C:  LDA $30
-L8C5E:  STA ChIndex_,Y
-L8C61:  JSR L8CF5
-L8C64:  LDY FormPartyY
-L8C66:  LDX FormPartyX
+
+SetChindex:
+L8C5C:  LDA GenByte30           ;Save the selected character index into the save game.
+L8C5E:  STA ChIndex_,Y          ;
+
+L8C61:  JSR UpdateSelChars      ;($8CF5)Update which characters are selected while forming a party.
+
+AlreadyChosen:
+L8C64:  LDY FormPartyY          ;Restore row/column of the selector sprite.
+L8C66:  LDX FormPartyX          ;
+
 L8C68:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
-L8C6B:  CMP #BTN_B
-L8C6D:  BNE FormChkBtnSel
+FormChkBtnB:
+L8C6B:  CMP #BTN_B              ;Was B button pressed?
+L8C6D:  BNE FormChkBtnSel       ;If not, branch to check other buttons.
 
-L8C6F:  LDA IsFormingParty
-L8C71:  BEQ L8C76
+L8C6F:  LDA IsFormingParty      ;Is player currently forming a party.
+L8C71:  BEQ +                   ;If so, branch to process B button press.
+
 L8C73:  JMP FormChkBtnSel       ;($8CA9)Check if select button was pressed.
 
-L8C76:  STX FormPartyX
-L8C78:  STY FormPartyY
-L8C7A:  LDA FormPartyX
-L8C7C:  BEQ L8C80
-L8C7E:  LDA #$0A
-L8C80:  SEC
-L8C81:  ADC FormPartyY
-L8C83:  STA $30
-L8C85:  LDY #$00
-L8C87:  LDA ChIndex_,Y
-L8C8A:  CMP $30
-L8C8C:  BEQ L8C9A
-L8C8E:  INY
-L8C8F:  CPY #$04
-L8C91:  BNE L8C87
-L8C93:  LDX FormPartyX
-L8C95:  LDY FormPartyY
+L8C76:* STX FormPartyX          ;Store selector sprite row/colomn position.
+L8C78:  STY FormPartyY          ;
+
+L8C7A:  LDA FormPartyX          ;Is selector in the first column?
+L8C7C:  BEQ +                   ;If so, branch.
+
+L8C7E:  LDA #$0A                ;Add 10. selector is on character 11-20.
+
+L8C80:* SEC                     ;
+L8C81:  ADC FormPartyY          ;Save the index to the selected character(0-19).
+L8C83:  STA GenByte30           ;
+
+L8C85:  LDY #$00                ;Zero out the index.
+
+L8C87:* LDA ChIndex_,Y          ;Does the deselected character match the one in the save game slot?
+L8C8A:  CMP GenByte30           ;
+L8C8C:  BEQ UnselectChr         ;If so, branch to process unselect request.
+
+L8C8E:  INY                     ;Have all 4 character slots been checked?
+L8C8F:  CPY #$04                ;
+L8C91:  BNE -                   ;If not, branch to check the next slot.
+
+L8C93:  LDX FormPartyX          ;Character was not previously selected.
+L8C95:  LDY FormPartyY          ;Restore selector sprite row/column positions.
 L8C97:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
-L8C9A:  LDA #$00
-L8C9C:  STA ChIndex_,Y
-L8C9F:  JSR L8CF5
+UnselectChr:
+L8C9A:  LDA #$00                ;Unselect character by zeroing out index.
+L8C9C:  STA ChIndex_,Y          ;
+L8C9F:  JSR UpdateSelChars      ;($8CF5)Update which characters are selected while forming a party.
 
-L8CA2:  LDY FormPartyY
-L8CA4:  LDX FormPartyX
+L8CA2:  LDY FormPartyY          ;Restore selector sprite row/column positions.
+L8CA4:  LDX FormPartyX          ;
 L8CA6:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
 FormChkBtnSel:
 L8CA9:  CMP #BTN_SELECT         ;Was the select button pressed? If so, branch.
 L8CAB:  BEQ +                   ;Else ignore any other inputs.
+
 L8CAD:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
-L8CB0:* INC IsFormingParty
-L8CB2:  LDA IsFormingParty
-L8CB4:  CMP #$01
-L8CB6:  BNE L8CBC
+L8CB0:* INC IsFormingParty      ;Increment forming party indicator.
 
-L8CB8:  LDA #$02
-L8CBA:  STA IsFormingParty
+L8CB2:  LDA IsFormingParty      ;Did player just hit select and move to END form party process?
+L8CB4:  CMP #$01                ;
+L8CB6:  BNE +                   ;If not, branch.
 
-L8CBC:  CMP #$03
-L8CBE:  BNE L8CDD
+L8CB8:  LDA #$02                ;Indicate player is ready to end form party process.
+L8CBA:  STA IsFormingParty      ;
 
-L8CC0:  LDA #$00
-L8CC2:  STA IsFormingParty
+L8CBC:* CMP #$03                ;Is player going back to forming the party?
+L8CBE:  BNE FormPrtyEnd         ;If not, branch.
 
-L8CC4:  LDA #$20
-L8CC6:  CPX #$00
-L8CC8:  BEQ +
+L8CC0:  LDA #$00                ;Indicate player went back to forming party.
+L8CC2:  STA IsFormingParty      ;
 
-L8CCA:  LDA #$98
+L8CC4:  LDA #$20                ;Assume selector sprite is in column 0.
+L8CC6:  CPX #$00                ;
+L8CC8:  BEQ +                   ;Branch if it actually is. X pixel position already set.
 
-L8CCC:* STA SpriteBuffer+3
-L8CCF:  TYA
-L8CD0:  ASL
-L8CD1:  ASL
-L8CD2:  ASL
-L8CD3:  ASL
-L8CD4:  CLC
-L8CD5:  ADC #$30
-L8CD7:  STA SpriteBuffer
+L8CCA:  LDA #$98                ;Set selector sprite X pixel position to 2nd column.
+
+L8CCC:* STA SpriteBuffer+3      ;Update X coordinate of selector sprite.
+
+L8CCF:  TYA                     ;
+L8CD0:  ASL                     ;
+L8CD1:  ASL                     ;
+L8CD2:  ASL                     ;Convert selector sprite row number into Y pixel position.
+L8CD3:  ASL                     ;
+L8CD4:  CLC                     ;
+L8CD5:  ADC #$30                ;
+L8CD7:  STA SpriteBuffer        ;
+
 L8CDA:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
-L8CDD:  LDA #$D0
-L8CDF:  STA SpriteBuffer
-L8CE2:  LDA IsFormingParty
-L8CE4:  CMP #$01
-L8CE6:  BEQ L8CED
+FormPrtyEnd:
+L8CDD:  LDA #$D0                ;Set Y pixel position of selector sprite to 208.
+L8CDF:  STA SpriteBuffer        ;
 
-L8CE8:  LDA #$A8
-L8CEA:  JMP +
+L8CE2:  LDA IsFormingParty      ;
+L8CE4:  CMP #$01                ;Should never be 1 at this point.
+L8CE6:  BEQ FormPrty1           ;
 
-L8CED:  LDA #$78
+L8CE8:  LDA #$A8                ;Set X pixel coordinate of selector sprite to 168.
+L8CEA:  JMP +                   ;
 
-L8CEF:* STA SpriteBuffer+3
+FormPrty1:
+L8CED:  LDA #$78                ;Should never get here.
+
+L8CEF:* STA SpriteBuffer+3      ;Update X pixel position f selector sprite.
 L8CF2:  JMP FormPartyInputLoop  ;($8B50)Get user input while forming a party.
 
 ;----------------------------------------------------------------------------------------------------
 
-L8CF5:  LDY #$00
-L8CF7:  LDA #$F0
-L8CF9:  STA $73C4,Y
-L8CFC:  INY
-L8CFD:  INY
-L8CFE:  INY
-L8CFF:  INY
-L8D00:  CPY #$10
-L8D02:  BNE L8CF9
-L8D04:  LDY #$00
-L8D06:  LDA #$00
-L8D08:  STA $2D
-L8D0A:  LDA $007E,Y
-L8D0D:  BNE L8D15
-L8D0F:  INY
-L8D10:  CPY #$04
-L8D12:  BNE L8D0A
-L8D14:  RTS
+UpdateSelChars:
+L8CF5:  LDY #$00                ;Prepare to unselect all character on form party screen.
+L8CF7:  LDA #$F0                ;
 
-L8D15:  LDX #$20
-L8D17:  CMP #$0B
-L8D19:  BCC L8D1D
-L8D1B:  LDX #$98
-L8D1D:  TXA
-L8D1E:  LDX $2D
-L8D20:  STA $73C7,X
-L8D23:  LDA $007E,Y
-L8D26:  CMP #$0B
-L8D28:  BCC L8D2D
-L8D2A:  SEC
-L8D2B:  SBC #$0A
-L8D2D:  ASL
-L8D2E:  ASL
-L8D2F:  ASL
-L8D30:  ASL
-L8D31:  CLC
-L8D32:  ADC #$20
-L8D34:  STA $73C4,X
-L8D37:  LDA #$01
-L8D39:  STA $73C5,X
-L8D3C:  LDA #$00
-L8D3E:  STA $73C6,X
-L8D41:  CLC
-L8D42:  LDA $2D
-L8D44:  ADC #$04
-L8D46:  STA $2D
-L8D48:  JMP L8D0F
+UnselectLoop:
+L8CF9:  STA SpriteBuffer+$C4,Y  ;
+L8CFC:  INY                     ;
+L8CFD:  INY                     ;
+L8CFE:  INY                     ;Remove all 4 sprites showing which characters are selected.
+L8CFF:  INY                     ;
+L8D00:  CPY #$10                ;
+L8D02:  BNE UnselectLoop        ;
+
+L8D04:  LDY #$00                ;start at selected character 0.
+L8D06:  LDA #$00                ;
+L8D08:  STA GenByte2D           ;Zero index into selected sprites.
+
+ChkSelectedLoop:
+L8D0A:  LDA FormPrtyIndex,Y     ;Does current character slot have a selected character?
+L8D0D:  BNE ChrIsSelected       ;If so, branch.
+
+ChkNextSelected:
+L8D0F:  INY                     ;Have all 4 character slots been checked as being selected?
+L8D10:  CPY #$04                ;
+L8D12:  BNE ChkSelectedLoop     ;If not, branch to check another.
+
+L8D14:  RTS                     ;All 4 character slots checked for being selected. Exit.
+
+ChrIsSelected:
+L8D15:  LDX #$20                ;Assume selected character is in the first column.
+
+L8D17:  CMP #$0B                ;Is current character 
+L8D19:  BCC +                   ;
+
+L8D1B:  LDX #$98                ;Selected character is in the second column.
+
+L8D1D:* TXA                     ;
+L8D1E:  LDX GenByte2D           ;Set pixel X position of selected sprite.
+L8D20:  STA SpriteBuffer+$C7,X  ;
+
+L8D23:  LDA FormPrtyIndex,Y     ;Is current character in the second column?
+L8D26:  CMP #$0B                ;
+L8D28:  BCC +                   ;If so, branch.
+
+L8D2A:  SEC                     ;Since character is in 2nd column, need to start back at the top.
+L8D2B:  SBC #$0A                ;
+
+L8D2D:* ASL                     ;
+L8D2E:  ASL                     ;*16. 16 pixels in the Y direction per character slot.
+L8D2F:  ASL                     ;
+L8D30:  ASL                     ;
+
+L8D31:  CLC                     ;+32. Character slots offset from the top by 32 pixels.
+L8D32:  ADC #$20                ;
+
+L8D34:  STA SpriteBuffer+$C4,X  ;Set Y pixel coordinate of selected sprite.
+
+L8D37:  LDA #$01                ;Set tile pattern of selected sprite.
+L8D39:  STA SpriteBuffer+$C5,X  ;
+
+L8D3C:  LDA #$00                ;Set properties of the selected sprite.
+L8D3E:  STA SpriteBuffer+$C6,X  ;
+
+L8D41:  CLC                     ;
+L8D42:  LDA GenByte2D           ;Increment index to next selected sprite offset(4 bytes per sprite).
+L8D44:  ADC #$04                ;
+L8D46:  STA GenByte2D           ;
+
+L8D48:  JMP ChkNextSelected     ;($8D0F)Move to next character selection slot.
 
 ;----------------------------------------------------------------------------------------------------
 
 DoHandMade:
 L8D4B:  JSR InitPPU             ;($990C)Initialize the PPU.
-L8D4E:  LDA SGDatPtrLB
-L8D50:  STA $29
-L8D52:  LDA SGDatPtrUB
-L8D54:  STA $2A
-L8D56:  INC $2A
-L8D58:  LDA #$14
-L8D5A:  STA $30
-L8D5C:  LDY #$00
 
-L8D5E:  LDA ($29),Y
-L8D60:  CMP #$FF
-L8D62:  BEQ L8D76
+L8D4E:  LDA SGDatPtrLB          ;
+L8D50:  STA ChrDatPtrLB_        ;Get a pointer to the base address
+L8D52:  LDA SGDatPtrUB          ;of the selected save game character data.
+L8D54:  STA ChrDatPtrUB_        ;
+L8D56:  INC ChrDatPtrUB_        ;
+
+L8D58:  LDA #NUM_CHARACTERS     ;Prepare to decrement through all the characters.
+L8D5A:  STA GenByte30           ;
+
+L8D5C:  LDY #$00                ;Zero out the index.
+
+ChkEmptyLoop_:
+L8D5E:  LDA (ChrDatPtr_),Y
+L8D60:  CMP #CHR_EMPTY_SLOT
+L8D62:  BEQ EmptySlotFound_
+
 L8D64:  CLC
-L8D65:  LDA $29
+L8D65:  LDA ChrDatPtrLB_
 L8D67:  ADC #$40
-L8D69:  STA $29
-L8D6B:  LDA $2A
+L8D69:  STA ChrDatPtrLB_
+L8D6B:  LDA ChrDatPtrUB_
 L8D6D:  ADC #$00
-L8D6F:  STA $2A
-L8D71:  DEC $30
-L8D73:  BNE L8D5E
-L8D75:  RTS
+L8D6F:  STA ChrDatPtrUB_
 
-L8D76:  LDA $2A
+L8D71:  DEC GenByte30           ;Have all the character slots been checked for an empty space?
+L8D73:  BNE ChkEmptyLoop_       ;If not, branch to check the next slot.
+
+L8D75:  RTS                     ;No empty character slots available. Exit.
+
+EmptySlotFound_:
+L8D76:  LDA ChrDatPtrUB_
 L8D78:  STA SGCharPtrUB
-L8D7A:  LDA $29
+L8D7A:  LDA ChrDatPtrLB_
 L8D7C:  STA SGCharPtrLB
+
 L8D7E:  LDA #$07
-L8D80:  STA $2A
+L8D80:  STA TXTXPos
 L8D82:  LDA #$04
-L8D84:  STA $29
+L8D84:  STA TXTYPos
+
 L8D86:  LDA #$10
-L8D88:  STA $2E
+L8D88:  STA TXTClrCols
 L8D8A:  LDA #$01
-L8D8C:  STA $2D
+L8D8C:  STA TXTClrRows
+
 L8D8E:  LDA #$09                ;CHARACTER MAKING text.
 L8D90:  STA TextIndex           ;
 L8D92:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L8D95:  LDA #$02
-L8D97:  STA $2A
+L8D97:  STA WndXPos
 L8D99:  LDA #$06
-L8D9B:  STA $29
+L8D9B:  STA WndYPos
 L8D9D:  LDA #$08
-L8D9F:  STA $2E
+L8D9F:  STA WndWidth
 L8DA1:  LDA #$0C
-L8DA3:  STA $2D
+L8DA3:  STA WndHeight
 L8DA5:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
 L8DA8:  LDA #$04
-L8DAA:  STA $2A
+L8DAA:  STA TXTXPos
 L8DAC:  LDA #$06
-L8DAE:  STA $29
+L8DAE:  STA TXTYPos
+
 L8DB0:  LDA #$05
-L8DB2:  STA $2E
+L8DB2:  STA TXTClrCols
 L8DB4:  LDA #$06
-L8DB6:  STA $2D
+L8DB6:  STA TXTClrRows
+
 L8DB8:  LDA #$0A                ;RACE text followed by a list of races.
 L8DBA:  STA TextIndex           ;
 L8DBC:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L8DBF:  LDA #$00
-L8DC1:  STA $31
-L8DC3:  STA $32
+L8DC1:  STA HandMadeState
+L8DC3:  STA HandMadeStatCol
 L8DC5:  LDY #$01
 L8DC7:  STA (CrntChrPtr),Y
 L8DC9:  INY
@@ -2442,7 +2526,7 @@ L8DDB:  LDA Pad1Input
 L8DDD:  CMP #BTN_RIGHT
 L8DDF:  BNE L8E0A
 
-L8DE1:  LDA $31
+L8DE1:  LDA HandMadeState
 L8DE3:  BEQ HandMadeInputLoop
 L8DE5:  CMP #$01
 L8DE7:  BNE L8DFC
@@ -2455,16 +2539,16 @@ L8DF2:  ADC #$06
 L8DF4:  STA (CrntChrPtr),Y
 L8DF6:  JSR L9016
 L8DF9:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8DFC:  LDA $32
+L8DFC:  LDA HandMadeStatCol
 L8DFE:  CMP #$03
 L8E00:  BEQ HandMadeInputLoop
-L8E02:  INC $32
+L8E02:  INC HandMadeStatCol
 L8E04:  JSR L9016
 L8E07:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
 L8E0A:  CMP #BTN_LEFT
 L8E0C:  BNE L8E3E
-L8E0E:  LDA $31
+L8E0E:  LDA HandMadeState
 L8E10:  BNE L8E15
 L8E12:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E15:  CMP #$01
@@ -2480,16 +2564,16 @@ L8E25:  SBC #$06
 L8E27:  STA (CrntChrPtr),Y
 L8E29:  JSR L9016
 L8E2C:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E2F:  LDA $32
+L8E2F:  LDA HandMadeStatCol
 L8E31:  BNE L8E36
 L8E33:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E36:  DEC $32
+L8E36:  DEC HandMadeStatCol
 L8E38:  JSR L9016
 L8E3B:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
 L8E3E:  CMP #BTN_UP
 L8E40:  BNE L8EA0
-L8E42:  LDA $31
+L8E42:  LDA HandMadeState
 L8E44:  BNE L8E5A
 L8E46:  LDY #CHR_RACE
 L8E48:  LDA (CrntChrPtr),Y
@@ -2525,7 +2609,7 @@ L8E84:  BCC L8E89
 L8E86:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E89:  LDA #$07
 L8E8B:  CLC
-L8E8C:  ADC $32
+L8E8C:  ADC HandMadeStatCol
 L8E8E:  TAY
 L8E8F:  LDA (CrntChrPtr),Y
 L8E91:  CMP #$19
@@ -2539,7 +2623,7 @@ L8E9D:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made ch
 L8EA0:  CMP #BTN_DOWN
 L8EA2:  BNE L8EF4
 
-L8EA4:  LDA $31
+L8EA4:  LDA HandMadeState
 L8EA6:  BNE L8EBE
 L8EA8:  LDY #CHR_RACE
 L8EAA:  LDA (CrntChrPtr),Y
@@ -2567,7 +2651,7 @@ L8ED6:  JSR L9016
 L8ED9:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8EDC:  CLC
 L8EDD:  LDA #$07
-L8EDF:  ADC $32
+L8EDF:  ADC HandMadeStatCol
 L8EE1:  TAY
 L8EE2:  LDA (CrntChrPtr),Y
 L8EE4:  BNE L8EE9
@@ -2582,8 +2666,8 @@ L8EF4:  CMP #BTN_A
 L8EF6:  BEQ L8EFB
 L8EF8:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8EFB:  INC $31
-L8EFD:  LDA $31
+L8EFB:  INC HandMadeState
+L8EFD:  LDA HandMadeState
 L8EFF:  CMP #$01
 L8F01:  BNE L8F4B
 L8F03:  LDA SpriteBuffer
@@ -2674,7 +2758,7 @@ L8FB1:  CPY #$0B
 L8FB3:  BNE L8FAD
 L8FB5:  CMP #$32
 L8FB7:  BEQ L8FBE
-L8FB9:  DEC $31
+L8FB9:  DEC HandMadeState
 L8FBB:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8FBE:  LDA #$F0
 L8FC0:  STA SpriteBuffer
@@ -2721,14 +2805,19 @@ L900F:  CMP #BTN_A
 L9011:  BNE L8FE4
 
 L9013:  JMP L8EFB
-L9016:  LDA $31
+
+;----------------------------------------------------------------------------------------------------
+
+L9016:  LDA HandMadeState
 L9018:  BNE L9026
 L901A:  LDY #CHR_RACE
 L901C:  LDA (CrntChrPtr),Y
+
 L901E:  TAX
 L901F:  LDA $90F0,X
 L9022:  STA SpriteBuffer
 L9025:  RTS
+
 L9026:  CMP #$01
 L9028:  BNE L9044
 L902A:  LDY #CHR_CLASS
@@ -2744,7 +2833,8 @@ L903C:  TAX
 L903D:  LDA $90F0,X
 L9040:  STA SpriteBuffer
 L9043:  RTS
-L9044:  LDX $32
+
+L9044:  LDX HandMadeStatCol
 L9046:  LDA $90F6,X
 L9049:  STA $7303
 L904C:  LDY #$00
@@ -2825,7 +2915,11 @@ L90EA:  STA TextIndex
 L90EC:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L90EF:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 L90F0:  .byte $40, $50, $60, $70, $80, $90, $50, $78, $A0, $C8
+
+;----------------------------------------------------------------------------------------------------
 
 EnterCharName:
 L90FA:  JSR InitPPU             ;($990C)Initialize the PPU.
@@ -2840,6 +2934,7 @@ L9109:  STA $30
 L910B:  STA $2E
 L910D:  STA $2D
 L910F:  JSR LdLgCharTiles1      ;($C009)Load tiles to display large character class portraits.
+
 L9112:  LDA #$20
 L9114:  STA $2A
 L9116:  LDA #$96
@@ -2847,8 +2942,10 @@ L9118:  STA $29
 L911A:  LDA #$DC
 L911C:  STA $2D
 L911E:  JSR LoadLargeChar       ;($96CD)Load large image of the character class.
+
 L9121:  LDA #$40
 L9123:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
+
 L9126:  LDA #$23
 L9128:  STA PPUBufBase,X
 L912B:  INX
@@ -2856,61 +2953,81 @@ L912C:  LDA #$C0
 L912E:  STA PPUBufBase,X
 L9131:  INX
 L9132:  LDY #$00
+
 L9134:  LDA $B561,Y
 L9137:  STA PPUBufBase,X
 L913A:  INX
 L913B:  INY
 L913C:  CPY #$40
 L913E:  BNE L9134
+
 L9140:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
+
 L9143:  LDA #$05
 L9145:  STA $2C
 L9147:  LDA #$04
 L9149:  STA $2B
-L914B:  LDY #CHR_CLASS
-L914D:  LDA (CrntChrPtr),Y
+
+L914B:  LDY #CHR_CLASS          ;Get current character class.
+L914D:  LDA (CrntChrPtr),Y      ;
 L914F:  JSR LoadLgChrPalettes   ;($9701)Load palette data for individual character portraits.
-L9152:  LDA #$1E
-L9154:  STA CurPPUConfig1
+
+L9152:  LDA #SCREEN_ON          ;Turn the screen on.
+L9154:  STA CurPPUConfig1       ;
+
 L9156:  LDA #$06
-L9158:  STA $2A
+L9158:  STA TXTXPos
 L915A:  LDA #$06
-L915C:  STA $29
+L915C:  STA TXTYPos
+
 L915E:  LDA #$0E
-L9160:  STA $2E
+L9160:  STA TXTClrCols
 L9162:  LDA #$01
-L9164:  STA $2D
-L9166:  LDA #$0E
-L9168:  STA TextIndex
+L9164:  STA TXTClrRows
+
+L9166:  LDA #$0E                ;CHARACTER NAME text.
+L9168:  STA TextIndex           ;
+
 L916A:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L916D:  JSR EnterName           ;($871D)Show screen for entring name info.
-L9170:  LDY #CHR_COND
-L9172:  LDA #$00
-L9174:  STA (CrntChrPtr),Y
-L9176:  INY
-L9177:  CPY #$40
-L9179:  BNE L9172
 
-L917B:  LDY #CHR_LEVEL
-L917D:  LDA #$01
-L917F:  STA (CrntChrPtr),Y
-L9181:  LDY #CHR_UNUSED32
-L9183:  STA (CrntChrPtr),Y
-L9185:  LDY #CHR_GOLD
-L9187:  LDA #$64
-L9189:  STA (CrntChrPtr),Y
-L918B:  LDA #$96
-L918D:  LDY #CHR_FOOD
-L918F:  STA (CrntChrPtr),Y
-L9191:  LDY #CHR_HIT_PNTS
-L9193:  STA (CrntChrPtr),Y
+L9170:  LDY #CHR_COND           ;Start at character condition.
+
+ChrClearLoop:
+L9172:* LDA #$00                ;Zero out character stat.
+L9174:  STA (CrntChrPtr),Y      ;
+L9176:  INY                     ;Are there more character stats to clear?
+L9177:  CPY #$40                ;
+L9179:  BNE -                   ;If so, branch to clear the next one.
+
+L917B:  LDY #CHR_LEVEL          ;
+L917D:  LDA #$01                ;Set character level to 1.
+L917F:  STA (CrntChrPtr),Y      ;
+
+L9181:  LDY #CHR_UNUSED32       ;No effect.
+L9183:  STA (CrntChrPtr),Y      ;
+
+L9185:  LDY #CHR_GOLD           ;
+L9187:  LDA #$64                ;Set character gold to 100.
+L9189:  STA (CrntChrPtr),Y      ;
+
+L918B:  LDA #$96                ;
+L918D:  LDY #CHR_FOOD           ;Set character food to 150.
+L918F:  STA (CrntChrPtr),Y      ;
+
+L9191:  LDY #CHR_HIT_PNTS       ;Set character hit points to 150.
+L9193:  STA (CrntChrPtr),Y      ;
+
 L9195:  LDA #$01
 L9197:  LDY #CHR_WEAPONS
 L9199:  STA (CrntChrPtr),Y
+
 L919B:  LDY #CHR_ARMOR
 L919D:  STA (CrntChrPtr),Y
+
 L919F:  LDY #CHR_EQ_WEAPON
 L91A1:  STA (CrntChrPtr),Y
+
 L91A3:  LDY #CHR_EQ_ARMOR
 L91A5:  STA (CrntChrPtr),Y
 
@@ -2924,6 +3041,7 @@ L91B2:  INY
 L91B3:  CPY #$05
 L91B5:  BNE L91A9
 L91B7:  RTS
+
 L91B8:  LDA #$00
 L91BA:  STA (CrntChrPtr),Y
 L91BC:  INY
@@ -6434,6 +6552,8 @@ LB7C3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $
 LB7D3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 LB7E3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 LB7F3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+
+;----------------------------------------------------------------------------------------------------
 
 LB800:  LDA ScrollDirAmt
 LB802:  BEQ LB808
