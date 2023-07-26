@@ -151,8 +151,8 @@ L80A0:  TAX                     ;
 L80A1:  LDA PosChrPtrLB,X       ;
 L80A3:  STA SGCharPtrLB         ;Get a pointer to the next open character slot.
 L80A5:  LDA PosChrPtrUB,X       ;
+L80A7:  STA SGCharPtrUB         ;
 
-L80A7:  STA SGCharPtrUB
 L80A9:  JSR EnterCharName       ;($90FA)Enter a newly created character's name.
 
 L80AC:  PLA                     ;Restore counter from the stack.
@@ -2446,17 +2446,17 @@ L8D5A:  STA GenByte30           ;
 L8D5C:  LDY #$00                ;Zero out the index.
 
 ChkEmptyLoop_:
-L8D5E:  LDA (ChrDatPtr_),Y
-L8D60:  CMP #CHR_EMPTY_SLOT
-L8D62:  BEQ EmptySlotFound_
+L8D5E:  LDA (ChrDatPtr_),Y      ;Is the current character slot empty?
+L8D60:  CMP #CHR_EMPTY_SLOT     ;
+L8D62:  BEQ EmptySlotFound_     ;If so, branch.
 
-L8D64:  CLC
-L8D65:  LDA ChrDatPtrLB_
-L8D67:  ADC #$40
-L8D69:  STA ChrDatPtrLB_
-L8D6B:  LDA ChrDatPtrUB_
-L8D6D:  ADC #$00
-L8D6F:  STA ChrDatPtrUB_
+L8D64:  CLC                     ;
+L8D65:  LDA ChrDatPtrLB_        ;
+L8D67:  ADC #$40                ;
+L8D69:  STA ChrDatPtrLB_        ;Increment to next character slot(64 bytes).
+L8D6B:  LDA ChrDatPtrUB_        ;
+L8D6D:  ADC #$00                ;
+L8D6F:  STA ChrDatPtrUB_        ;
 
 L8D71:  DEC GenByte30           ;Have all the character slots been checked for an empty space?
 L8D73:  BNE ChkEmptyLoop_       ;If not, branch to check the next slot.
@@ -2464,117 +2464,143 @@ L8D73:  BNE ChkEmptyLoop_       ;If not, branch to check the next slot.
 L8D75:  RTS                     ;No empty character slots available. Exit.
 
 EmptySlotFound_:
-L8D76:  LDA ChrDatPtrUB_
-L8D78:  STA SGCharPtrUB
-L8D7A:  LDA ChrDatPtrLB_
-L8D7C:  STA SGCharPtrLB
+L8D76:  LDA ChrDatPtrUB_        ;
+L8D78:  STA CrntChrPtrUB        ;Save a pointer to the empty character slot.
+L8D7A:  LDA ChrDatPtrLB_        ;
+L8D7C:  STA CrntChrPtrLB        ;
 
-L8D7E:  LDA #$07
-L8D80:  STA TXTXPos
-L8D82:  LDA #$04
-L8D84:  STA TXTYPos
+L8D7E:  LDA #$07                ;
+L8D80:  STA TXTXPos             ;Text will be located at tile coords X,Y=7,4.
+L8D82:  LDA #$04                ;
+L8D84:  STA TXTYPos             ;
 
-L8D86:  LDA #$10
-L8D88:  STA TXTClrCols
-L8D8A:  LDA #$01
-L8D8C:  STA TXTClrRows
+L8D86:  LDA #$10                ;
+L8D88:  STA TXTClrCols          ;Clear 10 columns and 1 row for the text string.
+L8D8A:  LDA #$01                ;
+L8D8C:  STA TXTClrRows          ;
 
 L8D8E:  LDA #$09                ;CHARACTER MAKING text.
 L8D90:  STA TextIndex           ;
 L8D92:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8D95:  LDA #$02
-L8D97:  STA WndXPos
-L8D99:  LDA #$06
-L8D9B:  STA WndYPos
-L8D9D:  LDA #$08
-L8D9F:  STA WndWidth
-L8DA1:  LDA #$0C
-L8DA3:  STA WndHeight
+L8D95:  LDA #$02                ;
+L8D97:  STA WndXPos             ;Window will be located at tile coords X,Y=2,6
+L8D99:  LDA #$06                ;
+L8D9B:  STA WndYPos             ;
+
+L8D9D:  LDA #$08                ;
+L8D9F:  STA WndWidth            ;Window will be 8 tiles wide and 12 tiles tall.
+L8DA1:  LDA #$0C                ;
+L8DA3:  STA WndHeight           ;
+
 L8DA5:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
-L8DA8:  LDA #$04
-L8DAA:  STA TXTXPos
-L8DAC:  LDA #$06
-L8DAE:  STA TXTYPos
+L8DA8:  LDA #$04                ;
+L8DAA:  STA TXTXPos             ;Text will be located at tile coords X,Y=4,6.
+L8DAC:  LDA #$06                ;
+L8DAE:  STA TXTYPos             ;
 
-L8DB0:  LDA #$05
-L8DB2:  STA TXTClrCols
-L8DB4:  LDA #$06
-L8DB6:  STA TXTClrRows
+L8DB0:  LDA #$05                ;
+L8DB2:  STA TXTClrCols          ;Clear 5 columns and 6 rows for the text string.
+L8DB4:  LDA #$06                ;
+L8DB6:  STA TXTClrRows          ;
 
 L8DB8:  LDA #$0A                ;RACE text followed by a list of races.
 L8DBA:  STA TextIndex           ;
 L8DBC:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8DBF:  LDA #$00
-L8DC1:  STA HandMadeState
-L8DC3:  STA HandMadeStatCol
-L8DC5:  LDY #$01
-L8DC7:  STA (CrntChrPtr),Y
-L8DC9:  INY
-L8DCA:  CPY #$40
-L8DCC:  BNE L8DC7
-L8DCE:  LDA #$40
-L8DD0:  STA SpriteBuffer
-L8DD3:  LDA #$18
-L8DD5:  STA $7303
+L8DBF:  LDA #00                 ;
+L8DC1:  STA HandMadeState       ;Zero out state and current column.
+L8DC3:  STA HandMadeStatCol     ;
+
+L8DC5:  LDY #$01                ;
+L8DC7:* STA (CrntChrPtr),Y      ;Fill all bytes of character data with $00.
+L8DC9:  INY                     ;
+L8DCA:  CPY #$40                ;
+L8DCC:  BNE -                   ;
+
+L8DCE:  LDA #$40                ;
+L8DD0:  STA SpriteBuffer        ;Set beginning coords of selector sprite to X,Y=24,64.
+L8DD3:  LDA #$18                ;
+L8DD5:  STA SpriteBuffer+3      ;
 
 HandMadeInputLoop:
 L8DD8:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
-L8DDB:  LDA Pad1Input
-L8DDD:  CMP #BTN_RIGHT
-L8DDF:  BNE L8E0A
 
-L8DE1:  LDA HandMadeState
-L8DE3:  BEQ HandMadeInputLoop
-L8DE5:  CMP #$01
-L8DE7:  BNE L8DFC
-L8DE9:  LDY #CHR_CLASS
-L8DEB:  LDA (CrntChrPtr),Y
-L8DED:  CMP #$05
-L8DEF:  BCS HandMadeInputLoop
-L8DF1:  CLC
-L8DF2:  ADC #$06
-L8DF4:  STA (CrntChrPtr),Y
-L8DF6:  JSR L9016
+L8DDB:  LDA Pad1Input           ;Did player push the right button on the d-pad?
+L8DDD:  CMP #BTN_RIGHT          ;
+L8DDF:  BNE HMChkLeft           ;If not, branch to check other buttons.
+
+L8DE1:  LDA HandMadeState       ;is player selecting the character's race?
+L8DE3:  BEQ HandMadeInputLoop   ;If so, branch to ignore input.
+
+L8DE5:  CMP #HM_PROFESSION      ;Is the player choosing the character's class?
+L8DE7:  BNE HMUpdateColumn      ;If not, branch.
+
+L8DE9:  LDY #CHR_CLASS          ;
+L8DEB:  LDA (CrntChrPtr),Y      ;Is the current selected class barbarian or greater?
+L8DED:  CMP #CLS_BARBARIAN      ;If so, branch to ignore right d-pad press.
+L8DEF:  BCS HandMadeInputLoop   ;
+
+L8DF1:  CLC                     ;If class is less than barbarian, add 6 to class values.
+L8DF2:  ADC #$06                ;All these classes are in the second column.
+L8DF4:  STA (CrntChrPtr),Y      ;
+
+L8DF6:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8DF9:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8DFC:  LDA HandMadeStatCol
-L8DFE:  CMP #$03
-L8E00:  BEQ HandMadeInputLoop
-L8E02:  INC HandMadeStatCol
-L8E04:  JSR L9016
+
+HMUpdateColumn:
+L8DFC:  LDA HandMadeStatCol     ;Must be in stat entry mode.
+L8DFE:  CMP #$03                ;Is selector sprite in right most column?
+L8E00:  BEQ HandMadeInputLoop   ;If so, branch to ignore right d-pad press.
+
+L8E02:  INC HandMadeStatCol     ;Move selector sprite one column to the right.
+
+L8E04:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E07:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
+HMChkLeft:
 L8E0A:  CMP #BTN_LEFT
-L8E0C:  BNE L8E3E
+L8E0C:  BNE HMChkUp
+
 L8E0E:  LDA HandMadeState
-L8E10:  BNE L8E15
+L8E10:  BNE +
+
 L8E12:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E15:  CMP #$01
+
+L8E15:* CMP #HM_PROFESSION
 L8E17:  BNE L8E2F
+
 L8E19:  LDY #CHR_CLASS
 L8E1B:  LDA (CrntChrPtr),Y
 L8E1D:  CMP #CLS_LARK
-L8E1F:  BCS L8E24
+L8E1F:  BCS +
 
 L8E21:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E24:  SEC
+
+L8E24:* SEC
 L8E25:  SBC #$06
 L8E27:  STA (CrntChrPtr),Y
-L8E29:  JSR L9016
+
+L8E29:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E2C:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
 L8E2F:  LDA HandMadeStatCol
-L8E31:  BNE L8E36
+L8E31:  BNE +
+
 L8E33:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E36:  DEC HandMadeStatCol
-L8E38:  JSR L9016
+
+L8E36:* DEC HandMadeStatCol
+L8E38:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E3B:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
+HMChkUp:
 L8E3E:  CMP #BTN_UP
-L8E40:  BNE L8EA0
+L8E40:  BNE HMChkDown
+
 L8E42:  LDA HandMadeState
 L8E44:  BNE L8E5A
+
 L8E46:  LDY #CHR_RACE
 L8E48:  LDA (CrntChrPtr),Y
 L8E4A:  BNE L8E4F
@@ -2582,21 +2608,28 @@ L8E4C:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made ch
 L8E4F:  SEC
 L8E50:  SBC #$01
 L8E52:  STA (CrntChrPtr),Y
-L8E54:  JSR L9016
+L8E54:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E57:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E5A:  CMP #$01
+
+L8E5A:  CMP #HM_PROFESSION
 L8E5C:  BNE L8E76
+
 L8E5E:  LDY #CHR_CLASS
 L8E60:  LDA (CrntChrPtr),Y
 L8E62:  BEQ L8E68
-L8E64:  CMP #$06
-L8E66:  BNE L8E6B
+
+L8E64:  CMP #CLS_LARK
+L8E66:  BNE +
+
 L8E68:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E6B:  SEC
+
+L8E6B:* SEC
 L8E6C:  SBC #$01
 L8E6E:  STA (CrntChrPtr),Y
-L8E70:  JSR L9016
+
+L8E70:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E73:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
 L8E76:  LDY #$07
 L8E78:  LDA #$00
 L8E7A:  CLC
@@ -2604,8 +2637,10 @@ L8E7B:  ADC (CrntChrPtr),Y
 L8E7D:  INY
 L8E7E:  CPY #$0B
 L8E80:  BNE L8E7A
+
 L8E82:  CMP #$2E
 L8E84:  BCC L8E89
+
 L8E86:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8E89:  LDA #$07
 L8E8B:  CLC
@@ -2613,13 +2648,17 @@ L8E8C:  ADC HandMadeStatCol
 L8E8E:  TAY
 L8E8F:  LDA (CrntChrPtr),Y
 L8E91:  CMP #$19
-L8E93:  BEQ L8E9D
-L8E95:  CLC
-L8E96:  ADC #$05
-L8E98:  STA (CrntChrPtr),Y
-L8E9A:  JSR L9016
-L8E9D:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+L8E93:  BEQ +
 
+L8E95:  CLC                     ;
+L8E96:  ADC #$05                ;Increase current stat by 5.
+L8E98:  STA (CrntChrPtr),Y      ;
+
+L8E9A:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
+
+L8E9D:* JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
+
+HMChkDown:
 L8EA0:  CMP #BTN_DOWN
 L8EA2:  BNE L8EF4
 
@@ -2633,7 +2672,7 @@ L8EB0:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made ch
 L8EB3:  CLC
 L8EB4:  ADC #$01
 L8EB6:  STA (CrntChrPtr),Y
-L8EB8:  JSR L9016
+L8EB8:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8EBB:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8EBE:  CMP #$01
 L8EC0:  BNE L8EDC
@@ -2647,7 +2686,7 @@ L8ECE:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made ch
 L8ED1:  CLC
 L8ED2:  ADC #$01
 L8ED4:  STA (CrntChrPtr),Y
-L8ED6:  JSR L9016
+L8ED6:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8ED9:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 L8EDC:  CLC
 L8EDD:  LDA #$07
@@ -2659,17 +2698,19 @@ L8EE6:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made ch
 L8EE9:  SEC
 L8EEA:  SBC #$05
 L8EEC:  STA (CrntChrPtr),Y
-L8EEE:  JSR L9016
+L8EEE:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8EF1:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
 L8EF4:  CMP #BTN_A
-L8EF6:  BEQ L8EFB
+L8EF6:  BEQ +
+
 L8EF8:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8EFB:  INC HandMadeState
+L8EFB:* INC HandMadeState
 L8EFD:  LDA HandMadeState
-L8EFF:  CMP #$01
+L8EFF:  CMP #HM_PROFESSION
 L8F01:  BNE L8F4B
+
 L8F03:  LDA SpriteBuffer
 L8F06:  STA $73C4
 L8F09:  LDA $7303
@@ -2705,12 +2746,14 @@ L8F43:  STA TextIndex           ;
 L8F45:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8F48:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8F4B:  CMP #$02
+L8F4B:  CMP #HM_STATS
 L8F4D:  BNE L8F9A
+
 L8F4F:  LDA SpriteBuffer
 L8F52:  STA $73C8
-L8F55:  LDA $7303
+L8F55:  LDA SpriteBuffer+3
 L8F58:  STA $73CB
+
 L8F5B:  LDA #$01
 L8F5D:  STA $73C9
 
@@ -2739,110 +2782,133 @@ L8F87:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8F8A:  LDA #$C0
 L8F8C:  STA SpriteBuffer
 L8F8F:  LDA #$50
-L8F91:  STA $7303
-L8F94:  JSR L9016
+L8F91:  STA SpriteBuffer+3
+L8F94:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8F97:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8F9A:  CMP #$03
+
+L8F9A:  CMP #HM_OK_CANCEL
 L8F9C:  BEQ L8FA9
-L8F9E:  LDA $7303
+
+L8F9E:  LDA SpriteBuffer+3
 L8FA1:  CMP #$A0
 L8FA3:  BNE L8FA6
 L8FA5:  RTS
+
 L8FA6:  JMP DoHandMade          ;($8D4B)Create a hand made character.
+
 L8FA9:  LDY #$07
 L8FAB:  LDA #$00
-L8FAD:  CLC
+
+L8FAD:* CLC
 L8FAE:  ADC (CrntChrPtr),Y
 L8FB0:  INY
 L8FB1:  CPY #$0B
-L8FB3:  BNE L8FAD
+L8FB3:  BNE -
+
 L8FB5:  CMP #$32
-L8FB7:  BEQ L8FBE
+L8FB7:  BEQ +
+
 L8FB9:  DEC HandMadeState
 L8FBB:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8FBE:  LDA #$F0
+
+L8FBE:* LDA #$F0
 L8FC0:  STA SpriteBuffer
 
 L8FC3:  LDA #$0C
 L8FC5:  STA $2A
 L8FC7:  LDA #$1A
 L8FC9:  STA $29
+
 L8FCB:  LDA #$12
 L8FCD:  STA $2E
 L8FCF:  LDA #$01
 L8FD1:  STA $2D
+
 L8FD3:  LDA #$0C                ;OK CANCEL text.
 L8FD5:  STA TextIndex           ;
 L8FD7:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
 L8FDA:  LDA #$A0
-L8FDC:  STA $7303
+L8FDC:  STA SpriteBuffer+3
 L8FDF:  LDA #$D0
 L8FE1:  STA SpriteBuffer
 
+OKCnclInputLoop:
 L8FE4:  JSR GetInputPress       ;($98EE)Get input button press and account for retrigger.
 L8FE7:  LDA Pad1Input
 
 L8FE9:  CMP #BTN_RIGHT
 L8FEB:  BNE L8FFC
-L8FED:  LDA $7303
+L8FED:  LDA SpriteBuffer+3
 L8FF0:  CMP #$A0
-L8FF2:  BNE L8FE4
+L8FF2:  BNE OKCnclInputLoop
 L8FF4:  LDA #$B8
-L8FF6:  STA $7303
-L8FF9:  JMP L8FE4
+L8FF6:  STA SpriteBuffer+3
+L8FF9:  JMP OKCnclInputLoop     ;($8FE4)Input loop for OK CANCEL selection.
 
 L8FFC:  CMP #BTN_LEFT
-L8FFE:  BNE L900F
-L9000:  LDA $7303
-L9003:  CMP #$B8
-L9005:  BNE L8FE4
-L9007:  LDA #$A0
-L9009:  STA $7303
-L900C:  JMP L8FE4
+L8FFE:  BNE OKChkA
 
+L9000:  LDA SpriteBuffer+3
+L9003:  CMP #$B8
+L9005:  BNE OKCnclInputLoop
+
+L9007:  LDA #$A0
+L9009:  STA SpriteBuffer+3
+
+L900C:  JMP OKCnclInputLoop     ;($8FE4)Input loop for OK CANCEL selection.
+
+OKChkA:
 L900F:  CMP #BTN_A
-L9011:  BNE L8FE4
+L9011:  BNE OKCnclInputLoop
 
 L9013:  JMP L8EFB
 
 ;----------------------------------------------------------------------------------------------------
 
+HMSpritesNStats:
 L9016:  LDA HandMadeState
 L9018:  BNE L9026
+
 L901A:  LDY #CHR_RACE
 L901C:  LDA (CrntChrPtr),Y
 
 L901E:  TAX
-L901F:  LDA $90F0,X
+L901F:  LDA HMYPosTbl,X
 L9022:  STA SpriteBuffer
 L9025:  RTS
 
-L9026:  CMP #$01
+L9026:  CMP #HM_PROFESSION
 L9028:  BNE L9044
+
 L902A:  LDY #CHR_CLASS
 L902C:  LDX #$48
 L902E:  LDA (CrntChrPtr),Y
-L9030:  CMP #$06
+L9030:  CMP #CLS_LARK
 L9032:  BCC L9039
+
 L9034:  LDX #$80
 L9036:  SEC
 L9037:  SBC #$06
-L9039:  STX $7303
+
+L9039:  STX SpriteBuffer+3
 L903C:  TAX
-L903D:  LDA $90F0,X
+L903D:  LDA HMYPosTbl,X
 L9040:  STA SpriteBuffer
 L9043:  RTS
 
-L9044:  LDX HandMadeStatCol
-L9046:  LDA $90F6,X
-L9049:  STA $7303
-L904C:  LDY #$00
-L904E:  LDA #$00
-L9050:  STA TextBuffer,Y
-L9053:  INY
-L9054:  CPY #$1E
-L9056:  BNE L9050
+L9044:  LDX HandMadeStatCol     ;
+L9046:  LDA HMXPosTbl,X         ;Set the selector sprite pixel X coord based on its current column.
+L9049:  STA SpriteBuffer+3      ;
+
+L904C:  LDY #$00                ;Prepare to zero out portion of text buffer.
+L904E:  LDA #$00                ;
+
+L9050:* STA TextBuffer,Y        ;
+L9053:  INY                     ;Zero out first 30 bytes of the text buffer.
+L9054:  CPY #$1E                ;
+L9056:  BNE -                   ;
+
 L9058:  LDA #$32
 L905A:  LDY #CHR_STR
 
@@ -2855,11 +2921,12 @@ L9062:  BNE -
 L9064:  STA BinInputLB
 L9066:  LDA #$00
 L9068:  STA BinInputUB
+
 L906A:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
 L906D:  LDA BCDOutput2
 L906F:  STA TextBufferBase
 L9072:  LDA BCDOutput3
-L9074:  STA $0581
+L9074:  STA TextBuffer+1
 L9077:  LDY #CHR_STR
 L9079:  LDA (CrntChrPtr),Y
 L907B:  STA BinInputLB
@@ -2867,9 +2934,9 @@ L907D:  LDA #$00
 L907F:  STA BinInputUB
 L9081:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
 L9084:  LDA BCDOutput2
-L9086:  STA $0585
+L9086:  STA TextBuffer+5
 L9089:  LDA BCDOutput3
-L908B:  STA $0586
+L908B:  STA TextBuffer+6
 L908E:  LDY #CHR_DEX
 L9090:  LDA (CrntChrPtr),Y
 L9092:  STA BinInputLB
@@ -2877,9 +2944,9 @@ L9094:  LDA #$00
 L9096:  STA BinInputUB
 L9098:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
 L909B:  LDA BCDOutput2
-L909D:  STA $058A
+L909D:  STA TextBuffer+$A
 L90A0:  LDA BCDOutput3
-L90A2:  STA $058B
+L90A2:  STA TextBuffer+$B
 L90A5:  LDY #CHR_INT
 L90A7:  LDA (CrntChrPtr),Y
 L90A9:  STA BinInputLB
@@ -2887,9 +2954,9 @@ L90AB:  LDA #$00
 L90AD:  STA BinInputUB
 L90AF:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
 L90B2:  LDA BCDOutput2
-L90B4:  STA $058F
+L90B4:  STA TextBuffer+$F
 L90B7:  LDA BCDOutput3
-L90B9:  STA $0590
+L90B9:  STA TextBuffer+$10
 L90BC:  LDY #CHR_WIS
 L90BE:  LDA (CrntChrPtr),Y
 L90C0:  STA BinInputLB
@@ -2897,27 +2964,41 @@ L90C2:  LDA #$00
 L90C4:  STA BinInputUB
 L90C6:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
 L90C9:  LDA BCDOutput2
-L90CB:  STA $0594
+L90CB:  STA TextBuffer+$14
 L90CE:  LDA BCDOutput3
-L90D0:  STA $0595
-L90D3:  LDA #$FF
-L90D5:  STA $0596
-L90D8:  LDA #$06
-L90DA:  STA $2A
-L90DC:  LDA #$18
-L90DE:  STA $29
-L90E0:  LDA #$16
-L90E2:  STA $2E
-L90E4:  LDA #$01
-L90E6:  STA $2D
-L90E8:  LDA #$FF
-L90EA:  STA TextIndex
+L90D0:  STA TextBuffer+$15
+
+L90D3:  LDA #TXT_END
+L90D5:  STA TextBuffer+$16
+
+L90D8:  LDA #$06                ;
+L90DA:  STA TXTXPos             ;Text will be located at tile coords X,Y=6,24.
+L90DC:  LDA #$18                ;
+L90DE:  STA TXTYPos             ;
+
+L90E0:  LDA #$16                ;
+L90E2:  STA TXTClrCols          ;Clear 22 columns and 1 row for the text string.
+L90E4:  LDA #$01                ;
+L90E6:  STA TXTClrRows          ;
+
+L90E8:  LDA #TXT_DBL_SPACE      ;Indicate text buffer is already filled and double spaced.
+L90EA:  STA TextIndex           ;
 L90EC:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L90EF:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-L90F0:  .byte $40, $50, $60, $70, $80, $90, $50, $78, $A0, $C8
+;The following table is used to set the pixel Y position of the selector sprite when selecting
+;a hand made character's profession.
+
+HMYPosTbl:
+L90F0:  .byte $40, $50, $60, $70, $80, $90
+
+;The following table is used to set the pixel X position of the selector sprite when setting
+;the character's stats.
+
+HMXPosTbl:
+L90F6:  .byte $50, $78, $A0, $C8
 
 ;----------------------------------------------------------------------------------------------------
 
