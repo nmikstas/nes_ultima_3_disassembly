@@ -2560,95 +2560,105 @@ L8E04:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stat
 L8E07:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
 HMChkLeft:
-L8E0A:  CMP #BTN_LEFT
-L8E0C:  BNE HMChkUp
+L8E0A:  CMP #BTN_LEFT           ;Was the left button pressed on the D pad?
+L8E0C:  BNE HMChkUp             ;If not, branch to process other buttons.
 
-L8E0E:  LDA HandMadeState
-L8E10:  BNE +
+L8E0E:  LDA HandMadeState       ;Is the player choosing the character's race?
+L8E10:  BNE +                   ;If not, branch.
 
 L8E12:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8E15:* CMP #HM_PROFESSION
-L8E17:  BNE L8E2F
+L8E15:* CMP #HM_PROFESSION      ;Is the player selecting the Character's class?
+L8E17:  BNE ChkStatsLeft        ;If not, branch. Must be setting stats.
 
-L8E19:  LDY #CHR_CLASS
-L8E1B:  LDA (CrntChrPtr),Y
-L8E1D:  CMP #CLS_LARK
-L8E1F:  BCS +
+L8E19:  LDY #CHR_CLASS          ;
+L8E1B:  LDA (CrntChrPtr),Y      ;Is the selector sprite in the right column(lark or higher)?
+L8E1D:  CMP #CLS_LARK           ;If so, branch to move selector to left column.
+L8E1F:  BCS +                   ;
 
 L8E21:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8E24:* SEC
-L8E25:  SBC #$06
-L8E27:  STA (CrntChrPtr),Y
+L8E24:* SEC                     ;
+L8E25:  SBC #$06                ;Subtract 6 from class to move selector to left column.
+L8E27:  STA (CrntChrPtr),Y      ;
 
 L8E29:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E2C:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8E2F:  LDA HandMadeStatCol
-L8E31:  BNE +
+ChkStatsLeft:
+L8E2F:  LDA HandMadeStatCol     ;When inputting stats, is selector sprite in the left most column?
+L8E31:  BNE +                   ;If not, branch to move selector sprite over by 1 column.
 
 L8E33:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8E36:* DEC HandMadeStatCol
+L8E36:* DEC HandMadeStatCol     ;Move selector sprite left by one column.
 L8E38:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E3B:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
 HMChkUp:
-L8E3E:  CMP #BTN_UP
-L8E40:  BNE HMChkDown
+L8E3E:  CMP #BTN_UP             ;Was the up button pressed on the d pad?
+L8E40:  BNE HMChkDown           ;If not, branch to check other button presses.
 
-L8E42:  LDA HandMadeState
-L8E44:  BNE L8E5A
+L8E42:  LDA HandMadeState       ;Is player selecting the character's race?
+L8E44:  BNE ChkClassUp          ;If not, branch.
 
-L8E46:  LDY #CHR_RACE
-L8E48:  LDA (CrntChrPtr),Y
-L8E4A:  BNE L8E4F
+L8E46:  LDY #CHR_RACE           ;Is character race human(Top of the list)?
+L8E48:  LDA (CrntChrPtr),Y      ;
+L8E4A:  BNE +                   ;If not, branch.
+
 L8E4C:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E4F:  SEC
-L8E50:  SBC #$01
-L8E52:  STA (CrntChrPtr),Y
+
+L8E4F:* SEC                     ;
+L8E50:  SBC #$01                ;Move selector sprite up 1 row on the race list.
+L8E52:  STA (CrntChrPtr),Y      ;
+
 L8E54:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E57:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8E5A:  CMP #HM_PROFESSION
-L8E5C:  BNE L8E76
+ChkClassUp:
+L8E5A:  CMP #HM_PROFESSION      ;Is player choosing the character's class?
+L8E5C:  BNE ChkStatUp           ;If not, branch. Must be setting stats.
 
-L8E5E:  LDY #CHR_CLASS
-L8E60:  LDA (CrntChrPtr),Y
-L8E62:  BEQ L8E68
+L8E5E:  LDY #CHR_CLASS          ;Is the fighter class selected(top of the list)?
+L8E60:  LDA (CrntChrPtr),Y      ;
+L8E62:  BEQ ExitClassUp         ;If so, branch to exit.
 
-L8E64:  CMP #CLS_LARK
-L8E66:  BNE +
+L8E64:  CMP #CLS_LARK           ;Is the lark class selected(top of the list)?
+L8E66:  BNE +                   ;If not, branch.
 
+ExitClassUp:
 L8E68:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8E6B:* SEC
-L8E6C:  SBC #$01
-L8E6E:  STA (CrntChrPtr),Y
+L8E6B:* SEC                     ;
+L8E6C:  SBC #$01                ;Move selector sprite up row in the class list.
+L8E6E:  STA (CrntChrPtr),Y      ;
 
 L8E70:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8E73:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8E76:  LDY #$07
-L8E78:  LDA #$00
-L8E7A:  CLC
-L8E7B:  ADC (CrntChrPtr),Y
-L8E7D:  INY
-L8E7E:  CPY #$0B
-L8E80:  BNE L8E7A
+ChkStatUp:
+L8E76:  LDY #CHR_STR            ;Prepare to add all the stats values together.
+L8E78:  LDA #$00                ;
 
-L8E82:  CMP #$2E
-L8E84:  BCC L8E89
+L8E7A:* CLC                     ;
+L8E7B:  ADC (CrntChrPtr),Y      ;Add the character's strength, dexterity,
+L8E7D:  INY                     ;intelligence and wisdom together.
+L8E7E:  CPY #CHR_WIS+1          ;
+L8E80:  BNE -                   ;
+
+L8E82:  CMP #$2E                ;Is the total stat value greater than 45?
+L8E84:  BCC +                   ;If not, branch.
 
 L8E86:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8E89:  LDA #$07
-L8E8B:  CLC
-L8E8C:  ADC HandMadeStatCol
-L8E8E:  TAY
-L8E8F:  LDA (CrntChrPtr),Y
-L8E91:  CMP #$19
-L8E93:  BEQ +
+
+L8E89:* LDA #CHR_STR            ;Start with the index of the character's strength.
+L8E8B:  CLC                     ;Add the current selected column to it to get the targeted stat.
+L8E8C:  ADC HandMadeStatCol     ;
+
+L8E8E:  TAY                     ;
+L8E8F:  LDA (CrntChrPtr),Y      ;Get the target stat. Is it maxed out at 25?
+L8E91:  CMP #25                 ;If so, branch to exit.
+L8E93:  BEQ +                   ;
 
 L8E95:  CLC                     ;
 L8E96:  ADC #$05                ;Increase current stat by 5.
@@ -2659,135 +2669,168 @@ L8E9A:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stat
 L8E9D:* JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
 HMChkDown:
-L8EA0:  CMP #BTN_DOWN
-L8EA2:  BNE L8EF4
+L8EA0:  CMP #BTN_DOWN           ;Did player press the down button?
+L8EA2:  BNE HMChkA              ;If not, branch to check other buttons.
 
-L8EA4:  LDA HandMadeState
-L8EA6:  BNE L8EBE
-L8EA8:  LDY #CHR_RACE
-L8EAA:  LDA (CrntChrPtr),Y
-L8EAC:  CMP #$04
-L8EAE:  BNE L8EB3
+L8EA4:  LDA HandMadeState       ;Is player selecting the character's race?
+L8EA6:  BNE ChkClassDown        ;If not, branch.
+
+L8EA8:  LDY #CHR_RACE           ;Is the current race selected a fuzzy?
+L8EAA:  LDA (CrntChrPtr),Y      ;
+L8EAC:  CMP #RC_FUZZY           ;If not, branch.
+L8EAE:  BNE +                   ;Else ignore input.
+
 L8EB0:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8EB3:  CLC
-L8EB4:  ADC #$01
-L8EB6:  STA (CrntChrPtr),Y
+
+L8EB3:* CLC                     ;
+L8EB4:  ADC #$01                ;Move down 1 row on the race list.
+L8EB6:  STA (CrntChrPtr),Y      ;
+
 L8EB8:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8EBB:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8EBE:  CMP #$01
-L8EC0:  BNE L8EDC
-L8EC2:  LDY #CHR_CLASS
-L8EC4:  LDA (CrntChrPtr),Y
-L8EC6:  CMP #CLS_BARBARIAN
-L8EC8:  BEQ L8ECE
-L8ECA:  CMP #$0A
-L8ECC:  BNE L8ED1
+
+ChkClassDown:
+L8EBE:  CMP #HM_PROFESSION      ;Is player selecting the character's class?
+L8EC0:  BNE ChkStatDown         ;If not, branch.
+
+L8EC2:  LDY #CHR_CLASS          ;Is the current class selected the barbarian?
+L8EC4:  LDA (CrntChrPtr),Y      ;
+L8EC6:  CMP #CLS_BARBARIAN      ;
+L8EC8:  BEQ ClassDownExit       ;If so, branch to exit.
+
+L8ECA:  CMP #CLS_RANGER         ;Is the current class selected the ranger?
+L8ECC:  BNE +                   ;If so, exit.
+
+ClassDownExit:
 L8ECE:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8ED1:  CLC
-L8ED2:  ADC #$01
-L8ED4:  STA (CrntChrPtr),Y
+
+L8ED1:* CLC                     ;
+L8ED2:  ADC #$01                ;Move down 1 row on the class list.
+L8ED4:  STA (CrntChrPtr),Y      ;
+
 L8ED6:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8ED9:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8EDC:  CLC
-L8EDD:  LDA #$07
-L8EDF:  ADC HandMadeStatCol
-L8EE1:  TAY
-L8EE2:  LDA (CrntChrPtr),Y
-L8EE4:  BNE L8EE9
+
+ChkStatDown:
+L8EDC:  CLC                     ;Start with the index of the character's strength.
+L8EDD:  LDA #CHR_STR            ;Add the current selected column to it to get the targeted stat.
+L8EDF:  ADC HandMadeStatCol     ;
+
+L8EE1:  TAY                     ;Get the target stat. Is it at the minimum value of 0?
+L8EE2:  LDA (CrntChrPtr),Y      ;
+L8EE4:  BNE +                   ;If not, branch to reduce the stat by 5.
+
 L8EE6:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
-L8EE9:  SEC
-L8EEA:  SBC #$05
-L8EEC:  STA (CrntChrPtr),Y
+
+L8EE9:* SEC                     ;
+L8EEA:  SBC #$05                ;Reduce the selected stat by 5.
+L8EEC:  STA (CrntChrPtr),Y      ;
+
 L8EEE:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8EF1:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8EF4:  CMP #BTN_A
-L8EF6:  BEQ +
+HMChkA:
+L8EF4:  CMP #BTN_A              ;Did player press the A button?
+L8EF6:  BEQ NextHandMadeState   ;If so, branch to process button press. Else exit.
 
 L8EF8:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8EFB:* INC HandMadeState
-L8EFD:  LDA HandMadeState
-L8EFF:  CMP #HM_PROFESSION
-L8F01:  BNE L8F4B
+NextHandMadeState:
+L8EFB:  INC HandMadeState       ;Move to next hand made stats state.
 
-L8F03:  LDA SpriteBuffer
-L8F06:  STA $73C4
-L8F09:  LDA $7303
-L8F0C:  STA $73C7
-L8F0F:  LDA #$01
-L8F11:  STA $73C5
-L8F14:  LDA #$40
-L8F16:  STA SpriteBuffer
-L8F19:  LDA #$48
-L8F1B:  STA $7303
+L8EFD:  LDA HandMadeState       ;Is the player about to select the character's class?
+L8EFF:  CMP #HM_PROFESSION      ;
+L8F01:  BNE ChkStatsState       ;If not, branch.
 
-L8F1E:  LDA #$08
-L8F20:  STA $2A
-L8F22:  LDA #$06
-L8F24:  STA $29
-L8F26:  LDA #$10
-L8F28:  STA $2E
-L8F2A:  LDA #$0E
-L8F2C:  STA $2D
+L8F03:  LDA SpriteBuffer        ;
+L8F06:  STA SpriteBuffer+$C4    ;Copy selector sprite into sprite 49.
+L8F09:  LDA SpriteBuffer+3      ;
+L8F0C:  STA SpriteBuffer+$C7    ;
+
+L8F0F:  LDA #$01                ;Set static selector sprite for race selection.
+L8F11:  STA SpriteBuffer+$C5    ;
+
+L8F14:  LDA #$40                ;
+L8F16:  STA SpriteBuffer        ;Set initial pixel coords of new selector sprite to X,Y=72,64.
+L8F19:  LDA #$48                ;
+L8F1B:  STA SpriteBuffer+3      ;
+
+L8F1E:  LDA #$08                ;
+L8F20:  STA WndXPos             ;Window will be located at tile coords X,Y=8,6
+L8F22:  LDA #$06                ;
+L8F24:  STA WndYPos             ;
+
+L8F26:  LDA #$10                ;
+L8F28:  STA WndWidth            ;Window will be 16 tiles wide and 14 tiles tall.
+L8F2A:  LDA #$0E                ;
+L8F2C:  STA WndHeight           ;
+
 L8F2E:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
-L8F31:  LDA #$0A
-L8F33:  STA $2A
-L8F35:  LDA #$06
-L8F37:  STA $29
-L8F39:  LDA #$0C
-L8F3B:  STA $2E
-L8F3D:  LDA #$07
-L8F3F:  STA $2D
+L8F31:  LDA #$0A                ;
+L8F33:  STA TXTXPos             ;Text will be located at tile coords X,Y=10,6.
+L8F35:  LDA #$06                ;
+L8F37:  STA TXTYPos             ;
+
+L8F39:  LDA #$0C                ;
+L8F3B:  STA TXTClrCols          ;Clear 12 columns and 7 rows for the text string.
+L8F3D:  LDA #$07                ;
+L8F3F:  STA TXTClrRows          ;
 
 L8F41:  LDA #$0D                ;PROFESSION text followed by all professions.
 L8F43:  STA TextIndex           ;
 L8F45:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 L8F48:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
-L8F4B:  CMP #HM_STATS
-L8F4D:  BNE L8F9A
+ChkStatsState:
+L8F4B:  CMP #HM_STATS           ;Is player setting the character's stats?
+L8F4D:  BNE ChkOKState          ;If not, branch.
 
-L8F4F:  LDA SpriteBuffer
-L8F52:  STA $73C8
-L8F55:  LDA SpriteBuffer+3
-L8F58:  STA $73CB
+L8F4F:  LDA SpriteBuffer        ;
+L8F52:  STA SpriteBuffer+$C8    ;Copy selector sprite into sprite 50.
+L8F55:  LDA SpriteBuffer+3      ;
+L8F58:  STA SpriteBuffer+$CB    ;
 
-L8F5B:  LDA #$01
-L8F5D:  STA $73C9
+L8F5B:  LDA #$01                ;Set static selector sprite for class selection.
+L8F5D:  STA SpriteBuffer+$C9    ;
 
-L8F60:  LDA #$02
-L8F62:  STA $2A
-L8F64:  LDA #$16
-L8F66:  STA $29
-L8F68:  LDA #$1C
-L8F6A:  STA $2E
-L8F6C:  LDA #$04
-L8F6E:  STA $2D
+L8F60:  LDA #$02                ;
+L8F62:  STA WndXPos             ;Window will be located at tile coords X,Y=2,22.
+L8F64:  LDA #$16                ;
+L8F66:  STA WndYPos             ;
+
+L8F68:  LDA #$1C                ;
+L8F6A:  STA WndWidth            ;Window will be 26 tiles wide and 4 tiles tall.
+L8F6C:  LDA #$04                ;
+L8F6E:  STA WndHeight           ;
+
 L8F70:  JSR DrawWndBrdr         ;($97A9)Draw window border.
 
-L8F73:  LDA #$04
-L8F75:  STA $2A
-L8F77:  LDA #$16
-L8F79:  STA $29
-L8F7B:  LDA #$19
-L8F7D:  STA $2E
-L8F7F:  LDA #$01
-L8F81:  STA $2D
-L8F83:  LDA #$0B
-L8F85:  STA TextIndex
+L8F73:  LDA #$04                ;
+L8F75:  STA TXTXPos             ;Text will be located at tile coords X,Y=4,22.
+L8F77:  LDA #$16                ;
+L8F79:  STA TXTYPos             ;
+
+L8F7B:  LDA #$19                ;
+L8F7D:  STA TXTClrCols          ;Clear 25 columns and 1 row for the text string.
+L8F7F:  LDA #$01                ;
+L8F81:  STA TXTClrRows          ;
+
+L8F83:  LDA #$0B                ;REST STR DEX INT WIS text.
+L8F85:  STA TextIndex           ;
 L8F87:  JSR ShowTextString      ;($995C)Show a text string on the screen.
 
-L8F8A:  LDA #$C0
-L8F8C:  STA SpriteBuffer
-L8F8F:  LDA #$50
-L8F91:  STA SpriteBuffer+3
+L8F8A:  LDA #$C0                ;
+L8F8C:  STA SpriteBuffer        ;Set initial pixel coords of new selector sprite to X,Y=80,192.
+L8F8F:  LDA #$50                ;
+L8F91:  STA SpriteBuffer+3      ;
+
 L8F94:  JSR HMSpritesNStats     ;($9016)Update selector sprite position and stats text.
 L8F97:  JMP HandMadeInputLoop   ;($8DD8)Input button processing for hand-made characters.
 
+ChkOKState:
 L8F9A:  CMP #HM_OK_CANCEL
-L8F9C:  BEQ L8FA9
+L8F9C:  BEQ ChkValidChar
 
 L8F9E:  LDA SpriteBuffer+3
 L8FA1:  CMP #$A0
@@ -2796,6 +2839,7 @@ L8FA5:  RTS
 
 L8FA6:  JMP DoHandMade          ;($8D4B)Create a hand made character.
 
+ChkValidChar:
 L8FA9:  LDY #$07
 L8FAB:  LDA #$00
 
@@ -2862,7 +2906,7 @@ OKChkA:
 L900F:  CMP #BTN_A
 L9011:  BNE OKCnclInputLoop
 
-L9013:  JMP L8EFB
+L9013:  JMP NextHandMadeState   ;($8EFB)Increment to next hand made state.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -2921,48 +2965,60 @@ L9062:  BNE -
 L9064:  STA BinInputLB
 L9066:  LDA #$00
 L9068:  STA BinInputUB
-
 L906A:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+
 L906D:  LDA BCDOutput2
 L906F:  STA TextBufferBase
 L9072:  LDA BCDOutput3
 L9074:  STA TextBuffer+1
+
 L9077:  LDY #CHR_STR
 L9079:  LDA (CrntChrPtr),Y
 L907B:  STA BinInputLB
+
 L907D:  LDA #$00
 L907F:  STA BinInputUB
 L9081:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+
 L9084:  LDA BCDOutput2
 L9086:  STA TextBuffer+5
 L9089:  LDA BCDOutput3
 L908B:  STA TextBuffer+6
+
 L908E:  LDY #CHR_DEX
 L9090:  LDA (CrntChrPtr),Y
 L9092:  STA BinInputLB
+
 L9094:  LDA #$00
 L9096:  STA BinInputUB
 L9098:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+
 L909B:  LDA BCDOutput2
 L909D:  STA TextBuffer+$A
 L90A0:  LDA BCDOutput3
 L90A2:  STA TextBuffer+$B
+
 L90A5:  LDY #CHR_INT
 L90A7:  LDA (CrntChrPtr),Y
 L90A9:  STA BinInputLB
+
 L90AB:  LDA #$00
 L90AD:  STA BinInputUB
 L90AF:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+
 L90B2:  LDA BCDOutput2
 L90B4:  STA TextBuffer+$F
 L90B7:  LDA BCDOutput3
 L90B9:  STA TextBuffer+$10
+
 L90BC:  LDY #CHR_WIS
 L90BE:  LDA (CrntChrPtr),Y
 L90C0:  STA BinInputLB
+
 L90C2:  LDA #$00
 L90C4:  STA BinInputUB
 L90C6:  JSR BinToBCD            ;($9883)Convert 16-bit word to 4 digit number.
+
 L90C9:  LDA BCDOutput2
 L90CB:  STA TextBuffer+$14
 L90CE:  LDA BCDOutput3
@@ -3115,7 +3171,7 @@ L91A5:  STA (CrntChrPtr),Y
 L91A7:  LDY #$00
 L91A9:  LDA TextBuffer,Y
 L91AC:  CMP #$FF
-L91AE:  BEQ L91B8
+L91AE:  BEQ +
 
 L91B0:  STA (CrntChrPtr),Y
 L91B2:  INY
@@ -3123,11 +3179,11 @@ L91B3:  CPY #$05
 L91B5:  BNE L91A9
 L91B7:  RTS
 
-L91B8:  LDA #$00
+L91B8:* LDA #$00
 L91BA:  STA (CrntChrPtr),Y
 L91BC:  INY
 L91BD:  CPY #$05
-L91BF:  BNE L91B8
+L91BF:  BNE -
 L91C1:  RTS
 
 ;----------------------------------------------------------------------------------------------------
