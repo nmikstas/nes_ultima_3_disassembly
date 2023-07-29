@@ -884,58 +884,58 @@
 .alias SFX_FINISHED     $01     ;Indicates an SFX just finished.
 .alias SFX_UNUSED       $02     ;Not used.
 
-;$00
-;$01
-;$02
+;$00                            ;Unused SFX.
+;$01                            ;Unused SFX.
+;$02                            ;Unused SFX.
 .alias SFX_OPEN_DOOR    $03     ;Open door.
-;$04
-;$05
-;$06
+;$04                            ;Unused SFX.
+;$05                            ;Unused SFX.
+;$06                            ;Unused SFX.
 .alias SFX_MN_GATE_B    $07     ;Player travels through moon gate.
-;$08
-.alias SFX_CASINO       $09     ;Randomly choose paper, rock scissors.
-;$0A
+;$08                            ;Unused SFX.
+.alias SFX_CASINO       $09     ;Randomly choose paper, rock, scissors.
+;$0A                            ;Unused SFX.
 .alias SFX_SPELL_B      $0B     ;Spell SFX variant B.
-;$0C
-;$0D
+;$0C                            ;Unused SFX.
+;$0D                            ;Unused SFX.
 .alias SFX_CHST_OPEN    $0E     ;Chest opened/card placed.
-;$0F
-;$10
+;$0F                            ;Unused SFX.
+;$10                            ;Unused SFX.
 .alias SFX_TIME_STOP    $11     ;Time stopped.
 .alias SFX_EN_MISS      $12     ;Enemy miss physical attack.
-;$13
+;$13                            ;Unused SFX.
 .alias SFX_MARK_DMG     $14     ;Player suffers fire/force damage.
-;$15
+;$15                            ;Unused SFX.
 .alias SFX_EN_HIT       $16     ;Player hit enemy.
 .alias SFX_PLYR_HIT     $17     ;Enemy hit player.
 .alias SFX_PLYR_ILL     $18     ;Player is poisoned/has cold.
 .alias SFX_FOREST       $19     ;Walking through forest/shrubs.
-;$1A
+;$1A                            ;Unused SFX.
 .alias SFX_BLOCKED      $1B     ;Player bumping into object.
-;$1C
+;$1C                            ;Unused SFX.
 .alias SFX_SWING        $1D     ;Player physical attack.
-;$1E
+;$1E                            ;Unused SFX.
 .alias SFX_PLYR_MISS    $1F     ;Player miss physical attack/Light torch.
-;$20
-;$21
-;$22
+;$20                            ;Unused SFX.
+;$21                            ;Unused SFX.
+;$22                            ;Unused SFX.
 .alias SFX_MAP          $23     ;Use gem SFX.
 .alias SFX_SPELL_A      $24     ;Spell SFX variant A.
 .alias SFX_EN_MJ_SPL    $25     ;Enemy casts major spell.
 .alias SFX_EX_FALL      $26     ;Castle Exodus falling apart.
-;$27
-;$28
-;$29
-;$2A
-;$2B
+;$27                            ;Unused SFX.
+;$28                            ;Unused SFX.
+;$29                            ;Unused SFX.
+;$2A                            ;Unused SFX.
+;$2B                            ;Unused SFX.
 .alias SFX_MN_GATE_A    $2C     ;Player enters/exits moongate.
 .alias SFX_DNGN_MOVE    $2D     ;Player move in dungeon.
-;$2E
-;$2F
-;$30
-;$31
-;$32
-;$33
+;$2E                            ;Unused SFX.
+;$2F                            ;Unused SFX.
+;$30                            ;Unused SFX.
+;$31                            ;Unused SFX.
+;$32                            ;Unused SFX.
+;$33                            ;Unused SFX.
 
 .alias MUS_DUNGEON      $00     ;Starts dungeon music.
 .alias MUS_TOWN         $01     ;Starts town music.

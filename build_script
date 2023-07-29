@@ -15,6 +15,7 @@ mkdir ./Output_Files
 printf "\n${magenta}Assembling individual PRG banks...${reset}\n\n"
 cd Source_Files
 
+../Ophis/ophis Header.asm ../Output_Files/Header.bin
 ../Ophis/ophis Bank00.asm ../Output_Files/Bank00.bin
 ../Ophis/ophis Bank01.asm ../Output_Files/Bank01.bin
 ../Ophis/ophis Bank02.asm ../Output_Files/Bank02.bin
