@@ -594,8 +594,7 @@ L8445:  STA SFXFinished,X       ;
 L8448:* INC ChnDatPtrLB,X       ;
 L844A:  BNE +                   ;Increment to next musical data byte.
 L844C:  INC ChnDatPtrUB,X       ;
-
-L844E:*  RTS
+L844E:*  RTS                    ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -986,7 +985,7 @@ L8743:  .word SQ2Release1C, SQ1Release1D, SQ1Release1E, SQ1Release1F
 L874B:  .word SQ1Release20, SQ1Release21, SQ2Release22, TriRelease23
 L8753:  .word TriRelease24, SQ2Release25, SQ1Release26, SQ2Release27
 L875B:  .word TriRelease28, SQ1Release29, SQ2Release2A, TriRelease2B
-L8763:  .word SQ2Release2C, SQ1Release2D,SQ1Release2E, SQ2Release2F
+L8763:  .word SQ2Release2C, SQ1Release2D, SQ1Release2E, SQ2Release2F
 L876B:  .word TriRelease30, TriRelease31
 
 ;----------------------------------------------------------------------------------------------------

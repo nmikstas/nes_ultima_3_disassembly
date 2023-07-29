@@ -15,15 +15,17 @@
 ;----------------------------------------------------------------------------------------------------
 
 InitMusic:
-L8000:  CMP MusCurrent
-L8003:  BNE +
-L8005:  RTS
+L8000:  CMP MusCurrent          ;Is a new song being requested?
+L8003:  BNE +                   ;If so, branch.
+L8005:  RTS                     ;Else exit.
 
-L8006:* STA MusCurrent
-L8009:  SEC
-L800A:  SBC #MUS_INTRO
-L800C:  BCS +
-L800E:  LDA #$01
+L8006:* STA MusCurrent          ;Set the new music as the current music.
+
+L8009:  SEC                     ;Subtract 10 from music being requested as the first 10
+L800A:  SBC #MUS_INTRO          ;songs are located in Bank08.
+L800C:  BCS +                   ;IF song is valid, branch to get music pointer data.
+
+L800E:  LDA #$01                ;Invalid song. Silence music.
 
 GetMusPointers:
 L8010:* ASL                     ;
@@ -68,16 +70,18 @@ L8051:  RTS                     ;
 ;The first word is for the SQ1 data, followed by SQ2, tiangle and noise data, respectively.
 
 MusicPtrTbl:
-L8052:  .word $8797,     $8C07,     $9173,     MusNone   ;Character creation music.
-L8059:  .word MusNone,   MusNone,   MusNone,   MusNone   ;Silence music.
-L8062:  .word $98D1,     $98DD,     $98EB,     $98FD     ;Exodus heart beat music.
-L8069:  .word $9840,     $985A,     MusNone,   MusNone   ;Silver horn music.
-L8072:  .word $9874,     MusNone,   MusNone-3, $A74B     ;Not used.
-L8079:  .word $A803,     $A903,     MusNone-3, $AA52     ;Not used.
-L8082:  .word $AB56,     $AC5A,     MusNone-3, $B2DE     ;Not used.
-L8089:  .word $B4E2,     $B6DA,     MusNone-3, $ADB3     ;Not used.
-L8092:  .word $AEB3,     $B121,     MusNone-3, MusNone-3 ;Not used.
-L8099:  .word MusNone-3, MusNone-3, MusNone-3            ;Not used.
+L8052:  .word ChrCreateSQ1, ChrCreateSQ2, ChrCreateTri, MusNone     ;Character creation music.
+L8059:  .word MusNone,      MusNone,      MusNone,      MusNone     ;Silence music.
+L8062:  .word ExodusHBSQ1,  ExodusHBSQ2,  ExodusHBTri,  ExodusHBNse ;Exodus heart beat music.
+L8069:  .word SlvrHornSQ1,  SlvrHornSQ2,  MusNone,      MusNone     ;Silver horn music.
+
+;The following entries in the table are not used.
+L8072:  .word UnusedSQ1,    MusNone,      MusNone-3,    $A74B       ;Not used.
+L8079:  .word $A803,        $A903,        MusNone-3,    $AA52       ;Not used.
+L8082:  .word $AB56,        $AC5A,        MusNone-3,    $B2DE       ;Not used.
+L8089:  .word $B4E2,        $B6DA,        MusNone-3,    $ADB3       ;Not used.
+L8092:  .word $AEB3,        $B121,        MusNone-3,    MusNone-3   ;Not used.
+L8099:  .word MusNone-3,    MusNone-3,    MusNone-3                 ;Not used.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -355,35 +359,48 @@ L82D3:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 GetChannelData:
-L82D4:  LDA ($F2,X)
-L82D6:  CMP #$FE
-L82D8:  BNE L82DD
-L82DA:  JMP L8400
-L82DD:  CMP #$F0
-L82DF:  BCS L82F0
-L82E1:  CPX #$08
-L82E3:  BCC L82ED
-L82E5:  BEQ L82EA
-L82E7:  JMP L851D
-L82EA:  JMP L8452
-L82ED:  JMP L8452
-L82F0:  CMP #$FF
-L82F2:  BEQ L8312
-L82F4:  CMP #$FC
-L82F6:  BNE L82FB
-L82F8:  JMP L8336
-L82FB:  CMP #$FD
-L82FD:  BNE L8302
-L82FF:  JMP L83A7
-L8302:  CMP #$FB
-L8304:  BNE L8309
-L8306:  JMP L8393
+L82D4:  LDA (ChnDatPtr,X)       ;Does the current channel need to be silenced?
+L82D6:  CMP #CHN_SILENCE        ;If not, branch.
+L82D8:  BNE +                   ;
+
+L82DA:  JMP SilenceChannel      ;($8400)Silence the channel for a period of time.
+
+L82DD:* CMP #CHN_CONTROL        ;Is this a control byte?
+L82DF:  BCS GetCntrlByte        ;If so, branch to process the control byte.
+
+L82E1:  CPX #TRI_DAT_OFFSET     ;Are we looking for SQ1 or SQ2 data?
+L82E3:  BCC GetSQData           ;If so, brach to get SQ music data.
+
+L82E5:  BEQ +                   ;Are we looking for triangle data? If so, branch.
+L82E7:  JMP SilenceNseChnl      ;($851D)Must be noise channel. Not used in music jump to silence.
+
+L82EA:*  JMP GetSQTriData       ;($8452)Get the triangle/SQ data.
+
+GetSQData:
+L82ED:  JMP GetSQTriData        ;($8452)Get the triangle/SQ data.
+
+;----------------------------------------------------------------------------------------------------
+
+GetCntrlByte:
+L82F0:  CMP #CHN_JUMP           ;Does the pointer need to jump? If so, branch.
+L82F2:  BEQ DoDataJump          ;($8312)Jump the data pointer to a new location.
+
+L82F4:  CMP #CHN_ASR            ;Is this an ASR control byte?
+L82F6:  BNE +                   ;If not, branch.
+L82F8:  JMP UpdateASR           ;($8336)Update the ASR(attack, sustain, release) profile.
+
+L82FB:* CMP #CHN_VIBRATO        ;Is this a vibrato control byte?
+L82FD:  BNE +                   ;If not branch.
+L82FF:  JMP UpdateVibratoData   ;($83A7)Update channel vibrato data.
+
+L8302:* CMP #CHN_VOLUME         ;Is this a volume control byte?
+L8304:  BNE NextChnByte         ;If not, branch. Invalid control byte.
+L8306:  JMP UpdateVolume        ;($8393)Update the channel base volume.
 
 NextChnByte:
 L8309:  INC ChnDatPtrLB,X       ;
 L830B:  BNE GetDataLoop         ;Increment to next musical data byte.
 L830D:  INC ChnDatPtrUB,X       ;
-
 
 GetDataLoop:
 L830F:  JMP GetChannelData      ;($82D4)Get data for next musical note.
@@ -415,16 +432,16 @@ L8333:  JMP GetDataLoop         ;($830F)Jump to get the next data byte.
 
 ;----------------------------------------------------------------------------------------------------
 
+UpdateASR:
+L8336:  INC ChnDatPtrLB,X       ;
+L8338:  BNE +                   ;Increment to next musical data byte.
+L833A:  INC ChnDatPtrUB,X       ;
 
-L8336:  INC $F2,X
-L8338:  BNE L833C
-L833A:  INC $F3,X
-
-L833C:  LDA ($F2,X)
-L833E:  SEC
-L833F:  SBC #$32
-L8341:  ASL
-L8342:  TAY
+L833C:* LDA (ChnDatPtr,X)       ;Get the index into the ASR data tables.
+L833E:  SEC                     ;
+L833F:  SBC #$32                ;Subtract 50.
+L8341:  ASL                     ;*2. The addresses in the table are 2 bytes each.
+L8342:  TAY                     ;
 
 L8343:  LDA AttackPtrTbl,Y      ;
 L8346:  STA AttackDatPtrLB,X    ;
@@ -433,253 +450,359 @@ L834B:  LDA AttackPtrTbl+1,Y    ;
 L834E:  STA AttackDatPtrUB,X    ;
 L8351:  STA GenPtrF4UB          ;
 
-L8353:  STY $F8
-L8355:  LDY #$00
-L8357:  LDA ($F4),Y
-L8359:  STA $7630,X
-L835C:  LDY $F8
-L835E:  LDA $8660,Y
-L8361:  STA $7612,X
-L8364:  STA $F4
-L8366:  LDA $8661,Y
-L8369:  STA $7613,X
-L836C:  STA $F5
-L836E:  STY $F8
-L8370:  LDY #$00
-L8372:  LDA ($F4),Y
-L8374:  STA $7631,X
-L8377:  LDY $F8
-L8379:  LDA $867A,Y
-L837C:  STA $7620,X
-L837F:  STA $F4
-L8381:  LDA $867B,Y
-L8384:  STA $7621,X
-L8387:  STA $F5
-L8389:  LDY #$00
-L838B:  LDA ($F4),Y
-L838D:  STA $7632,X
-L8390:  JMP L8309
+L8353:  STY GenByteF8           ;Temporarily save the value of Y.
+
+L8355:  LDY #$00                ;
+L8357:  LDA (GenPtrF4),Y        ;Save the length of the attack data string.
+L8359:  STA ChnAttackDatLen,X   ;
+
+L835C:  LDY GenByteF8           ;Restore the value of Y.
+
+L835E:  LDA SustainPtrTbl,Y     ;
+L8361:  STA SustainDatPtrLB,X   ;
+L8364:  STA GenPtrF4LB          ;Update the sustain data pointer for the channel.
+L8366:  LDA SustainPtrTbl+1,Y   ;
+L8369:  STA SustainDatPtrUB,X   ;
+L836C:  STA GenPtrF4UB          ;
+
+L836E:  STY GenByteF8           ;Temporarily save the value of Y.
+
+L8370:  LDY #$00                ;
+L8372:  LDA (GenPtrF4),Y        ;Save the length of the sustain data string.
+L8374:  STA ChnSustainDatLen,X  ;
+
+L8377:  LDY GenByteF8           ;Restore the value of Y.
+
+L8379:  LDA ReleasePtrTbl,Y     ;
+L837C:  STA ReleaseDatPtrLB,X   ;
+L837F:  STA GenPtrF4LB          ;Update the release data pointer for the channel.
+L8381:  LDA ReleasePtrTbl+1,Y   ;
+L8384:  STA ReleaseDatPtrUB,X   ;
+L8387:  STA GenPtrF4UB          ;
+
+L8389:  LDY #$00                ;
+L838B:  LDA (GenPtrF4),Y        ;Save the length of the release data string.
+L838D:  STA ChnReleaseDatLen,X  ;
+
+L8390:  JMP NextChnByte         ;($8309)Get next byte of channel music data.
+
+;----------------------------------------------------------------------------------------------------
 
 UpdateVolume:
-L8393:  INC $F2,X
-L8395:  BNE L8399
-L8397:  INC $F3,X
-L8399:  LDA ($F2,X)
-L839B:  ASL
-L839C:  ASL
-L839D:  ASL
-L839E:  ASL
-L839F:  EOR #$FF
-L83A1:  STA $768A,X
-L83A4:  JMP L8309
-L83A7:  INC $F2,X
-L83A9:  BNE L83AD
-L83AB:  INC $F3,X
-L83AD:  LDA ($F2,X)
-L83AF:  STA $7643,X
-L83B2:  INC $F2,X
-L83B4:  BNE L83B8
-L83B6:  INC $F3,X
-L83B8:  LDA ($F2,X)
-L83BA:  CMP #$02
-L83BC:  BCS L83D1
-L83BE:  LDA #$00
-L83C0:  STA $7650,X
-L83C3:  STA $7651,X
-L83C6:  STA $7652,X
-L83C9:  LDA #$00
-L83CB:  STA $7653,X
-L83CE:  JMP L83F2
-L83D1:  STA $F8
-L83D3:  LDA #$00
-L83D5:  STA $F4
-L83D7:  LDA #$08
-L83D9:  STA $F5
-L83DB:  JSR L857F
-L83DE:  LDA $F4
-L83E0:  STA $7650,X
-L83E3:  LDA $F5
-L83E5:  STA $7651,X
-L83E8:  LDA #$00
-L83EA:  STA $7652,X
-L83ED:  LDA #$02
-L83EF:  STA $7653,X
-L83F2:  INC $F2,X
-L83F4:  BNE L83F8
-L83F6:  INC $F3,X
-L83F8:  LDA ($F2,X)
-L83FA:  STA $7678,X
-L83FD:  JMP L8309
+L8393:  INC ChnDatPtrLB,X       ;
+L8395:  BNE +                   ;Increment to next music data byte.
+L8397:  INC ChnDatPtrUB,X       ;
+
+L8399:* LDA (ChnDatPtr,X)       ;
+L839B:  ASL                     ;
+L839C:  ASL                     ;Move 4-bit volume data to upper byte.
+L839D:  ASL                     ;
+L839E:  ASL                     ;
+
+L839F:  EOR #$FF                ;1s compliment the byte.
+L83A1:  STA Volume1sComp_,X     ;
+L83A4:  JMP NextChnByte         ;($8309)Get next byte of channel music data.
+
+;----------------------------------------------------------------------------------------------------
+
+UpdateVibratoData:
+L83A7:  INC ChnDatPtrLB,X       ;
+L83A9:  BNE +                   ;Increment to next music data byte.
+L83AB:  INC ChnDatPtrUB,X       ;
+
+L83AD:* LDA (ChnDatPtr,X)       ;Get unused data byte. Always 0.
+L83AF:  STA ChnVibUnused,X      ;
+
+L83B2:  INC ChnDatPtrLB,X       ;
+L83B4:  BNE +                   ;Increment to next music data byte.
+L83B6:  INC ChnDatPtrUB,X       ;
+
+L83B8:* LDA (ChnDatPtr,X)       ;Get the vibrato speed control byte.
+L83BA:  CMP #$02                ;Is speed control byte 2 or less?
+L83BC:  BCS PrepVibratoCalc     ;If so, disable vibrato, else branch to calculate vibrato.
+
+L83BE:  LDA #$00                ;
+L83C0:  STA ChnVibSpeedLB,X     ;
+L83C3:  STA ChnVibSpeedUB,X     ;Disable vibrato.
+L83C6:  STA ChnVibCntLB,X       ;
+L83C9:  LDA #$00                ;
+L83CB:  STA ChnVibCntUB,X       ;
+
+L83CE:  JMP GetVibratoData      ;($83F2)Get vibrato intensity byte.
+
+PrepVibratoCalc:
+L83D1:  STA DivisorF8           ;
+L83D3:  LDA #$00                ;
+L83D5:  STA DivLBF4             ;Divide #$0800 by the value in $F8.
+L83D7:  LDA #$08                ;
+L83D9:  STA DivUBF5             ;
+L83DB:  JSR DoDiv               ;($857F)Integer divide a word by a byte.
+
+L83DE:  LDA DivLBF4             ;
+L83E0:  STA ChnVibSpeedLB,X     ;Set the vibrato speed control with results from previous division.
+L83E3:  LDA DivUBF5             ;
+L83E5:  STA ChnVibSpeedUB,X     ;
+
+L83E8:  LDA #$00                ;
+L83EA:  STA ChnVibCntLB,X       ;Reset the vibrato counter to #$0200.
+L83ED:  LDA #$02                ;
+L83EF:  STA ChnVibCntUB,X       ;
+
+GetVibratoData:
+L83F2:  INC ChnDatPtrLB,X       ;
+L83F4:  BNE +                   ;Increment to next musical data byte.
+L83F6:  INC ChnDatPtrUB,X       ;
+
+L83F8:* LDA (ChnDatPtr,X)       ;Store the vibrato intensity byte.
+L83FA:  STA ChnVibIntensity,X   ;
+L83FD:  JMP NextChnByte         ;($8309)Get next byte of channel music data.
+
+;----------------------------------------------------------------------------------------------------
 
 SilenceChannel:
-L8400:  INC $F2,X
-L8402:  BNE L8406
-L8404:  INC $F3,X
-L8406:  LDA ($F2,X)
-L8408:  STA $7623,X
-L840B:  STA $7640,X
-L840E:  SEC
-L840F:  SBC $7630,X
-L8412:  BCS L8416
-L8414:  LDA #$00
-L8416:  STA $7641,X
-L8419:  CMP $7632,X
-L841C:  BCC L8421
-L841E:  LDA $7632,X
-L8421:  STA $7642,X
-L8424:  LDA $85A2,X
-L8427:  STA $7600,X
-L842A:  LDA $85A3,X
-L842D:  STA $7601,X
-L8430:  LDA $85A4,X
-L8433:  STA $7602,X
-L8436:  LDA $85A5,X
-L8439:  STA $7603,X
-L843C:  LDA #$FF
-L843E:  STA $7622,X
-L8441:  LDA SFXFinished,X
-L8444:  BNE L844B
-L8446:  LDA #$01
-L8448:  STA SFXFinished,X
-L844B:  INC $F2,X
-L844D:  BNE L8451
-L844F:  INC $F3,X
-L8451:  RTS
+L8400:  INC ChnDatPtrLB,X       ;
+L8402:  BNE +                   ;Increment channel data pointer.
+L8404:  INC ChnDatPtrUB,X       ;
 
-L8452:  CPX #$08
-L8454:  BNE L8461
-L8456:  PHA
-L8457:  LDA $764B
-L845A:  CMP #$FF
-L845C:  PLA
-L845D:  BCS L8461
-L845F:  ADC #$0C
-L8461:  TAY
-L8462:  LDA $8600,Y
-L8465:  STA $F4
-L8467:  LDA $85B2,Y
-L846A:  LSR
-L846B:  ROR $F4
-L846D:  LSR
-L846E:  ROR $F4
-L8470:  LSR
-L8471:  ROR $F4
-L8473:  LDA #$00
-L8475:  STA $F5
-L8477:  LDA $7678,X
-L847A:  STA $F8
-L847C:  STY $FD
-L847E:  JSR L857F
-L8481:  LDY $FD
-L8483:  LDA $F4
-L8485:  STA $7679,X
-L8488:  LDA $85B2,Y
-L848B:  STA $7603,X
-L848E:  LDA $8600,Y
-L8491:  STX $FD
-L8493:  ASL $FD
-L8495:  LDY $FD
-L8497:  STA $7660,Y
-L849A:  STA $7664,Y
-L849D:  CLC
-L849E:  ADC $7679,X
-L84A1:  BCC L84A5
-L84A3:  LDA #$FF
-L84A5:  STA $7661,Y
-L84A8:  STA $7663,Y
-L84AB:  CLC
-L84AC:  ADC $7679,X
-L84AF:  BCC L84B3
-L84B1:  LDA #$FF
-L84B3:  STA $7662,Y
-L84B6:  SEC
-L84B7:  LDA $7660,Y
-L84BA:  SBC $7679,X
-L84BD:  BCS L84C1
-L84BF:  LDA #$FF
-L84C1:  STA $7665,Y
-L84C4:  STA $7667,Y
-L84C7:  SEC
-L84C8:  SBC $7679,X
-L84CB:  BCS L84CF
-L84CD:  LDA #$FF
-L84CF:  STA $7666,Y
-L84D2:  INC $F2,X
-L84D4:  BNE L84D8
-L84D6:  INC $F3,X
-L84D8:  LDA ($F2,X)
-L84DA:  STA $7623,X
-L84DD:  STA $7640,X
-L84E0:  SEC
-L84E1:  SBC $7630,X
-L84E4:  BCS L84E8
-L84E6:  LDA #$00
-L84E8:  STA $7641,X
-L84EB:  SEC
-L84EC:  SBC $7632,X
-L84EF:  BCS L84F3
-L84F1:  LDA #$00
-L84F3:  CMP $7631,X
-L84F6:  BCC L84FB
-L84F8:  LDA $7631,X
-L84FB:  STA $F4
-L84FD:  LDA $7641,X
-L8500:  SEC
-L8501:  SBC $F4
-L8503:  STA $7642,X
-L8506:  INC $F2,X
-L8508:  BNE L850C
-L850A:  INC $F3,X
-L850C:  LDA $768A,X
-L850F:  STA $7622,X
-L8512:  LDA SFXFinished,X
-L8515:  BNE L851C
-L8517:  LDA #$01
-L8519:  STA SFXFinished,X
-L851C:  RTS
+L8406:* LDA (ChnDatPtr,X)       ;
+L8408:  STA ChnLenCounter,X     ;Set the time period in frames to silence the channel.
+L840B:  STA ChnNoteLength,X     ;
 
-L851D:  AND #$0F
-L851F:  STA $760E
-L8522:  LDA $85AE
-L8525:  STA $760C
-L8528:  LDA $85AF
-L852B:  STA $760D
-L852E:  LDA $85B1
-L8531:  STA $760F
-L8534:  INC $FE
-L8536:  BNE L853A
-L8538:  INC $FF
-L853A:  LDA ($F2,X)
-L853C:  STA $762F
-L853F:  STA $764C
-L8542:  SEC
-L8543:  SBC $763C
-L8546:  BCS L854A
-L8548:  LDA #$00
-L854A:  STA $764D
-L854D:  SEC
-L854E:  SBC $763E
-L8551:  BCS L8555
-L8553:  LDA #$00
-L8555:  CMP $763D
-L8558:  BCC L855D
-L855A:  LDA $763D
-L855D:  STA $F4
-L855F:  LDA $764D
-L8562:  SEC
-L8563:  SBC $F4
-L8565:  STA $764E
-L8568:  INC $F2,X
-L856A:  BNE L856E
-L856C:  INC $F3,X
-L856E:  LDA $7696
-L8571:  STA $762E
-L8574:  LDA $7697
-L8577:  BNE L857E
-L8579:  LDA #$01
-L857B:  STA $7697
-L857E:  RTS
+L840E:  SEC                     ;
+L840F:  SBC ChnAttackDatLen,X   ;Caclulate the time for the sustain phase to start.
+L8412:  BCS +                   ;
+L8414:  LDA #$00                ;
 
+L8416:* STA ChnSustainTime,X    ;If the sustain time less than the release time?
+L8419:  CMP ChnReleaseDatLen,X  ;If so, branch.
+L841C:  BCC +                   ;
+
+L841E:  LDA ChnReleaseDatLen,X  ;Set the release time.
+L8421:* STA ChnReleaseTime,X    ;
+
+L8424:  LDA SilenceChnTbl,X     ;
+L8427:  STA ChnCtrl0,X          ;
+L842A:  LDA SilenceChnTbl+1,X   ;
+L842D:  STA ChnCtrl1,X          ;Load data from the table below to silence the selected channel.
+L8430:  LDA SilenceChnTbl+2,X   ;
+L8433:  STA ChnCtrl2,X          ;
+L8436:  LDA SilenceChnTbl+3,X   ;
+L8439:  STA ChnCtrl3,X          ;
+
+L843C:  LDA #$FF                ;Set volume to 0.
+L843E:  STA Volume1sComp,X      ;
+
+L8441:  LDA SFXFinished,X       ;
+L8444:  BNE +                   ;Set any playing SFX on this channel as just finished.
+L8446:  LDA #$01                ;
+L8448:  STA SFXFinished,X       ;
+
+L844B:* INC ChnDatPtrLB,X       ;
+L844D:  BNE +                   ;Increment to next musical data byte.
+L844F:  INC ChnDatPtrUB,X       ;
+L8451:*  RTS                    ;
+
+;----------------------------------------------------------------------------------------------------
+
+GetSQTriData:
+L8452:  CPX #TRI_DAT_OFFSET     ;Are we getting triangle music data?
+L8454:  BNE GetMusData          ;If not, branch.
+
+L8456:  PHA                     ;
+L8457:  LDA TriCompensate       ;Should triangle notes be on the same octive as the SQ notes?
+L845A:  CMP #TRI_CHN_COMP       ;If so, look 12 entries ahead in the notes table as the
+L845C:  PLA                     ;triangle notes play at half frequency as the SQ notes by
+L845D:  BCS GetMusData          ;default. This is 1 octive lower. 
+L845F:  ADC #$0C                ;
+
+GetMusData:
+L8461:  TAY                     ;
+L8462:  LDA NoteTblLo,Y         ;
+L8465:  STA DivLBF4             ;
+L8467:  LDA NoteTblHi,Y         ;
+L846A:  LSR                     ;Get the upper 8 bits of the note frequency
+L846B:  ROR DivLBF4             ;and but it into $F4.
+L846D:  LSR                     ;
+L846E:  ROR DivLBF4             ;
+L8470:  LSR                     ;
+L8471:  ROR DivLBF4             ;
+
+L8473:  LDA #$00                ;Zero out $F5 to use in a division algorithm.
+L8475:  STA DivUBF5             ;
+
+L8477:  LDA ChnVibIntensity,X   ;Prepare to add vibrato to note being played.
+L847A:  STA DivisorF8           ;
+L847C:  STY GenByteFD           ;Store the index value in Y.
+L847E:  JSR DoDiv               ;($857F)Integer divide a word by a byte.
+
+L8481:  LDY GenByteFD           ;Restore the index value to Y.
+
+L8483:  LDA DivLBF4             ;Store the delta frequency for vibrato notes.
+L8485:  STA ChnVibratoDF,X      ;
+
+L8488:  LDA NoteTblHi,Y         ;Store the lower counter value. This is the base note frequency.
+L848B:  STA ChnCtrl3,X          ;
+
+;The following code creates an 8 byte table of vibrato frequencies.
+;Visually, the table looks something like this:
+; Y Axis = Frequency
+; |
+; |    P
+; |   / \
+; |  H   H
+; |/      \
+; B--------B--------   X Axis = Table Entry Number
+; |         \     /
+; |          L   L
+; |           \ /
+; |            M
+; |
+;Where:
+;B = Base frequency.
+;H = Higher frequency.
+;P = Peak frequency.
+;L = Lower frequency.
+;M = Minimum frequency.
+
+LoadVibratoTbl:
+L848E:  LDA NoteTblLo,Y         ;
+L8491:  STX GenByteFD           ;Save the channel index. A multiple of 4.
+L8493:  ASL GenByteFD           ;*2. 8 bytes per vibrato lookup table.
+L8495:  LDY GenByteFD           ;
+
+L8497:  STA ChnVibBase,Y        ;Spots 0 and 4 in the vibrato lookup table are the base frequency.
+L849A:  STA ChnVibBase+4,Y      ;
+
+L849D:  CLC                     ;Add the delta frequency to base frequency.
+L849E:  ADC ChnVibratoDF,X      ;Creates higher frequency.
+L84A1:  BCC +                   ;
+L84A3:  LDA #$FF                ;Make sure value does not wrap around.
+
+L84A5:* STA ChnVibBase+1,Y      ;Higher frequency stored in spots 1 and 3
+L84A8:  STA ChnVibBase+3,Y      ;of the vibrato lookup table.
+
+L84AB:  CLC                     ;Add the delta frequency to previous frequency.
+L84AC:  ADC ChnVibratoDF,X      ;Creates peak frequency.
+L84AF:  BCC +                   ;
+L84B1:  LDA #$FF                ;Make sure value does not wrap around.
+
+L84B3:* STA ChnVibBase+2,Y      ;Peak frequency stored in position 2 of vibrato lookup table.
+
+L84B6:  SEC                     ;
+L84B7:  LDA ChnVibBase,Y        ;Subtract the delta frequency from base frequency.
+L84BA:  SBC ChnVibratoDF,X      ;Creates lower frequency.
+L84BD:  BCS +                   ;
+L84BF:  LDA #$FF                ;If wraps, set to max freq. Is this a bug? Should be 0?
+
+L84C1:* STA ChnVibBase+5,Y      ;Lower frequency stored in spots 5 and 7
+L84C4:  STA ChnVibBase+7,Y      ;of the vibrato lookup table.
+
+L84C7:  SEC                     ;Subtract the delta frequency from previous frequency.
+L84C8:  SBC ChnVibratoDF,X      ;Creates minimum frequency.
+L84CB:  BCS +
+L84CD:  LDA #$FF                ;If wraps, set to max freq. Is this a bug? Should be 0?
+
+L84CF:* STA ChnVibBase+6,Y      ;Minimum frequency stored in position 6 of vibrato lookup table.
+
+L84D2:  INC ChnDatPtrLB,X       ;
+L84D4:  BNE +                   ;Increment to next musical data byte.
+L84D6:  INC ChnDatPtrUB,X       ;
+
+L84D8:* LDA (ChnDatPtr,X)       ;
+L84DA:  STA ChnLenCounter,X     ;Set the duration of the new note to play.
+L84DD:  STA ChnNoteLength,X     ;
+
+L84E0:  SEC                     ;
+L84E1:  SBC ChnAttackDatLen,X   ;
+L84E4:  BCS +                   ;Calculate frame when sustain starts and save it.
+L84E6:  LDA #$00                ;
+L84E8:* STA ChnSustainTime,X    ;
+
+L84EB:  SEC                     ;
+L84EC:  SBC ChnReleaseDatLen,X  ;Calculate frame when sustain ends.
+L84EF:  BCS +                   ;
+L84F1:  LDA #$00                ;
+
+L84F3:* CMP ChnSustainDatLen,X  ;Is the end time less than the sustain data length?
+L84F6:  BCC +                   ;If so, branch.
+
+L84F8:  LDA ChnSustainDatLen,X  ;Sustain time=sustain data length.
+
+L84FB:* STA GenByteF4           ;Store frame when sustain ends.
+
+L84FD:  LDA ChnSustainTime,X    ;
+L8500:  SEC                     ;
+L8501:  SBC GenByteF4           ;Caclulate frame when release starts and save it.
+L8503:  STA ChnReleaseTime,X    ;
+
+L8506:  INC ChnDatPtrLB,X       ;
+L8508:  BNE +                   ;Increment to next musical data byte.
+L850A:  INC ChnDatPtrUB,X       ;
+
+L850C:* LDA Volume1sComp_,X     ;Transfer the 1s compliment of the volume to the working register.
+L850F:  STA Volume1sComp,X      ;
+
+L8512:  LDA SFXFinished,X       ;
+L8515:  BNE +                   ;
+L8517:  LDA #$01                ;Set any playing SFX on the noise channel as just finished.
+L8519:  STA SFXFinished,X       ;
+L851C:* RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
+SilenceNseChnl:
+L851D:  AND #$0F                ;
+L851F:  STA NextNseCtrl2        ;
+L8522:  LDA SilenceChnTbl+$C    ;
+L8525:  STA NextNseCtrl0        ;Load the noise hardware registers with the data in the table below.
+L8528:  LDA SilenceChnTbl+$D    ;
+L852B:  STA NextNseCtrl1        ;
+L852E:  LDA SilenceChnTbl+$F    ;
+L8531:  STA NextNseCtrl3        ;
+
+L8534:  INC NseDatPtrLB         ;
+L8536:  BNE +                   ;Increment to the next noise data byte.
+L8538:  INC NseDatPtrUB         ;
+
+L853A:* LDA (ChnDatPtr,X)       ;
+L853C:  STA NseLenCounter       ;Set the number of frames Noise channel is silent.
+L853F:  STA NseNoteLength       ;
+
+L8542:  SEC                     ;
+L8543:  SBC NseAttackDatLen     ;
+L8546:  BCS +                   ;Calculate frame when sustain starts and save it.
+L8548:  LDA #$00                ;
+L854A:* STA NseSustainTime      ;
+
+L854D:  SEC                     ;
+L854E:  SBC NseReleaseDatLen    ;Calculate frame when sustain ends.
+L8551:  BCS +                   ;
+L8553:  LDA #$00                ;
+
+L8555:* CMP NseSustainDatLen    ;Is the end time less than the sustain data length?
+L8558:  BCC +                   ;If so, branch.
+
+L855A:  LDA NseSustainDatLen    ;Sustain time=sustain data length.
+
+L855D:* STA GenByteF4           ;Store frame when sustain ends.
+
+L855F:  LDA NseSustainTime      ;
+L8562:  SEC                     ;
+L8563:  SBC GenByteF4           ;Caclulate frame when release starts and save it.
+L8565:  STA NseReleaseTime      ;
+
+L8568:  INC ChnDatPtrLB,X       ;
+L856A:  BNE +                   ;Increment to next musical data byte.
+L856C:  INC ChnDatPtrUB,X       ;
+
+L856E:* LDA SFXNseUnused7696    ;Not used.
+L8571:  STA NseUnused762E       ;
+
+L8574:  LDA SFXNseFinished      ;
+L8577:  BNE +                   ;
+L8579:  LDA #$01                ;Set any playing SFX on the noise channel as just finished.
+L857B:  STA SFXNseFinished      ;
+L857E:* RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -827,422 +950,2487 @@ L8642:  .byte CHN_JUMP, $00, $FE, $FF    ;Jump back 2 bytes to $863D.
 ;the triangle channel. The bottom 5 bits are the volume data.
 
 AttackPtrTbl:
-L8646:  .byte $94, $86, $B7, $86, $E3, $86, $07, $87, $2A, $87
-L8650:  .byte $57, $87, $7F, $87, $8E, $98, $A5, $98, $BB, $98, $B3, $97, $E6, $97, $14, $98
-L8660:  .byte $98, $86, $BA, $86, $EC, $86, $0B, $87, $2D, $87, $5F, $87, $87, $87, $93, $98
-L8670:  .byte $AF, $98, $C2, $98, $B8, $97, $EB, $97, $1D, $98, $A0, $86, $DB, $86, $FD, $86
-L8680:  .byte $13, $87, $4E, $87, $61, $87, $89, $87, $98, $98, $B8, $98, $C5, $98, $DC, $97
-L8690:  .byte $0A, $98, $36, $98, $03, $08, $4F, $4F, $07, $4E, $4C, $4B, $4A, $49, $49, $49
+L8646:  .word SQ1Attack00, SQ2Attack01, TriAttack02, SQ1Attack03
+L864D:  .word SQ2Attack04, SQ1Attack05, SQ2Attack06, SQ12Attack07
+L8656:  .word TriAttack08, NseAttack09, SQ1Attack0A, SQ2Attack0B
+L865D:  .word SQ1Attack0C
+
+SustainPtrTbl:
+L8660:  .word SQ1Sustain00, SQ2Sustain01, TriSustain02, SQ1Sustain03
+L8668:  .word SQ2Sustain04, SQ1Sustain05, SQ2Sustain06, SQ12Sustain07
+L8670:  .word TriSustain08, NseSustain09, SQ1Sustain0A, SQ2Sustain0B
+L8678:  .word SQ1Sustain0C
+
+ReleasePtrTbl:
+L867A:  .word SQ1Release00, SQ2Release01, TriRelease02, SQ1Release03
+L8682:  .word SQ2Release04, SQ1Release05, SQ2Release06, SQ12Release07
+L868A:  .word TriRelease08, NseRelease09, SQ1Release0A, SQ2Release0B
+L8692:  .word SQ1Release0C
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by character creation music SQ1.
+
+SQ1Attack00:
+L8694:  .byte $03, $08, $4F, $4F
+
+SQ1Sustain00:
+L8698:  .byte $07, $4E, $4C, $4B, $4A, $49, $49, $49
+
+SQ1Release00:
 L86A0:  .byte $15, $48, $48, $48, $48, $47, $47, $47, $47, $46, $46, $46, $46, $45, $45, $45
-L86B0:  .byte $45, $44, $44, $44, $44, $43, $43, $02, $8C, $8F, $20, $8B, $8B, $8B, $8B, $8B
-L86C0:  .byte $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B
-L86D0:  .byte $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $06, $89, $87, $85, $84
-L86E0:  .byte $82, $80, $80, $08, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $10, $0F, $0F, $0F
-L86F0:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $00, $00, $00, $00, $00, $08, $00, $00
-L8700:  .byte $00, $00, $00, $00, $00, $00, $00, $03, $08, $0F, $0F, $07, $0E, $0C, $0B, $0A
-L8710:  .byte $09, $09, $09, $15, $08, $08, $08, $08, $07, $07, $07, $07, $06, $06, $06, $06
-L8720:  .byte $05, $05, $05, $05, $04, $04, $04, $04, $03, $03, $02, $CC, $CF, $20, $CB, $CB
-L8730:  .byte $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB
-L8740:  .byte $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $07, $CA
-L8750:  .byte $C9, $C7, $C5, $C4, $C2, $C0, $C0, $07, $88, $8C, $8E, $90, $8F, $8E, $8D, $01
-L8760:  .byte $8D, $1C, $8C, $86, $87, $89, $88, $88, $88, $87, $87, $87, $87, $86, $86, $86
-L8770:  .byte $86, $86, $85, $85, $85, $85, $85, $84, $84, $84, $84, $84, $84, $83, $83, $07
-L8780:  .byte $48, $4C, $50, $4F, $4D, $49, $46, $01, $48, $0C, $48, $47, $46, $47, $46, $46
-L8790:  .byte $45, $45, $44, $44, $44, $43, $43
+L86B0:  .byte $45, $44, $44, $44, $44, $43, $43
 
-L8797:  .byte $FB, $0C, $FD, $00, $08, $0E, $FC, $32, $15
-L87A0:  .byte $1B, $1A, $0D, $1C, $0E, $FE, $0D, $14, $0E, $15, $0D, $1C, $0E, $FE, $0D, $1E
-L87B0:  .byte $0E, $1A, $0D, $17, $0E, $15, $1B, $14, $1B, $15, $1B, $1A, $0D, $1C, $0E, $FE
-L87C0:  .byte $0D, $14, $0E, $15, $0D, $1C, $0E, $FE, $0D, $1E, $0E, $1A, $0D, $17, $0E, $15
-L87D0:  .byte $1B, $14, $1B, $FC, $35, $28, $1B, $28, $1B, $FE, $0D, $2A, $0E, $2A, $0D, $2B
-L87E0:  .byte $0E, $FE, $1B, $FE, $0D, $2B, $0E, $2A, $0D, $2B, $0E, $2A, $0D, $28, $0E, $2B
-L87F0:  .byte $1B, $2B, $1B, $FE, $0D, $2A, $0E, $2A, $0D, $28, $0E, $FE, $1B, $FE, $0D, $2B
-L8800:  .byte $0E, $2A, $0D, $2B, $0E, $2A, $0D, $28, $0E, $FD, $00, $0C, $12, $FC, $37, $FB
-L8810:  .byte $0C, $FE, $1B, $FE, $0D, $28, $1B, $25, $0E, $28, $0D, $25, $0E, $28, $0D, $2A
-L8820:  .byte $1B, $28, $1B, $FE, $0E, $FE, $1B, $FE, $1B, $FE, $0D, $2A, $1B, $2A, $0E, $28
-L8830:  .byte $0D, $26, $0E, $25, $0D, $23, $1B, $21, $1B, $FE, $0E, $FE, $1B, $FE, $1B, $2A
-L8840:  .byte $1B, $2A, $1B, $25, $1B, $28, $1B, $2A, $0D, $28, $1B, $25, $0E, $23, $0D, $21
-L8850:  .byte $0E, $23, $14, $25, $14, $25, $1B, $FE, $0E, $FE, $1B, $20, $06, $23, $07, $25
-L8860:  .byte $0E, $28, $0D, $25, $0E, $20, $06, $23, $07, $25, $0E, $28, $0D, $25, $0E, $FE
-L8870:  .byte $1B, $FE, $0D, $28, $1B, $25, $0E, $28, $0D, $25, $0E, $28, $0D, $2A, $1B, $28
-L8880:  .byte $1B, $FE, $0E, $FE, $1B, $FE, $1B, $FE, $0D, $2A, $1B, $2A, $0E, $28, $0D, $26
-L8890:  .byte $0E, $25, $0D, $23, $1B, $21, $1B, $FE, $0E, $FE, $1B, $FE, $1B, $2A, $1B, $2A
-L88A0:  .byte $1B, $25, $1B, $28, $1B, $2A, $0D, $28, $1B, $25, $0E, $23, $0D, $21, $0E, $28
-L88B0:  .byte $14, $25, $14, $25, $1B, $FE, $0E, $FE, $1B, $FE, $0D, $2C, $0E, $2C, $0D, $2C
-L88C0:  .byte $0E, $2C, $0D, $2A, $0E, $2C, $0D, $2D, $1B, $26, $0E, $26, $51, $FE, $0D, $26
-L88D0:  .byte $0E, $2D, $0D, $2C, $0E, $2D, $0D, $2C, $0E, $2A, $0D, $28, $0E, $2C, $14, $2C
-L88E0:  .byte $14, $2C, $0E, $2C, $14, $28, $14, $25, $5F, $FE, $0D, $2A, $1B, $26, $0E, $26
-L88F0:  .byte $51, $26, $0D, $2D, $0E, $2C, $0D, $2D, $1B, $2A, $1B, $28, $0E, $2C, $1B, $25
-L8900:  .byte $0D, $28, $44, $FE, $1B, $FE, $1B, $FE, $0D, $2F, $0E, $2D, $0D, $2F, $0E, $2C
-L8910:  .byte $1B, $25, $0D, $28, $36, $20, $07, $23, $07, $25, $0D, $25, $0E, $23, $0D, $25
-L8920:  .byte $0E, $25, $0D, $25, $0E, $23, $0D, $25, $0E, $2A, $14, $2C, $14, $25, $0E, $2A
-L8930:  .byte $14, $2C, $22, $FE, $0D, $2A, $0E, $2C, $0D, $2D, $0E, $2F, $0D, $2D, $1B, $2C
-L8940:  .byte $07, $2A, $07, $2A, $14, $2A, $14, $28, $5F, $FE, $1B, $FE, $1B, $FE, $0D, $2A
-L8950:  .byte $0E, $2D, $14, $2C, $14, $2A, $0E, $2A, $14, $2C, $14, $2D, $0E, $2D, $36, $FE
-L8960:  .byte $0D, $2D, $0E, $2C, $0D, $2A, $0E, $2F, $28, $2C, $44, $1D, $06, $20, $07, $21
-L8970:  .byte $0E, $20, $06, $21, $07, $23, $0E, $25, $06, $23, $07, $21, $07, $20, $07, $1E
-L8980:  .byte $06, $1D, $07, $1A, $07, $19, $07, $2A, $14, $2C, $14, $25, $0E, $2A, $14, $2C
-L8990:  .byte $22, $FE, $0D, $2A, $0E, $2C, $0D, $2D, $0E, $2F, $0D, $2D, $1B, $2C, $07, $2A
-L89A0:  .byte $07, $2A, $14, $2A, $14, $28, $5F, $FE, $1B, $FE, $1B, $FE, $0D, $2A, $0E, $2D
-L89B0:  .byte $14, $2C, $14, $2A, $0E, $2A, $14, $2C, $14, $2D, $0E, $2D, $36, $2D, $14, $2F
-L89C0:  .byte $14, $2A, $0E, $2C, $36, $2C, $14, $2F, $14, $29, $0E, $FE, $0D, $25, $0E, $23
-L89D0:  .byte $0D, $25, $0E, $20, $06, $21, $07, $23, $0E, $1D, $06, $1E, $07, $20, $0E, $2C
-L89E0:  .byte $28, $2D, $95, $FE, $1B, $2C, $28, $2A, $95, $FE, $1B, $FC, $35, $28, $1B, $28
-L89F0:  .byte $1B, $FE, $0D, $2A, $0E, $2A, $0D, $2B, $0E, $FE, $1B, $FE, $0D, $2B, $0E, $2A
-L8A00:  .byte $0D, $2B, $0E, $2A, $0D, $28, $0E, $2B, $1B, $2B, $1B, $FE, $0D, $2A, $0E, $2A
-L8A10:  .byte $0D, $28, $0E, $FE, $1B, $FE, $0D, $2B, $0E, $2A, $0D, $2B, $0E, $2A, $0D, $28
-L8A20:  .byte $0E, $FD, $00, $0C, $12, $FC, $37, $FB, $0C, $FE, $1B, $FE, $0D, $28, $1B, $25
-L8A30:  .byte $0E, $28, $0D, $25, $0E, $28, $0D, $2A, $1B, $28, $1B, $FE, $0E, $FE, $1B, $FE
-L8A40:  .byte $1B, $FE, $0D, $2A, $1B, $2A, $0E, $28, $0D, $26, $0E, $25, $0D, $23, $1B, $21
-L8A50:  .byte $1B, $FE, $0E, $FE, $1B, $FE, $1B, $2A, $1B, $2A, $1B, $25, $1B, $28, $1B, $2A
-L8A60:  .byte $0D, $28, $1B, $25, $0E, $23, $0D, $21, $0E, $23, $14, $25, $14, $25, $1B, $FE
-L8A70:  .byte $0E, $FE, $1B, $20, $06, $23, $07, $25, $0E, $28, $0D, $25, $0E, $20, $06, $23
-L8A80:  .byte $07, $25, $0E, $28, $0D, $25, $0E, $FE, $1B, $FE, $0D, $28, $1B, $25, $0E, $28
-L8A90:  .byte $0D, $25, $0E, $28, $0D, $2A, $1B, $28, $1B, $FE, $0E, $FE, $1B, $FE, $1B, $FE
-L8AA0:  .byte $0D, $2A, $1B, $2A, $0E, $28, $0D, $26, $0E, $25, $0D, $23, $1B, $21, $1B, $FE
-L8AB0:  .byte $0E, $FE, $1B, $FE, $1B, $2A, $1B, $2A, $1B, $25, $1B, $28, $1B, $2A, $0D, $28
-L8AC0:  .byte $1B, $25, $0E, $23, $0D, $21, $0E, $28, $14, $25, $14, $25, $1B, $FE, $0E, $FE
-L8AD0:  .byte $1B, $FE, $0D, $2C, $0E, $2C, $0D, $2C, $0E, $2C, $0D, $2A, $0E, $2C, $0D, $2D
-L8AE0:  .byte $1B, $26, $0E, $26, $51, $FE, $0D, $26, $0E, $2D, $0D, $2C, $0E, $2D, $0D, $2C
-L8AF0:  .byte $0E, $2A, $0D, $28, $0E, $2C, $14, $2C, $14, $2C, $0E, $2C, $14, $28, $14, $25
-L8B00:  .byte $5F, $FE, $0D, $2A, $1B, $26, $0E, $26, $51, $26, $0D, $2D, $0E, $2C, $0D, $2D
-L8B10:  .byte $1B, $2A, $1B, $28, $0E, $2C, $1B, $25, $0D, $28, $44, $FE, $1B, $FE, $1B, $FE
-L8B20:  .byte $0D, $2F, $0E, $2D, $0D, $2F, $0E, $2C, $1B, $25, $0D, $28, $36, $20, $07, $23
-L8B30:  .byte $07, $25, $0D, $25, $0E, $23, $0D, $25, $0E, $25, $0D, $25, $0E, $23, $0D, $25
-L8B40:  .byte $0E, $2A, $14, $2C, $14, $25, $0E, $2A, $14, $2C, $22, $FE, $0D, $2A, $0E, $2C
-L8B50:  .byte $0D, $2D, $0E, $2F, $0D, $2D, $1B, $2C, $07, $2A, $07, $2A, $14, $2A, $14, $28
-L8B60:  .byte $5F, $FE, $1B, $FE, $1B, $FE, $0D, $2A, $0E, $2D, $14, $2C, $14, $2A, $0E, $2A
-L8B70:  .byte $14, $2C, $14, $2D, $0E, $2D, $36, $FE, $0D, $2D, $0E, $2C, $0D, $2A, $0E, $2F
-L8B80:  .byte $28, $2C, $44, $1D, $06, $20, $07, $21, $0E, $20, $06, $21, $07, $23, $0E, $25
-L8B90:  .byte $06, $23, $07, $21, $07, $20, $07, $1E, $06, $1D, $07, $1A, $07, $19, $07, $2A
-L8BA0:  .byte $14, $2C, $14, $25, $0E, $2A, $14, $2C, $22, $FE, $0D, $2A, $0E, $2C, $0D, $2D
-L8BB0:  .byte $0E, $2F, $0D, $2D, $1B, $2C, $07, $2A, $07, $2A, $14, $2A, $14, $28, $5F, $FE
-L8BC0:  .byte $1B, $FE, $1B, $FE, $0D, $2A, $0E, $2D, $14, $2C, $14, $2A, $0E, $2A, $14, $2C
-L8BD0:  .byte $14, $2D, $0E, $2D, $36, $2D, $14, $2F, $14, $2A, $0E, $2C, $36, $2C, $14, $2F
-L8BE0:  .byte $14, $29, $0E, $FE, $0D, $25, $0E, $23, $0D, $25, $0E, $20, $06, $21, $07, $23
-L8BF0:  .byte $0E, $1D, $06, $1E, $07, $20, $0E, $2C, $28, $2D, $95, $FE, $1B, $2C, $28, $2A
-L8C00:  .byte $95, $FE, $1B, $FF, $00, $94, $FB
+;----------------------------------------------------------------------------------------------------
 
-L8C07:  .byte $FB, $0C, $FD, $00, $08, $0E, $FC, $33, $15
-L8C10:  .byte $1B, $1A, $0D, $1C, $0E, $FE, $0D, $14, $0E, $15, $0D, $1C, $0E, $FE, $0D, $1E
-L8C20:  .byte $0E, $1A, $0D, $17, $0E, $15, $1B, $14, $1B, $15, $1B, $1A, $0D, $1C, $0E, $FE
-L8C30:  .byte $0D, $14, $0E, $15, $0D, $1C, $0E, $FE, $0D, $1E, $0E, $1A, $0D, $17, $0E, $15
-L8C40:  .byte $1B, $14, $1B, $FC, $36, $19, $1B, $19, $1B, $FE, $0D, $1A, $0E, $1A, $0D, $1C
-L8C50:  .byte $0E, $FE, $1B, $FE, $0D, $1C, $0E, $1A, $0D, $1C, $0E, $1A, $0D, $19, $0E, $1C
-L8C60:  .byte $1B, $1C, $1B, $FE, $0D, $1A, $0E, $1A, $0D, $19, $0E, $FE, $1B, $FE, $0D, $1A
-L8C70:  .byte $0E, $19, $0D, $1A, $0E, $19, $0D, $17, $0E, $FB, $09, $FC, $38, $FE, $0D, $21
-L8C80:  .byte $07, $25, $07, $2A, $0D, $28, $0E, $FE, $0D, $21, $07, $25, $07, $28, $0D, $28
-L8C90:  .byte $0E, $FE, $0D, $20, $07, $23, $07, $2A, $0D, $28, $0E, $FE, $0D, $20, $07, $23
-L8CA0:  .byte $07, $28, $0D, $28, $0E, $FE, $0D, $1E, $07, $21, $07, $28, $0D, $26, $0E, $FE
-L8CB0:  .byte $0D, $1E, $07, $21, $07, $26, $0D, $26, $0E, $FE, $0D, $1E, $07, $21, $07, $26
-L8CC0:  .byte $0D, $25, $0E, $FE, $0D, $1E, $07, $21, $07, $25, $0D, $25, $0E, $26, $0D, $1E
-L8CD0:  .byte $0E, $21, $0D, $28, $1B, $26, $1B, $21, $0E, $26, $0D, $1E, $0E, $21, $0D, $1C
-L8CE0:  .byte $1B, $1A, $1B, $21, $0E, $25, $0D, $20, $0E, $23, $0D, $28, $1B, $25, $1B, $20
-L8CF0:  .byte $0E, $14, $06, $17, $07, $19, $0E, $1C, $0D, $19, $0E, $14, $06, $17, $07, $19
-L8D00:  .byte $0E, $1C, $0D, $19, $0E, $FE, $0D, $21, $07, $25, $07, $2A, $0D, $28, $0E, $FE
-L8D10:  .byte $0D, $21, $07, $25, $07, $28, $0D, $28, $0E, $FE, $0D, $20, $07, $23, $07, $2A
-L8D20:  .byte $0D, $28, $0E, $FE, $0D, $20, $07, $23, $07, $28, $0D, $28, $0E, $FE, $0D, $1E
-L8D30:  .byte $07, $21, $07, $28, $0D, $26, $0E, $FE, $0D, $1E, $07, $21, $07, $26, $0D, $26
-L8D40:  .byte $0E, $FE, $0D, $1E, $07, $21, $07, $26, $0D, $25, $0E, $FE, $0D, $1E, $07, $21
-L8D50:  .byte $07, $25, $0D, $25, $0E, $26, $0D, $1E, $0E, $21, $0D, $28, $1B, $26, $1B, $21
-L8D60:  .byte $0E, $26, $0D, $1E, $0E, $21, $0D, $28, $1B, $26, $1B, $21, $0E, $25, $0D, $20
-L8D70:  .byte $0E, $23, $0D, $28, $1B, $25, $1B, $20, $0E, $25, $0D, $20, $0E, $23, $0D, $28
-L8D80:  .byte $1B, $25, $1B, $2D, $1B, $1A, $0E, $1A, $51, $FE, $0D, $1A, $0E, $21, $0D, $20
-L8D90:  .byte $0E, $21, $0D, $20, $0E, $1E, $0D, $1C, $0E, $20, $14, $20, $14, $20, $0E, $20
-L8DA0:  .byte $14, $1C, $14, $19, $5F, $FE, $0D, $1E, $1B, $1A, $0E, $1A, $51, $1A, $0D, $21
-L8DB0:  .byte $0E, $20, $0D, $21, $1B, $1E, $1B, $1C, $0E, $19, $0D, $20, $1B, $20, $0E, $1E
-L8DC0:  .byte $0D, $1C, $1B, $19, $0E, $19, $0D, $20, $1B, $20, $0E, $1E, $0D, $1C, $1B, $19
-L8DD0:  .byte $0E, $19, $0D, $20, $1B, $20, $0E, $1E, $0D, $1C, $1B, $19, $0E, $19, $0D, $19
-L8DE0:  .byte $0E, $17, $0D, $19, $0E, $19, $0D, $19, $0E, $17, $0D, $19, $0E, $21, $14, $23
-L8DF0:  .byte $14, $1E, $0E, $21, $14, $23, $07, $23, $1B, $FE, $0D, $1E, $0E, $20, $0D, $21
-L8E00:  .byte $0E, $23, $0D, $21, $1B, $20, $07, $1E, $07, $1E, $14, $1E, $14, $1C, $5F, $FE
-L8E10:  .byte $1B, $FE, $1B, $FE, $0D, $26, $0E, $2A, $14, $28, $14, $26, $0E, $26, $14, $28
-L8E20:  .byte $14, $2A, $0E, $2A, $36, $FE, $0D, $2A, $0E, $28, $0D, $26, $0E, $2C, $28, $29
-L8E30:  .byte $0E, $29, $36, $1D, $06, $20, $07, $21, $0E, $20, $06, $21, $07, $23, $0E, $25
-L8E40:  .byte $06, $23, $07, $21, $07, $20, $07, $1E, $06, $1D, $07, $1A, $07, $19, $07, $21
-L8E50:  .byte $14, $23, $14, $1E, $0E, $21, $14, $23, $07, $23, $1B, $FE, $0D, $1E, $0E, $20
-L8E60:  .byte $0D, $21, $0E, $23, $0D, $21, $1B, $20, $07, $1E, $07, $1E, $14, $1E, $14, $1C
-L8E70:  .byte $5F, $FE, $1B, $FE, $1B, $FE, $0D, $26, $0E, $2A, $14, $28, $14, $26, $0E, $26
-L8E80:  .byte $14, $28, $14, $2A, $0E, $2A, $36, $2A, $14, $2C, $14, $26, $0E, $29, $36, $29
-L8E90:  .byte $14, $2C, $14, $25, $0E, $FE, $0D, $25, $0E, $23, $0D, $25, $0E, $20, $06, $21
-L8EA0:  .byte $07, $23, $0E, $1D, $06, $1E, $07, $20, $0E, $20, $1B, $20, $0D, $1C, $0E, $1E
-L8EB0:  .byte $0D, $1E, $1B, $1A, $0E, $20, $1B, $20, $0D, $1C, $0E, $1E, $0D, $1E, $1B, $1A
-L8EC0:  .byte $0E, $20, $1B, $20, $0D, $1C, $0E, $22, $0D, $22, $1B, $1E, $0E, $20, $1B, $20
-L8ED0:  .byte $0D, $1C, $0E, $22, $0D, $22, $1B, $1E, $0E, $FC, $36, $19, $1B, $19, $1B, $FE
-L8EE0:  .byte $0D, $1A, $0E, $1A, $0D, $1C, $0E, $FE, $1B, $FE, $0D, $1C, $0E, $1A, $0D, $1C
-L8EF0:  .byte $0E, $1A, $0D, $19, $0E, $1C, $1B, $1C, $1B, $FE, $0D, $1A, $0E, $1A, $0D, $19
-L8F00:  .byte $0E, $FE, $1B, $FE, $0D, $1A, $0E, $19, $0D, $1A, $0E, $19, $0D, $17, $0E, $FB
-L8F10:  .byte $09, $FC, $38, $FE, $0D, $21, $07, $25, $07, $2A, $0D, $28, $0E, $FE, $0D, $21
-L8F20:  .byte $07, $25, $07, $28, $0D, $28, $0E, $FE, $0D, $20, $07, $23, $07, $2A, $0D, $28
-L8F30:  .byte $0E, $FE, $0D, $20, $07, $23, $07, $28, $0D, $28, $0E, $FE, $0D, $1E, $07, $21
-L8F40:  .byte $07, $28, $0D, $26, $0E, $FE, $0D, $1E, $07, $21, $07, $26, $0D, $26, $0E, $FE
-L8F50:  .byte $0D, $1E, $07, $21, $07, $26, $0D, $25, $0E, $FE, $0D, $1E, $07, $21, $07, $25
-L8F60:  .byte $0D, $25, $0E, $26, $0D, $1E, $0E, $21, $0D, $28, $1B, $26, $1B, $21, $0E, $26
-L8F70:  .byte $0D, $1E, $0E, $21, $0D, $1C, $1B, $1A, $1B, $21, $0E, $25, $0D, $20, $0E, $23
-L8F80:  .byte $0D, $28, $1B, $25, $1B, $20, $0E, $14, $06, $17, $07, $19, $0E, $1C, $0D, $19
-L8F90:  .byte $0E, $14, $06, $17, $07, $19, $0E, $1C, $0D, $19, $0E, $FE, $0D, $21, $07, $25
-L8FA0:  .byte $07, $2A, $0D, $28, $0E, $FE, $0D, $21, $07, $25, $07, $28, $0D, $28, $0E, $FE
-L8FB0:  .byte $0D, $20, $07, $23, $07, $2A, $0D, $28, $0E, $FE, $0D, $20, $07, $23, $07, $28
-L8FC0:  .byte $0D, $28, $0E, $FE, $0D, $1E, $07, $21, $07, $28, $0D, $26, $0E, $FE, $0D, $1E
-L8FD0:  .byte $07, $21, $07, $26, $0D, $26, $0E, $FE, $0D, $1E, $07, $21, $07, $26, $0D, $25
-L8FE0:  .byte $0E, $FE, $0D, $1E, $07, $21, $07, $25, $0D, $25, $0E, $26, $0D, $1E, $0E, $21
-L8FF0:  .byte $0D, $28, $1B, $26, $1B, $21, $0E, $26, $0D, $1E, $0E, $21, $0D, $28, $1B, $26
-L9000:  .byte $1B, $21, $0E, $25, $0D, $20, $0E, $23, $0D, $28, $1B, $25, $1B, $20, $0E, $25
-L9010:  .byte $0D, $20, $0E, $23, $0D, $28, $1B, $25, $1B, $2D, $1B, $1A, $0E, $1A, $51, $FE
-L9020:  .byte $0D, $1A, $0E, $21, $0D, $20, $0E, $21, $0D, $20, $0E, $1E, $0D, $1C, $0E, $20
-L9030:  .byte $14, $20, $14, $20, $0E, $20, $14, $1C, $14, $19, $5F, $FE, $0D, $1E, $1B, $1A
-L9040:  .byte $0E, $1A, $51, $1A, $0D, $21, $0E, $20, $0D, $21, $1B, $1E, $1B, $1C, $0E, $19
-L9050:  .byte $0D, $20, $1B, $20, $0E, $1E, $0D, $1C, $1B, $19, $0E, $19, $0D, $20, $1B, $20
-L9060:  .byte $0E, $1E, $0D, $1C, $1B, $19, $0E, $19, $0D, $20, $1B, $20, $0E, $1E, $0D, $1C
-L9070:  .byte $1B, $19, $0E, $19, $0D, $19, $0E, $17, $0D, $19, $0E, $19, $0D, $19, $0E, $17
-L9080:  .byte $0D, $19, $0E, $21, $14, $23, $14, $1E, $0E, $21, $14, $23, $07, $23, $1B, $FE
-L9090:  .byte $0D, $1E, $0E, $20, $0D, $21, $0E, $23, $0D, $21, $1B, $20, $07, $1E, $07, $1E
-L90A0:  .byte $14, $1E, $14, $1C, $5F, $FE, $1B, $FE, $1B, $FE, $0D, $26, $0E, $2A, $14, $28
-L90B0:  .byte $14, $26, $0E, $26, $14, $28, $14, $2A, $0E, $2A, $36, $FE, $0D, $2A, $0E, $28
-L90C0:  .byte $0D, $26, $0E, $2C, $28, $29, $0E, $29, $36, $1D, $06, $20, $07, $21, $0E, $20
-L90D0:  .byte $06, $21, $07, $23, $0E, $25, $06, $23, $07, $21, $07, $20, $07, $1E, $06, $1D
-L90E0:  .byte $07, $1A, $07, $19, $07, $21, $14, $23, $14, $1E, $0E, $21, $14, $23, $07, $23
-L90F0:  .byte $1B, $FE, $0D, $1E, $0E, $20, $0D, $21, $0E, $23, $0D, $21, $1B, $20, $07, $1E
-L9100:  .byte $07, $1E, $14, $1E, $14, $1C, $5F, $FE, $1B, $FE, $1B, $FE, $0D, $26, $0E, $2A
-L9110:  .byte $14, $28, $14, $26, $0E, $26, $14, $28, $14, $2A, $0E, $2A, $36, $2A, $14, $2C
-L9120:  .byte $14, $26, $0E, $29, $36, $29, $14, $2C, $14, $25, $0E, $FE, $0D, $25, $0E, $23
-L9130:  .byte $0D, $25, $0E, $20, $06, $21, $07, $23, $0E, $1D, $06, $1E, $07, $20, $0E, $20
-L9140:  .byte $1B, $20, $0D, $1C, $0E, $1E, $0D, $1E, $1B, $1A, $0E, $20, $1B, $20, $0D, $1C
-L9150:  .byte $0E, $1E, $0D, $1E, $1B, $1A, $0E, $20, $1B, $20, $0D, $1C, $0E, $22, $0D, $22
-L9160:  .byte $1B, $1E, $0E, $20, $1B, $20, $0D, $1C, $0E, $22, $0D, $22, $1B, $1E, $0E, $FF
-L9170:  .byte $00, $98, $FA, $FB, $0F, $FD, $00, $08, $18, $FC, $34, $09, $1B, $0E, $0D, $10
-L9180:  .byte $0E, $FE, $0D, $08, $0E, $09, $0D, $10, $0E, $FE, $0D, $12, $0E, $0E, $0D, $0B
-L9190:  .byte $0E, $09, $1B, $08, $1B, $09, $1B, $0E, $0D, $10, $0E, $FE, $0D, $08, $0E, $09
-L91A0:  .byte $0D, $10, $0E, $FE, $0D, $12, $0E, $0E, $0D, $0B, $0E, $09, $1B, $08, $1B, $09
-L91B0:  .byte $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09
-L91C0:  .byte $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09
-L91D0:  .byte $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09
-L91E0:  .byte $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09
-L91F0:  .byte $0D, $FE, $0E, $FE, $1B, $FE, $0D, $09, $0E, $06, $0D, $04, $0E, $FE, $1B, $FE
-L9200:  .byte $0D, $04, $0E, $FE, $0D, $04, $0E, $FE, $1B, $0B, $0D, $FE, $0E, $FE, $1B, $FE
-L9210:  .byte $0D, $0B, $0E, $09, $0D, $06, $0E, $FE, $0D, $FE, $1B, $06, $0E, $FE, $0D, $06
-L9220:  .byte $0E, $FE, $1B, $0E, $0D, $FE, $0E, $FE, $1B, $FE, $0D, $0E, $0E, $0B, $0D, $09
-L9230:  .byte $0E, $FE, $1B, $FE, $0D, $0E, $0E, $FE, $0D, $0E, $0E, $FE, $1B, $0D, $0D, $FE
-L9240:  .byte $0E, $FE, $1B, $FE, $0D, $0D, $0E, $0B, $0D, $08, $0E, $FE, $1B, $FE, $0D, $0D
-L9250:  .byte $0E, $FE, $0D, $0D, $0E, $FE, $1B, $09, $0D, $FE, $0E, $FE, $1B, $FE, $0D, $09
-L9260:  .byte $0E, $06, $0D, $04, $0E, $FE, $1B, $FE, $0D, $04, $0E, $FE, $0D, $04, $0E, $FE
-L9270:  .byte $1B, $0B, $0D, $FE, $0E, $FE, $1B, $FE, $0D, $0B, $0E, $09, $0D, $06, $0E, $FE
-L9280:  .byte $0D, $FE, $1B, $06, $0E, $FE, $0D, $06, $0E, $FE, $1B, $0E, $0D, $0E, $1B, $0E
-L9290:  .byte $0E, $0E, $0D, $0E, $1B, $0E, $0E, $0E, $0D, $0E, $1B, $0E, $0E, $0E, $0D, $0E
-L92A0:  .byte $1B, $0E, $0E, $0D, $0D, $0D, $1B, $0D, $0E, $0D, $0D, $0D, $1B, $0D, $0E, $0D
-L92B0:  .byte $0D, $0D, $1B, $0D, $0E, $0D, $0D, $0D, $1B, $0D, $0E, $0E, $0D, $1A, $0E, $0B
-L92C0:  .byte $0D, $17, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $0E, $0D, $1A, $0E, $0B
-L92D0:  .byte $0D, $17, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $0D, $0D, $19, $0E, $0B
-L92E0:  .byte $0D, $17, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $0D, $0D, $19, $0E, $0B
-L92F0:  .byte $0D, $17, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $0B, $0D, $17, $0E, $09
-L9300:  .byte $0D, $15, $0E, $08, $0D, $12, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $09
-L9310:  .byte $0D, $15, $0E, $08, $0D, $12, $0E, $09, $0D, $15, $0E, $09, $0D, $09, $0E, $09
-L9320:  .byte $0D, $09, $0E, $09, $0D, $09, $0E, $09, $0D, $09, $0E, $09, $0D, $09, $0E, $09
-L9330:  .byte $0D, $09, $0E, $09, $0D, $09, $0E, $09, $0D, $09, $0E, $0E, $0D, $0E, $0E, $0E
-L9340:  .byte $0D, $0E, $0E, $0E, $0D, $0E, $0E, $0E, $0D, $0E, $0E, $09, $28, $0D, $0E, $FE
-L9350:  .byte $0D, $0D, $29, $06, $0D, $FE, $1B, $06, $0E, $FE, $0D, $06, $07, $08, $07, $09
-L9360:  .byte $06, $08, $07, $06, $07, $04, $07, $08, $0D, $FE, $0E, $FE, $0D, $08, $0E, $FE
-L9370:  .byte $0D, $12, $07, $14, $07, $15, $06, $14, $07, $12, $07, $10, $07, $04, $0D, $FE
-L9380:  .byte $0E, $FE, $0D, $04, $0E, $FE, $0D, $04, $07, $06, $07, $08, $06, $06, $07, $04
-L9390:  .byte $07, $0B, $07, $04, $0D, $FE, $0E, $FE, $0D, $04, $0E, $FE, $0D, $10, $07, $12
-L93A0:  .byte $07, $14, $06, $12, $07, $10, $07, $17, $07, $0E, $0D, $FE, $0E, $FE, $0D, $0E
-L93B0:  .byte $0E, $FE, $0D, $0E, $0E, $FE, $1B, $0E, $0D, $FE, $0E, $FE, $0D, $0E, $0E, $FE
-L93C0:  .byte $0D, $0E, $0E, $FE, $1B, $0D, $0D, $FE, $0E, $FE, $0D, $0D, $0E, $FE, $0D, $0D
-L93D0:  .byte $0E, $FE, $1B, $0D, $0D, $FE, $0E, $FE, $0D, $0D, $0E, $FE, $0D, $0B, $07, $08
-L93E0:  .byte $07, $0D, $06, $08, $07, $0B, $07, $08, $07, $06, $0D, $FE, $1B, $06, $0E, $FE
-L93F0:  .byte $0D, $06, $07, $08, $07, $09, $06, $08, $07, $06, $07, $04, $07, $08, $0D, $FE
-L9400:  .byte $0E, $FE, $0D, $08, $0E, $FE, $0D, $12, $07, $14, $07, $15, $06, $14, $07, $12
-L9410:  .byte $07, $10, $07, $04, $0D, $FE, $0E, $FE, $0D, $04, $0E, $FE, $0D, $04, $07, $06
-L9420:  .byte $07, $08, $06, $06, $07, $04, $07, $0B, $07, $04, $0D, $FE, $0E, $FE, $0D, $04
-L9430:  .byte $0E, $FE, $0D, $10, $07, $12, $07, $14, $06, $12, $07, $10, $07, $17, $07, $0E
-L9440:  .byte $0D, $FE, $0E, $FE, $0D, $0E, $0E, $FE, $0D, $0E, $0E, $FE, $1B, $0E, $0D, $FE
-L9450:  .byte $0E, $FE, $0D, $0E, $0E, $FE, $0D, $0E, $0E, $FE, $1B, $0D, $0D, $FE, $0E, $FE
-L9460:  .byte $0D, $0D, $0E, $FE, $0D, $0D, $0E, $FE, $1B, $0D, $0D, $FE, $0E, $FE, $0D, $0D
-L9470:  .byte $0E, $FE, $0D, $0D, $0E, $FE, $1B, $0E, $0D, $0E, $0E, $0E, $0D, $0E, $1B, $0E
-L9480:  .byte $0E, $0E, $0D, $0E, $0E, $0E, $0D, $0E, $0E, $0E, $0D, $0E, $1B, $0E, $0E, $0E
-L9490:  .byte $0D, $0E, $0E, $06, $0D, $06, $0E, $06, $0D, $06, $1B, $06, $0E, $06, $0D, $06
-L94A0:  .byte $0E, $06, $0D, $06, $0E, $06, $0D, $06, $1B, $06, $0E, $06, $0D, $06, $0E, $09
-L94B0:  .byte $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09
-L94C0:  .byte $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09
-L94D0:  .byte $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09
-L94E0:  .byte $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09, $0D, $15, $0E, $09
-L94F0:  .byte $0D, $FE, $0E, $FE, $1B, $FE, $0D, $09, $0E, $06, $0D, $04, $0E, $FE, $1B, $FE
-L9500:  .byte $0D, $04, $0E, $FE, $0D, $04, $0E, $FE, $1B, $0B, $0D, $FE, $0E, $FE, $1B, $FE
-L9510:  .byte $0D, $0B, $0E, $09, $0D, $06, $0E, $FE, $0D, $FE, $1B, $06, $0E, $FE, $0D, $06
-L9520:  .byte $0E, $FE, $1B, $0E, $0D, $FE, $0E, $FE, $1B, $FE, $0D, $0E, $0E, $0B, $0D, $09
-L9530:  .byte $0E, $FE, $1B, $FE, $0D, $0E, $0E, $FE, $0D, $0E, $0E, $FE, $1B, $0D, $0D, $FE
-L9540:  .byte $0E, $FE, $1B, $FE, $0D, $0D, $0E, $0B, $0D, $08, $0E, $FE, $1B, $FE, $0D, $0D
-L9550:  .byte $0E, $FE, $0D, $0D, $0E, $FE, $1B, $09, $0D, $FE, $0E, $FE, $1B, $FE, $0D, $09
-L9560:  .byte $0E, $06, $0D, $04, $0E, $FE, $1B, $FE, $0D, $04, $0E, $FE, $0D, $04, $0E, $FE
-L9570:  .byte $1B, $0B, $0D, $FE, $0E, $FE, $1B, $FE, $0D, $0B, $0E, $09, $0D, $06, $0E, $FE
-L9580:  .byte $0D, $FE, $1B, $06, $0E, $FE, $0D, $06, $0E, $FE, $1B, $0E, $0D, $0E, $1B, $0E
-L9590:  .byte $0E, $0E, $0D, $0E, $1B, $0E, $0E, $0E, $0D, $0E, $1B, $0E, $0E, $0E, $0D, $0E
-L95A0:  .byte $1B, $0E, $0E, $0D, $0D, $0D, $1B, $0D, $0E, $0D, $0D, $0D, $1B, $0D, $0E, $0D
-L95B0:  .byte $0D, $0D, $1B, $0D, $0E, $0D, $0D, $0D, $1B, $0D, $0E, $0E, $0D, $1A, $0E, $0B
-L95C0:  .byte $0D, $17, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $0E, $0D, $1A, $0E, $0B
-L95D0:  .byte $0D, $17, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $0D, $0D, $19, $0E, $0B
-L95E0:  .byte $0D, $17, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $0D, $0D, $19, $0E, $0B
-L95F0:  .byte $0D, $17, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $0B, $0D, $17, $0E, $09
-L9600:  .byte $0D, $15, $0E, $08, $0D, $12, $0E, $09, $0D, $15, $0E, $0B, $0D, $17, $0E, $09
-L9610:  .byte $0D, $15, $0E, $08, $0D, $12, $0E, $09, $0D, $15, $0E, $09, $0D, $09, $0E, $09
-L9620:  .byte $0D, $09, $0E, $09, $0D, $09, $0E, $09, $0D, $09, $0E, $09, $0D, $09, $0E, $09
-L9630:  .byte $0D, $09, $0E, $09, $0D, $09, $0E, $09, $0D, $09, $0E, $0E, $0D, $0E, $0E, $0E
-L9640:  .byte $0D, $0E, $0E, $0E, $0D, $0E, $0E, $0E, $0D, $0E, $0E, $09, $28, $0D, $0E, $FE
-L9650:  .byte $0D, $0D, $29, $06, $0D, $FE, $1B, $06, $0E, $FE, $0D, $06, $07, $08, $07, $09
-L9660:  .byte $06, $08, $07, $06, $07, $04, $07, $08, $0D, $FE, $0E, $FE, $0D, $08, $0E, $FE
-L9670:  .byte $0D, $12, $07, $14, $07, $15, $06, $14, $07, $12, $07, $10, $07, $04, $0D, $FE
-L9680:  .byte $0E, $FE, $0D, $04, $0E, $FE, $0D, $04, $07, $06, $07, $08, $06, $06, $07, $04
-L9690:  .byte $07, $0B, $07, $04, $0D, $FE, $0E, $FE, $0D, $04, $0E, $FE, $0D, $10, $07, $12
-L96A0:  .byte $07, $14, $06, $12, $07, $10, $07, $17, $07, $0E, $0D, $FE, $0E, $FE, $0D, $0E
-L96B0:  .byte $0E, $FE, $0D, $0E, $0E, $FE, $1B, $0E, $0D, $FE, $0E, $FE, $0D, $0E, $0E, $FE
-L96C0:  .byte $0D, $0E, $0E, $FE, $1B, $0D, $0D, $FE, $0E, $FE, $0D, $0D, $0E, $FE, $0D, $0D
-L96D0:  .byte $0E, $FE, $1B, $0D, $0D, $FE, $0E, $FE, $0D, $0D, $0E, $FE, $0D, $0B, $07, $08
-L96E0:  .byte $07, $0D, $06, $08, $07, $0B, $07, $08, $07, $06, $0D, $FE, $1B, $06, $0E, $FE
-L96F0:  .byte $0D, $06, $07, $08, $07, $09, $06, $08, $07, $06, $07, $04, $07, $08, $0D, $FE
-L9700:  .byte $0E, $FE, $0D, $08, $0E, $FE, $0D, $12, $07, $14, $07, $15, $06, $14, $07, $12
-L9710:  .byte $07, $10, $07, $04, $0D, $FE, $0E, $FE, $0D, $04, $0E, $FE, $0D, $04, $07, $06
-L9720:  .byte $07, $08, $06, $06, $07, $04, $07, $0B, $07, $04, $0D, $FE, $0E, $FE, $0D, $04
-L9730:  .byte $0E, $FE, $0D, $10, $07, $12, $07, $14, $06, $12, $07, $10, $07, $17, $07, $0E
-L9740:  .byte $0D, $FE, $0E, $FE, $0D, $0E, $0E, $FE, $0D, $0E, $0E, $FE, $1B, $0E, $0D, $FE
-L9750:  .byte $0E, $FE, $0D, $0E, $0E, $FE, $0D, $0E, $0E, $FE, $1B, $0D, $0D, $FE, $0E, $FE
-L9760:  .byte $0D, $0D, $0E, $FE, $0D, $0D, $0E, $FE, $1B, $0D, $0D, $FE, $0E, $FE, $0D, $0D
-L9770:  .byte $0E, $FE, $0D, $0D, $0E, $FE, $1B, $0E, $0D, $0E, $0E, $0E, $0D, $0E, $1B, $0E
-L9780:  .byte $0E, $0E, $0D, $0E, $0E, $0E, $0D, $0E, $0E, $0E, $0D, $0E, $1B, $0E, $0E, $0E
-L9790:  .byte $0D, $0E, $0E, $06, $0D, $06, $0E, $06, $0D, $06, $1B, $06, $0E, $06, $0D, $06
-L97A0:  .byte $0E, $06, $0D, $06, $0E, $06, $0D, $06, $1B, $06, $0E, $06, $0D, $06, $0E, $FF
-L97B0:  .byte $00, $C4, $F9, $04, $84, $88, $8C, $90, $23, $8E, $8C, $89, $8C, $8E, $8E, $8C
-L97C0:  .byte $89, $8C, $8E, $8E, $8C, $89, $8C, $8E, $8E, $8C, $89, $8C, $8E, $8E, $8C, $89
-L97D0:  .byte $8C, $8E, $8E, $8C, $89, $8C, $8E, $8E, $8C, $89, $8C, $8E, $08, $8C, $8A, $88
-L97E0:  .byte $88, $86, $86, $84, $82, $82, $04, $84, $88, $8C, $90, $1E, $8E, $8C, $8A, $8A
-L97F0:  .byte $8C, $8E, $8C, $8A, $8A, $8C, $8E, $8C, $8A, $8A, $8C, $8E, $8C, $8A, $8A, $8C
-L9800:  .byte $8E, $8C, $8A, $8A, $8C, $8E, $8C, $8A, $8A, $8C, $08, $8C, $8A, $88, $88, $86
-L9810:  .byte $86, $84, $82, $82, $08, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $18, $0F, $0F
-L9820:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
-L9830:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $08, $0F, $0F, $0F, $0F, $0F, $00, $00, $00, $00
-L9840:  .byte $FB, $0E, $FD, $00, $0F, $18, $FC, $3C, $24, $30, $27, $30, $29, $20, $27, $30
-L9850:  .byte $24, $10, $FE, $40, $FE, $40, $FF, $00, $FE, $FF, $FB, $0E, $FD, $00, $1D, $12
-L9860:  .byte $FC, $3D, $24, $30, $27, $30, $29, $20, $27, $30, $24, $10, $FE, $40, $FE, $40
-L9870:  .byte $FF, $00, $FE, $FF, $FB, $0F, $FD, $00, $10, $10, $FC, $3E, $18, $30, $1B, $30
-L9880:  .byte $1D, $20, $1B, $30, $18, $10, $FE, $40, $FE, $40, $FF, $00, $FE, $FF, $04, $86
-L9890:  .byte $89, $8C, $90, $04, $90, $8E, $90, $8E, $0C, $8D, $89, $87, $86, $86, $85, $85
-L98A0:  .byte $84, $84, $83, $83, $82, $09, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $08
-L98B0:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $02, $0F, $0F, $06, $08, $0C, $0F, $0D
-L98C0:  .byte $09, $08, $02, $08, $08, $0A, $07, $06, $05, $05, $04, $04, $03, $03, $02, $01
-L98D0:  .byte $00, $FD, $00, $00, $00, $FC, $39, $FE, $58, $FF, $00, $FE, $FF, $FB, $0F, $FD
-L98E0:  .byte $00, $00, $00, $FC, $39, $FE, $40, $FF, $00, $FE, $FF, $FB, $08, $FD, $00, $00
-L98F0:  .byte $00, $FC, $3A, $02, $08, $04, $08, $FE, $40, $FF, $00, $FA, $FF, $FB, $00, $FD
-L9900:  .byte $00, $00, $00, $FC, $3B, $FE, $40, $FF, $00, $FE, $FF, $36, $07, $FE, $0D, $3B
-L9910:  .byte $06, $39, $07, $38, $06, $3B, $07, $39, $06, $38, $07, $FB, $0D, $FD, $00, $06
-L9920:  .byte $40, $FC, $11, $28, $0D, $28, $0D, $26, $0D, $28, $1A, $26, $1A, $28, $1A, $28
-L9930:  .byte $0D, $26, $1A, $28, $1A, $2B, $1A, $26, $0D, $26, $0D, $24, $0D, $26, $1A, $24
-L9940:  .byte $1A, $26, $1A, $26, $0D, $24, $1A, $26, $1A, $28, $1A, $28, $0D, $28, $0D, $26
-L9950:  .byte $0D, $28, $1A, $26, $1A, $28, $1A, $28, $0D, $26, $1A, $28, $1A, $2B, $1A, $26
-L9960:  .byte $0D, $26, $0D, $24, $0D, $26, $1A, $24, $1A, $26, $1A, $26, $0D, $24, $1A, $26
-L9970:  .byte $1A, $28, $1A, $29, $0D, $29, $0D, $29, $0D, $29, $0D, $29, $0D, $2B, $1A, $29
-L9980:  .byte $1A, $29, $0D, $28, $1A, $26, $1A, $24, $0D, $2D, $34, $2C, $0D, $2C, $27, $2A
-L9990:  .byte $0D, $2A, $27, $2A, $0D, $2A, $06, $2C, $07, $2D, $0D, $2C, $06, $2D, $07, $2F
-L99A0:  .byte $0D, $FF, $00, $92, $FE, $FB, $0C, $FD, $00, $03, $80, $FC, $0F, $21, $0D, $18
-L99B0:  .byte $0D, $1C, $0D, $18, $0D, $21, $0D, $18, $0D, $1C, $0D, $21, $0D, $1F, $0D, $17
-L99C0:  .byte $0D, $1A, $0D, $17, $0D, $1F, $0D, $17, $0D, $1A, $0D, $1F, $0D, $1F, $0D, $18
-L99D0:  .byte $0D, $1C, $0D, $18, $0D, $1F, $0D, $18, $0D, $1C, $0D, $1F, $0D, $1F, $0D, $19
-L99E0:  .byte $0D, $1C, $0D, $19, $0D, $1F, $0D, $19, $0D, $1C, $0D, $1F, $0D, $21, $0D, $1A
-L99F0:  .byte $0D, $1D, $0D, $1A, $0D, $21, $0D, $19, $0D, $1D, $0D, $21, $0D, $21, $0D, $18
-L9A00:  .byte $0D, $1D, $0D, $18, $0D, $21, $0D, $17, $0D, $1A, $0D, $1F, $0D, $1D, $0D, $16
-L9A10:  .byte $0D, $1A, $0D, $16, $0D, $1D, $0D, $16, $0D, $1A, $0D, $1D, $0D, $1D, $0D, $1C
-L9A20:  .byte $0D, $18, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D, $1C, $0D, $1D, $0D, $1C
-L9A30:  .byte $0D, $18, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D, $1C, $0D, $21, $0D, $20
-L9A40:  .byte $0D, $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D, $20, $0D, $21, $0D, $20
-L9A50:  .byte $0D, $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D, $20, $0D, $21, $0D, $18
-L9A60:  .byte $0D, $1C, $0D, $18, $0D, $21, $0D, $18, $0D, $1C, $0D, $21, $0D, $1F, $0D, $17
-L9A70:  .byte $0D, $1A, $0D, $17, $0D, $1F, $0D, $17, $0D, $1A, $0D, $1F, $0D, $1F, $0D, $18
-L9A80:  .byte $0D, $1C, $0D, $18, $0D, $1F, $0D, $18, $0D, $1C, $0D, $1F, $0D, $1F, $0D, $19
-L9A90:  .byte $0D, $1C, $0D, $19, $0D, $1F, $0D, $19, $0D, $1C, $0D, $1F, $0D, $21, $0D, $1A
-L9AA0:  .byte $0D, $1D, $0D, $1A, $0D, $21, $0D, $19, $0D, $1D, $0D, $21, $0D, $21, $0D, $18
-L9AB0:  .byte $0D, $1D, $0D, $18, $0D, $21, $0D, $17, $0D, $1A, $0D, $1F, $0D, $1D, $0D, $16
-L9AC0:  .byte $0D, $1A, $0D, $16, $0D, $1D, $0D, $16, $0D, $1A, $0D, $1D, $0D, $1D, $0D, $1C
-L9AD0:  .byte $0D, $18, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D, $1C, $0D, $1D, $0D, $1C
-L9AE0:  .byte $0D, $18, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D, $1C, $0D, $21, $0D, $20
-L9AF0:  .byte $0D, $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D, $20, $0D, $21, $0D, $20
-L9B00:  .byte $0D, $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D, $20, $0D, $FB, $0D, $FC
-L9B10:  .byte $12, $24, $0D, $24, $0D, $23, $0D, $24, $1A, $23, $1A, $24, $1A, $24, $0D, $23
-L9B20:  .byte $1A, $24, $1A, $28, $1A, $23, $0D, $23, $0D, $21, $0D, $23, $1A, $21, $1A, $23
-L9B30:  .byte $1A, $23, $0D, $21, $1A, $23, $1A, $24, $1A, $24, $0D, $24, $0D, $23, $0D, $24
-L9B40:  .byte $1A, $23, $1A, $24, $1A, $24, $0D, $23, $1A, $24, $1A, $28, $1A, $23, $0D, $23
-L9B50:  .byte $0D, $21, $0D, $23, $1A, $21, $1A, $23, $1A, $23, $0D, $21, $1A, $23, $1A, $24
-L9B60:  .byte $1A, $26, $0D, $26, $0D, $26, $0D, $26, $0D, $26, $0D, $28, $1A, $26, $1A, $26
-L9B70:  .byte $0D, $24, $1A, $23, $1A, $21, $0D, $28, $34, $28, $0D, $28, $27, $26, $0D, $26
-L9B80:  .byte $27, $26, $0D, $26, $06, $28, $07, $2A, $0D, $28, $06, $2A, $07, $2C, $0D, $FF
-L9B90:  .byte $00, $16, $FE, $FB, $0F, $FD, $00, $03, $80, $FC, $10, $09, $0D, $09, $0D, $09
-L9BA0:  .byte $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $0B, $0D, $0B, $0D, $0B
-L9BB0:  .byte $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0C, $0D, $0C, $0D, $0C
-L9BC0:  .byte $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0D, $0D, $0D, $0D, $0D
-L9BD0:  .byte $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0E, $0D, $0E, $0D, $0E
-L9BE0:  .byte $0D, $0E, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0C, $0D, $0C, $0D, $0C
-L9BF0:  .byte $0D, $0C, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0A, $0D, $0A, $0D, $0A
-L9C00:  .byte $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0C, $0D, $0C, $0D, $0C
-L9C10:  .byte $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C
-L9C20:  .byte $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $10, $0D, $10, $0D, $10
-L9C30:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10
-L9C40:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $09, $0D, $09, $0D, $09
-L9C50:  .byte $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $0B, $0D, $0B, $0D, $0B
-L9C60:  .byte $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0C, $0D, $0C, $0D, $0C
-L9C70:  .byte $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0D, $0D, $0D, $0D, $0D
-L9C80:  .byte $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0E, $0D, $0E, $0D, $0E
-L9C90:  .byte $0D, $0E, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0C, $0D, $0C, $0D, $0C
-L9CA0:  .byte $0D, $0C, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0A, $0D, $0A, $0D, $0A
-L9CB0:  .byte $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0C, $0D, $0C, $0D, $0C
-L9CC0:  .byte $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C
-L9CD0:  .byte $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $10, $0D, $10, $0D, $10
-L9CE0:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10
-L9CF0:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $11, $0D, $11, $0D, $11
-L9D00:  .byte $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11
-L9D10:  .byte $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $10, $0D, $10, $0D, $10
-L9D20:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10
-L9D30:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $11, $0D, $11, $0D, $11
-L9D40:  .byte $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11
-L9D50:  .byte $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $10, $0D, $10, $0D, $10
-L9D60:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10
-L9D70:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $0E, $0D, $0E, $0D, $0E
-L9D80:  .byte $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E
-L9D90:  .byte $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $10, $1A, $10, $0D, $10, $0D, $10
-L9DA0:  .byte $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10
-L9DB0:  .byte $0D, $10, $06, $0E, $07, $0B, $0D, $10, $06, $0E, $07, $0B, $0D, $FF, $00, $D6
-L9DC0:  .byte $FD, $0A, $82, $83, $84, $85, $87, $89, $8B, $8A, $8C, $8D, $10, $8D, $8D, $8D
-L9DD0:  .byte $8D, $8D, $8D, $8D, $8D, $8C, $8C, $8C, $8C, $8C, $8C, $8C, $8C, $12, $8C, $8B
-L9DE0:  .byte $8A, $89, $89, $88, $88, $87, $87, $86, $86, $86, $85, $85, $85, $84, $84, $84
-L9DF0:  .byte $84, $0A, $82, $83, $84, $85, $87, $89, $8B, $8A, $8C, $8D, $10, $8D, $8D, $8D
-L9E00:  .byte $8D, $8D, $8D, $8D, $8D, $8C, $8C, $8C, $8C, $8C, $8C, $8C, $8C, $10, $8C, $8B
-L9E10:  .byte $8A, $89, $89, $88, $88, $87, $87, $86, $86, $86, $85, $85, $85, $84, $84, $84
-L9E20:  .byte $84, $08, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $10, $0F, $0F, $0F, $0F, $0F
-L9E30:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $08, $0F, $0F, $00, $00
-L9E40:  .byte $00, $00, $00, $00, $00, $07, $85, $89, $8C, $8E, $90, $8C, $88, $01, $88, $0D
-L9E50:  .byte $87, $88, $88, $88, $87, $87, $87, $87, $86, $86, $86, $86, $85, $85, $08, $0F
-L9E60:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $20, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
-L9E70:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
-L9E80:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $08, $00, $00, $00, $00, $00, $00, $00
-L9E90:  .byte $00, $00, $07, $85, $89, $8C, $8E, $90, $8C, $88, $01, $88, $0D, $87, $88, $88
-L9EA0:  .byte $88, $87, $87, $87, $87, $86, $86, $86, $86, $85, $85, $FB, $0E, $FD, $00, $0F
-L9EB0:  .byte $14, $FC, $13, $1D, $4E, $1D, $13, $1F, $14, $21, $13, $1A, $14, $22, $4E, $1D
-L9EC0:  .byte $4E, $1F, $4E, $18, $27, $24, $27, $21, $9C, $FE, $27, $FE, $13, $1A, $14, $21
-L9ED0:  .byte $13, $22, $14, $24, $13, $21, $14, $22, $3A, $1A, $3B, $1F, $27, $1D, $4E, $FE
-L9EE0:  .byte $13, $1F, $0A, $20, $0A, $1F, $13, $1D, $14, $1D, $3A, $1D, $0A, $1F, $0A, $1C
-L9EF0:  .byte $4E, $1D, $4E, $1D, $13, $1F, $14, $21, $13, $1A, $14, $22, $4E, $1D, $4E, $1F
-L9F00:  .byte $4E, $18, $27, $24, $27, $21, $9C, $FE, $27, $FE, $13, $1A, $14, $21, $13, $22
-L9F10:  .byte $14, $24, $13, $21, $14, $22, $3A, $1A, $3B, $1F, $27, $1D, $4E, $FE, $13, $1F
-L9F20:  .byte $0A, $20, $0A, $1F, $13, $1D, $14, $1D, $3A, $1D, $0A, $1F, $0A, $1C, $4E, $28
-L9F30:  .byte $13, $29, $27, $2B, $14, $28, $4E, $28, $13, $29, $27, $2B, $14, $2D, $13, $2B
-L9F40:  .byte $06, $2D, $06, $2B, $08, $29, $13, $28, $14, $26, $3A, $24, $62, $24, $0C, $24
-L9F50:  .byte $0D, $26, $0E, $26, $0C, $28, $0D, $28, $0E, $28, $0C, $28, $0D, $29, $0E, $29
-L9F60:  .byte $0C, $2B, $0D, $2B, $0E, $28, $13, $29, $27, $2B, $14, $28, $4E, $28, $13, $29
-L9F70:  .byte $27, $2B, $14, $2D, $13, $2B, $06, $2D, $06, $2B, $08, $29, $13, $28, $14, $26
-L9F80:  .byte $3A, $24, $62, $24, $0C, $24, $0D, $26, $0E, $26, $0C, $28, $0D, $28, $0E, $28
-L9F90:  .byte $0C, $28, $0D, $29, $0E, $29, $0C, $2B, $0D, $2B, $0E, $2C, $13, $29, $14, $29
-L9FA0:  .byte $13, $26, $14, $26, $13, $23, $27, $2C, $14, $2C, $13, $29, $14, $29, $13, $26
-L9FB0:  .byte $14, $26, $13, $23, $3B, $28, $3A, $28, $0A, $29, $0A, $2B, $3A, $2B, $0A, $2D
-L9FC0:  .byte $0A, $2E, $3A, $2E, $0A, $30, $0A, $2D, $4E, $FF, $00, $E2, $FE, $FB, $0C, $FD
-L9FD0:  .byte $00, $0A, $18, $FC, $14, $FE, $13, $1A, $14, $1D, $13, $1F, $14, $21, $27, $1A
-L9FE0:  .byte $27, $FE, $13, $1A, $14, $1D, $13, $1F, $14, $22, $27, $1A, $27, $FE, $13, $18
-L9FF0:  .byte $14, $1C, $13, $1D, $14, $1F, $27, $18, $27, $FE, $13, $18, $14, $1D, $13, $1F
+;Used by dungeon music SQ2.
+
+SQ2Attack01:
+L86B7:  .byte $02, $8C, $8F
+
+SQ2Sustain01:
+L86BA:  .byte $20, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B
+L86CA:  .byte $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B, $8B
+L86DA:  .byte $8B
+
+SQ2Release01:
+L86DB:  .byte $06, $89, $87, $85, $84, $82, $80, $80
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by dungeon music triangle.
+
+TriAttack02:
+L86E3:  .byte $08, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
+
+TriSustain02:
+L86EC:  .byte $10, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $00, $00, $00, $00
+L86FC:  .byte $00
+
+TriRelease02:
+L86FD:  .byte $08, $00, $00, $00, $00, $00, $00, $00, $00, $00
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by character creation music SQ1.
+
+SQ1Attack03:
+L8707:  .byte $03, $08, $0F, $0F
+
+SQ1Sustain03:
+L870B:  .byte $07, $0E, $0C, $0B, $0A, $09, $09, $09
+
+SQ1Release03:
+L8713:  .byte $15, $08, $08, $08, $08, $07, $07, $07, $07, $06, $06, $06, $06, $05, $05, $05
+L8723:  .byte $05, $04, $04, $04, $04, $03, $03
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by character creation music SQ2.
+
+SQ2Attack04:
+L872A:  .byte $02, $CC, $CF
+
+SQ2Sustain04:
+L872D:  .byte $20, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB
+L873D:  .byte $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB, $CB
+L874D:  .byte $CB
+
+SQ2Release04:
+L874E:  .byte $07, $CA, $C9, $C7, $C5, $C4, $C2, $C0, $C0
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by character creation music SQ1.
+
+SQ1Attack05:
+L8757:  .byte $07, $88, $8C, $8E, $90, $8F, $8E, $8D
+
+SQ1Sustain05:
+L875F:  .byte $01, $8D
+
+SQ1Release05:
+L8761:  .byte $1C, $8C, $86, $87, $89, $88, $88, $88, $87, $87, $87, $87, $86, $86, $86, $86
+L8771:  .byte $86, $85, $85, $85, $85, $85, $84, $84, $84, $84, $84, $84, $83, $83
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by character creation music SQ2.
+
+SQ2Attack06:
+L877F:  .byte $07, $48, $4C, $50, $4F, $4D, $49, $46
+
+SQ2Sustain06:
+L8787:  .byte $01, $48
+
+SQ2Release06:
+L8789:  .byte $0C, $48, $47, $46, $47, $46, $46, $45, $45, $44, $44, $44, $43, $43
+
+;----------------------------------------------------------------------------------------------------
+
+;Character creation music SQ1 data.
+
+ChrCreateSQ1:
+L8797:  .byte CHN_VOLUME, $0C            ;Set channel volume to 12.
+L8799:  .byte CHN_VIBRATO, $00, $08, $0E ;Set vibrato speed=8, intensity=14.
+L879D:  .byte CHN_ASR, $32               ;Set ASR data index to 00.
+L879F:  .byte $15, $1B                   ;Play note A3  for 27 frames.
+L87A1:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L87A3:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L87A5:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L87A7:  .byte $14, $0E                   ;Play note G#3 for 14 frames.
+L87A9:  .byte $15, $0D                   ;Play note A3  for 13 frames.
+L87AB:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L87AD:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L87AF:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L87B1:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L87B3:  .byte $17, $0E                   ;Play note B3  for 14 frames.
+L87B5:  .byte $15, $1B                   ;Play note A3  for 27 frames.
+L87B7:  .byte $14, $1B                   ;Play note G#3 for 27 frames.
+L87B9:  .byte $15, $1B                   ;Play note A3  for 27 frames.
+L87BB:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L87BD:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L87BF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L87C1:  .byte $14, $0E                   ;Play note G#3 for 14 frames.
+L87C3:  .byte $15, $0D                   ;Play note A3  for 13 frames.
+L87C5:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L87C7:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L87C9:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L87CB:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L87CD:  .byte $17, $0E                   ;Play note B3  for 14 frames.
+L87CF:  .byte $15, $1B                   ;Play note A3  for 27 frames.
+L87D1:  .byte $14, $1B                   ;Play note G#3 for 27 frames.
+L87D3:  .byte CHN_ASR, $35               ;Set ASR data index to 03.
+L87D5:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L87D7:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L87D9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L87DB:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L87DD:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L87DF:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L87E1:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L87E3:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L87E5:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L87E7:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L87E9:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L87EB:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L87ED:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L87EF:  .byte $2B, $1B                   ;Play note G5  for 27 frames.
+L87F1:  .byte $2B, $1B                   ;Play note G5  for 27 frames.
+L87F3:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L87F5:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L87F7:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L87F9:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L87FB:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L87FD:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L87FF:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L8801:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8803:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L8805:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8807:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8809:  .byte CHN_VIBRATO, $00, $0C, $12 ;Set vibrato speed=12, intensity=18.
+L880D:  .byte CHN_ASR, $37               ;Set ASR data index to 05.
+L880F:  .byte CHN_VOLUME, $0C            ;Set channel volume to 12.
+L8811:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8813:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8815:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8817:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8819:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L881B:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L881D:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L881F:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8821:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8823:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8825:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8827:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8829:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L882B:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L882D:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L882F:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8831:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8833:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8835:  .byte $23, $1B                   ;Play note B4  for 27 frames.
+L8837:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L8839:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L883B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L883D:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L883F:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8841:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8843:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8845:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8847:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8849:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L884B:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L884D:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L884F:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8851:  .byte $23, $14                   ;Play note B4  for 20 frames.
+L8853:  .byte $25, $14                   ;Play note C#5 for 20 frames.
+L8855:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8857:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8859:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L885B:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L885D:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L885F:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8861:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8863:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8865:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L8867:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8869:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L886B:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L886D:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L886F:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8871:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8873:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8875:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8877:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8879:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L887B:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L887D:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L887F:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8881:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8883:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8885:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8887:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8889:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L888B:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L888D:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L888F:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8891:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8893:  .byte $23, $1B                   ;Play note B4  for 27 frames.
+L8895:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L8897:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8899:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L889B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L889D:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L889F:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L88A1:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L88A3:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L88A5:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L88A7:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L88A9:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L88AB:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L88AD:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L88AF:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L88B1:  .byte $25, $14                   ;Play note C#5 for 20 frames.
+L88B3:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L88B5:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L88B7:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L88B9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L88BB:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L88BD:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L88BF:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L88C1:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L88C3:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L88C5:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L88C7:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L88C9:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L88CB:  .byte $26, $51                   ;Play note D5  for 81 frames.
+L88CD:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L88CF:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L88D1:  .byte $2D, $0D                   ;Play note A5  for 13 frames.
+L88D3:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L88D5:  .byte $2D, $0D                   ;Play note A5  for 13 frames.
+L88D7:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L88D9:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L88DB:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L88DD:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L88DF:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L88E1:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L88E3:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L88E5:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L88E7:  .byte $25, $5F                   ;Play note C#5 for 95 frames.
+L88E9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L88EB:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L88ED:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L88EF:  .byte $26, $51                   ;Play note D5  for 81 frames.
+L88F1:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L88F3:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L88F5:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L88F7:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L88F9:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L88FB:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L88FD:  .byte $2C, $1B                   ;Play note G#5 for 27 frames.
+L88FF:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8901:  .byte $28, $44                   ;Play note E5  for 68 frames.
+L8903:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8905:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8907:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8909:  .byte $2F, $0E                   ;Play note B5  for 14 frames.
+L890B:  .byte $2D, $0D                   ;Play note A5  for 13 frames.
+L890D:  .byte $2F, $0E                   ;Play note B5  for 14 frames.
+L890F:  .byte $2C, $1B                   ;Play note G#5 for 27 frames.
+L8911:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8913:  .byte $28, $36                   ;Play note E5  for 54 frames.
+L8915:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8917:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8919:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L891B:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L891D:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L891F:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8921:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8923:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8925:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8927:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8929:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L892B:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L892D:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L892F:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8931:  .byte $2C, $22                   ;Play note G#5 for 34 frames.
+L8933:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8935:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8937:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8939:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L893B:  .byte $2F, $0D                   ;Play note B5  for 13 frames.
+L893D:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L893F:  .byte $2C, $07                   ;Play note G#5 for 7 frames.
+L8941:  .byte $2A, $07                   ;Play note F#5 for 7 frames.
+L8943:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8945:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8947:  .byte $28, $5F                   ;Play note E5  for 95 frames.
+L8949:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L894B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L894D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L894F:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8951:  .byte $2D, $14                   ;Play note A5  for 20 frames.
+L8953:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8955:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8957:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8959:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L895B:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L895D:  .byte $2D, $36                   ;Play note A5  for 54 frames.
+L895F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8961:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L8963:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8965:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8967:  .byte $2F, $28                   ;Play note B5  for 40 frames.
+L8969:  .byte $2C, $44                   ;Play note G#5 for 68 frames.
+L896B:  .byte $1D, $06                   ;Play note F4  for 6 frames.
+L896D:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L896F:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8971:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L8973:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8975:  .byte $23, $0E                   ;Play note B4  for 14 frames.
+L8977:  .byte $25, $06                   ;Play note C#5 for 6 frames.
+L8979:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L897B:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L897D:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L897F:  .byte $1E, $06                   ;Play note F#4 for 6 frames.
+L8981:  .byte $1D, $07                   ;Play note F4  for 7 frames.
+L8983:  .byte $1A, $07                   ;Play note D4  for 7 frames.
+L8985:  .byte $19, $07                   ;Play note C#4 for 7 frames.
+L8987:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8989:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L898B:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L898D:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L898F:  .byte $2C, $22                   ;Play note G#5 for 34 frames.
+L8991:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8993:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8995:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8997:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L8999:  .byte $2F, $0D                   ;Play note B5  for 13 frames.
+L899B:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L899D:  .byte $2C, $07                   ;Play note G#5 for 7 frames.
+L899F:  .byte $2A, $07                   ;Play note F#5 for 7 frames.
+L89A1:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L89A3:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L89A5:  .byte $28, $5F                   ;Play note E5  for 95 frames.
+L89A7:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L89A9:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L89AB:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L89AD:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L89AF:  .byte $2D, $14                   ;Play note A5  for 20 frames.
+L89B1:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L89B3:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L89B5:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L89B7:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L89B9:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L89BB:  .byte $2D, $36                   ;Play note A5  for 54 frames.
+L89BD:  .byte $2D, $14                   ;Play note A5  for 20 frames.
+L89BF:  .byte $2F, $14                   ;Play note B5  for 20 frames.
+L89C1:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L89C3:  .byte $2C, $36                   ;Play note G#5 for 54 frames.
+L89C5:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L89C7:  .byte $2F, $14                   ;Play note B5  for 20 frames.
+L89C9:  .byte $29, $0E                   ;Play note F5  for 14 frames.
+L89CB:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L89CD:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L89CF:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L89D1:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L89D3:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L89D5:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L89D7:  .byte $23, $0E                   ;Play note B4  for 14 frames.
+L89D9:  .byte $1D, $06                   ;Play note F4  for 6 frames.
+L89DB:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L89DD:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L89DF:  .byte $2C, $28                   ;Play note G#5 for 40 frames.
+L89E1:  .byte $2D, $95                   ;Play note A5  for 149 frames.
+L89E3:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L89E5:  .byte $2C, $28                   ;Play note G#5 for 40 frames.
+L89E7:  .byte $2A, $95                   ;Play note F#5 for 149 frames.
+L89E9:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L89EB:  .byte CHN_ASR, $35               ;Set ASR data index to 03.
+L89ED:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L89EF:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L89F1:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L89F3:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L89F5:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L89F7:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L89F9:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L89FB:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L89FD:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L89FF:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8A01:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L8A03:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8A05:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8A07:  .byte $2B, $1B                   ;Play note G5  for 27 frames.
+L8A09:  .byte $2B, $1B                   ;Play note G5  for 27 frames.
+L8A0B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8A0D:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8A0F:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8A11:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8A13:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A15:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8A17:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L8A19:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8A1B:  .byte $2B, $0E                   ;Play note G5  for 14 frames.
+L8A1D:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8A1F:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8A21:  .byte CHN_VIBRATO, $00, $0C, $12 ;Set vibrato speed=12, intensity=18.
+L8A25:  .byte CHN_ASR, $37               ;Set ASR data index to 05.
+L8A27:  .byte CHN_VOLUME, $0C            ;Set channel volume to 12.
+L8A29:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A2B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8A2D:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8A2F:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A31:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8A33:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A35:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8A37:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8A39:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8A3B:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8A3D:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A3F:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A41:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8A43:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8A45:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8A47:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8A49:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8A4B:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8A4D:  .byte $23, $1B                   ;Play note B4  for 27 frames.
+L8A4F:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L8A51:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8A53:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A55:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A57:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8A59:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8A5B:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8A5D:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8A5F:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8A61:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8A63:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A65:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8A67:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8A69:  .byte $23, $14                   ;Play note B4  for 20 frames.
+L8A6B:  .byte $25, $14                   ;Play note C#5 for 20 frames.
+L8A6D:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8A6F:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8A71:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A73:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L8A75:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8A77:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A79:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8A7B:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A7D:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L8A7F:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8A81:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A83:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8A85:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A87:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A89:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8A8B:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8A8D:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A8F:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8A91:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8A93:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8A95:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8A97:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8A99:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8A9B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A9D:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8A9F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8AA1:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8AA3:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8AA5:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8AA7:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8AA9:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8AAB:  .byte $23, $1B                   ;Play note B4  for 27 frames.
+L8AAD:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L8AAF:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8AB1:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8AB3:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8AB5:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8AB7:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8AB9:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8ABB:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8ABD:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8ABF:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8AC1:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8AC3:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8AC5:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8AC7:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L8AC9:  .byte $25, $14                   ;Play note C#5 for 20 frames.
+L8ACB:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8ACD:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L8ACF:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8AD1:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8AD3:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L8AD5:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8AD7:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L8AD9:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8ADB:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8ADD:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8ADF:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L8AE1:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8AE3:  .byte $26, $51                   ;Play note D5  for 81 frames.
+L8AE5:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8AE7:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8AE9:  .byte $2D, $0D                   ;Play note A5  for 13 frames.
+L8AEB:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L8AED:  .byte $2D, $0D                   ;Play note A5  for 13 frames.
+L8AEF:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L8AF1:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8AF3:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8AF5:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8AF7:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8AF9:  .byte $2C, $0E                   ;Play note G#5 for 14 frames.
+L8AFB:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8AFD:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L8AFF:  .byte $25, $5F                   ;Play note C#5 for 95 frames.
+L8B01:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8B03:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8B05:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8B07:  .byte $26, $51                   ;Play note D5  for 81 frames.
+L8B09:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8B0B:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L8B0D:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8B0F:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L8B11:  .byte $2A, $1B                   ;Play note F#5 for 27 frames.
+L8B13:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8B15:  .byte $2C, $1B                   ;Play note G#5 for 27 frames.
+L8B17:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8B19:  .byte $28, $44                   ;Play note E5  for 68 frames.
+L8B1B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8B1D:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8B1F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8B21:  .byte $2F, $0E                   ;Play note B5  for 14 frames.
+L8B23:  .byte $2D, $0D                   ;Play note A5  for 13 frames.
+L8B25:  .byte $2F, $0E                   ;Play note B5  for 14 frames.
+L8B27:  .byte $2C, $1B                   ;Play note G#5 for 27 frames.
+L8B29:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8B2B:  .byte $28, $36                   ;Play note E5  for 54 frames.
+L8B2D:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8B2F:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8B31:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8B33:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8B35:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8B37:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8B39:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8B3B:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8B3D:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8B3F:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8B41:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8B43:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8B45:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8B47:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8B49:  .byte $2C, $22                   ;Play note G#5 for 34 frames.
+L8B4B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8B4D:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8B4F:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8B51:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L8B53:  .byte $2F, $0D                   ;Play note B5  for 13 frames.
+L8B55:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L8B57:  .byte $2C, $07                   ;Play note G#5 for 7 frames.
+L8B59:  .byte $2A, $07                   ;Play note F#5 for 7 frames.
+L8B5B:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8B5D:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8B5F:  .byte $28, $5F                   ;Play note E5  for 95 frames.
+L8B61:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8B63:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8B65:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8B67:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8B69:  .byte $2D, $14                   ;Play note A5  for 20 frames.
+L8B6B:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8B6D:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8B6F:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8B71:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8B73:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L8B75:  .byte $2D, $36                   ;Play note A5  for 54 frames.
+L8B77:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8B79:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L8B7B:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8B7D:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8B7F:  .byte $2F, $28                   ;Play note B5  for 40 frames.
+L8B81:  .byte $2C, $44                   ;Play note G#5 for 68 frames.
+L8B83:  .byte $1D, $06                   ;Play note F4  for 6 frames.
+L8B85:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8B87:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8B89:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L8B8B:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8B8D:  .byte $23, $0E                   ;Play note B4  for 14 frames.
+L8B8F:  .byte $25, $06                   ;Play note C#5 for 6 frames.
+L8B91:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8B93:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8B95:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8B97:  .byte $1E, $06                   ;Play note F#4 for 6 frames.
+L8B99:  .byte $1D, $07                   ;Play note F4  for 7 frames.
+L8B9B:  .byte $1A, $07                   ;Play note D4  for 7 frames.
+L8B9D:  .byte $19, $07                   ;Play note C#4 for 7 frames.
+L8B9F:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8BA1:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8BA3:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8BA5:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8BA7:  .byte $2C, $22                   ;Play note G#5 for 34 frames.
+L8BA9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8BAB:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8BAD:  .byte $2C, $0D                   ;Play note G#5 for 13 frames.
+L8BAF:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L8BB1:  .byte $2F, $0D                   ;Play note B5  for 13 frames.
+L8BB3:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L8BB5:  .byte $2C, $07                   ;Play note G#5 for 7 frames.
+L8BB7:  .byte $2A, $07                   ;Play note F#5 for 7 frames.
+L8BB9:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8BBB:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8BBD:  .byte $28, $5F                   ;Play note E5  for 95 frames.
+L8BBF:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8BC1:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8BC3:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8BC5:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8BC7:  .byte $2D, $14                   ;Play note A5  for 20 frames.
+L8BC9:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8BCB:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8BCD:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8BCF:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8BD1:  .byte $2D, $0E                   ;Play note A5  for 14 frames.
+L8BD3:  .byte $2D, $36                   ;Play note A5  for 54 frames.
+L8BD5:  .byte $2D, $14                   ;Play note A5  for 20 frames.
+L8BD7:  .byte $2F, $14                   ;Play note B5  for 20 frames.
+L8BD9:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8BDB:  .byte $2C, $36                   ;Play note G#5 for 54 frames.
+L8BDD:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8BDF:  .byte $2F, $14                   ;Play note B5  for 20 frames.
+L8BE1:  .byte $29, $0E                   ;Play note F5  for 14 frames.
+L8BE3:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8BE5:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8BE7:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8BE9:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8BEB:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L8BED:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8BEF:  .byte $23, $0E                   ;Play note B4  for 14 frames.
+L8BF1:  .byte $1D, $06                   ;Play note F4  for 6 frames.
+L8BF3:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8BF5:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8BF7:  .byte $2C, $28                   ;Play note G#5 for 40 frames.
+L8BF9:  .byte $2D, $95                   ;Play note A5  for 149 frames.
+L8BFB:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8BFD:  .byte $2C, $28                   ;Play note G#5 for 40 frames.
+L8BFF:  .byte $2A, $95                   ;Play note F#5 for 149 frames.
+L8C01:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8C03:  .byte CHN_JUMP, $00, $94, $FB    ;Jump back 1132 bytes to $8797.
+
+;----------------------------------------------------------------------------------------------------
+
+;Character creation music SQ2 data.
+
+ChrCreateSQ2:
+L8C07:  .byte CHN_VOLUME, $0C            ;Set channel volume to 12.
+L8C09:  .byte CHN_VIBRATO, $00, $08, $0E ;Set vibrato speed=8, intensity=14.
+L8C0D:  .byte CHN_ASR, $33               ;Set ASR data index to 01.
+L8C0F:  .byte $15, $1B                   ;Play note A3  for 27 frames.
+L8C11:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8C13:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8C15:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C17:  .byte $14, $0E                   ;Play note G#3 for 14 frames.
+L8C19:  .byte $15, $0D                   ;Play note A3  for 13 frames.
+L8C1B:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8C1D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C1F:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8C21:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8C23:  .byte $17, $0E                   ;Play note B3  for 14 frames.
+L8C25:  .byte $15, $1B                   ;Play note A3  for 27 frames.
+L8C27:  .byte $14, $1B                   ;Play note G#3 for 27 frames.
+L8C29:  .byte $15, $1B                   ;Play note A3  for 27 frames.
+L8C2B:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8C2D:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8C2F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C31:  .byte $14, $0E                   ;Play note G#3 for 14 frames.
+L8C33:  .byte $15, $0D                   ;Play note A3  for 13 frames.
+L8C35:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8C37:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C39:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8C3B:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8C3D:  .byte $17, $0E                   ;Play note B3  for 14 frames.
+L8C3F:  .byte $15, $1B                   ;Play note A3  for 27 frames.
+L8C41:  .byte $14, $1B                   ;Play note G#3 for 27 frames.
+L8C43:  .byte CHN_ASR, $36               ;Set ASR data index to 04.
+L8C45:  .byte $19, $1B                   ;Play note C#4 for 27 frames.
+L8C47:  .byte $19, $1B                   ;Play note C#4 for 27 frames.
+L8C49:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C4B:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8C4D:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8C4F:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8C51:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8C53:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C55:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8C57:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8C59:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8C5B:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8C5D:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8C5F:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8C61:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8C63:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C65:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8C67:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8C69:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8C6B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8C6D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C6F:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8C71:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8C73:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8C75:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8C77:  .byte $17, $0E                   ;Play note B3  for 14 frames.
+L8C79:  .byte CHN_VOLUME, $09            ;Set channel volume to 9.
+L8C7B:  .byte CHN_ASR, $38               ;Set ASR data index to 06.
+L8C7D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C7F:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8C81:  .byte $25, $07                   ;Play note C#5 for 7 frames.
+L8C83:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8C85:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8C87:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C89:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8C8B:  .byte $25, $07                   ;Play note C#5 for 7 frames.
+L8C8D:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8C8F:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8C91:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C93:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8C95:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8C97:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8C99:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8C9B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8C9D:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8C9F:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8CA1:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8CA3:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8CA5:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8CA7:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8CA9:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8CAB:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8CAD:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8CAF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8CB1:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8CB3:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8CB5:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8CB7:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8CB9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8CBB:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8CBD:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8CBF:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8CC1:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8CC3:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8CC5:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8CC7:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8CC9:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8CCB:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8CCD:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8CCF:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8CD1:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8CD3:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8CD5:  .byte $26, $1B                   ;Play note D5  for 27 frames.
+L8CD7:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8CD9:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8CDB:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8CDD:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8CDF:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8CE1:  .byte $1A, $1B                   ;Play note D4  for 27 frames.
+L8CE3:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8CE5:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8CE7:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8CE9:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8CEB:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8CED:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8CEF:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8CF1:  .byte $14, $06                   ;Play note G#3 for 6 frames.
+L8CF3:  .byte $17, $07                   ;Play note B3  for 7 frames.
+L8CF5:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8CF7:  .byte $1C, $0D                   ;Play note E4  for 13 frames.
+L8CF9:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8CFB:  .byte $14, $06                   ;Play note G#3 for 6 frames.
+L8CFD:  .byte $17, $07                   ;Play note B3  for 7 frames.
+L8CFF:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8D01:  .byte $1C, $0D                   ;Play note E4  for 13 frames.
+L8D03:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8D05:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D07:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8D09:  .byte $25, $07                   ;Play note C#5 for 7 frames.
+L8D0B:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8D0D:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8D0F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D11:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8D13:  .byte $25, $07                   ;Play note C#5 for 7 frames.
+L8D15:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8D17:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8D19:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D1B:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8D1D:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8D1F:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8D21:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8D23:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D25:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8D27:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8D29:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8D2B:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8D2D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D2F:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8D31:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8D33:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8D35:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8D37:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D39:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8D3B:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8D3D:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8D3F:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8D41:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D43:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8D45:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8D47:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8D49:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8D4B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D4D:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8D4F:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8D51:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8D53:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8D55:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8D57:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8D59:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8D5B:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8D5D:  .byte $26, $1B                   ;Play note D5  for 27 frames.
+L8D5F:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8D61:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8D63:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8D65:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8D67:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8D69:  .byte $26, $1B                   ;Play note D5  for 27 frames.
+L8D6B:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8D6D:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8D6F:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8D71:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8D73:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8D75:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8D77:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8D79:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8D7B:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8D7D:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8D7F:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8D81:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8D83:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L8D85:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8D87:  .byte $1A, $51                   ;Play note D4  for 81 frames.
+L8D89:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8D8B:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8D8D:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8D8F:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8D91:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8D93:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8D95:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L8D97:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8D99:  .byte $20, $14                   ;Play note G#4 for 20 frames.
+L8D9B:  .byte $20, $14                   ;Play note G#4 for 20 frames.
+L8D9D:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8D9F:  .byte $20, $14                   ;Play note G#4 for 20 frames.
+L8DA1:  .byte $1C, $14                   ;Play note E4  for 20 frames.
+L8DA3:  .byte $19, $5F                   ;Play note C#4 for 95 frames.
+L8DA5:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8DA7:  .byte $1E, $1B                   ;Play note F#4 for 27 frames.
+L8DA9:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8DAB:  .byte $1A, $51                   ;Play note D4  for 81 frames.
+L8DAD:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8DAF:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8DB1:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L8DB3:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L8DB5:  .byte $1E, $1B                   ;Play note F#4 for 27 frames.
+L8DB7:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8DB9:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8DBB:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L8DBD:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8DBF:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L8DC1:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8DC3:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8DC5:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8DC7:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L8DC9:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8DCB:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L8DCD:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8DCF:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8DD1:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8DD3:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L8DD5:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8DD7:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L8DD9:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8DDB:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8DDD:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8DDF:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8DE1:  .byte $17, $0D                   ;Play note B3  for 13 frames.
+L8DE3:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8DE5:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8DE7:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8DE9:  .byte $17, $0D                   ;Play note B3  for 13 frames.
+L8DEB:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8DED:  .byte $21, $14                   ;Play note A4  for 20 frames.
+L8DEF:  .byte $23, $14                   ;Play note B4  for 20 frames.
+L8DF1:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8DF3:  .byte $21, $14                   ;Play note A4  for 20 frames.
+L8DF5:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8DF7:  .byte $23, $1B                   ;Play note B4  for 27 frames.
+L8DF9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8DFB:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8DFD:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L8DFF:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8E01:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8E03:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L8E05:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8E07:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8E09:  .byte $1E, $14                   ;Play note F#4 for 20 frames.
+L8E0B:  .byte $1E, $14                   ;Play note F#4 for 20 frames.
+L8E0D:  .byte $1C, $5F                   ;Play note E4  for 95 frames.
+L8E0F:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8E11:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8E13:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8E15:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8E17:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8E19:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L8E1B:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8E1D:  .byte $26, $14                   ;Play note D5  for 20 frames.
+L8E1F:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L8E21:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8E23:  .byte $2A, $36                   ;Play note F#5 for 54 frames.
+L8E25:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8E27:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8E29:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8E2B:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8E2D:  .byte $2C, $28                   ;Play note G#5 for 40 frames.
+L8E2F:  .byte $29, $0E                   ;Play note F5  for 14 frames.
+L8E31:  .byte $29, $36                   ;Play note F5  for 54 frames.
+L8E33:  .byte $1D, $06                   ;Play note F4  for 6 frames.
+L8E35:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8E37:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8E39:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L8E3B:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8E3D:  .byte $23, $0E                   ;Play note B4  for 14 frames.
+L8E3F:  .byte $25, $06                   ;Play note C#5 for 6 frames.
+L8E41:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8E43:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8E45:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8E47:  .byte $1E, $06                   ;Play note F#4 for 6 frames.
+L8E49:  .byte $1D, $07                   ;Play note F4  for 7 frames.
+L8E4B:  .byte $1A, $07                   ;Play note D4  for 7 frames.
+L8E4D:  .byte $19, $07                   ;Play note C#4 for 7 frames.
+L8E4F:  .byte $21, $14                   ;Play note A4  for 20 frames.
+L8E51:  .byte $23, $14                   ;Play note B4  for 20 frames.
+L8E53:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8E55:  .byte $21, $14                   ;Play note A4  for 20 frames.
+L8E57:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8E59:  .byte $23, $1B                   ;Play note B4  for 27 frames.
+L8E5B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8E5D:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8E5F:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L8E61:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8E63:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8E65:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L8E67:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8E69:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8E6B:  .byte $1E, $14                   ;Play note F#4 for 20 frames.
+L8E6D:  .byte $1E, $14                   ;Play note F#4 for 20 frames.
+L8E6F:  .byte $1C, $5F                   ;Play note E4  for 95 frames.
+L8E71:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8E73:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8E75:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8E77:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8E79:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8E7B:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L8E7D:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8E7F:  .byte $26, $14                   ;Play note D5  for 20 frames.
+L8E81:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L8E83:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L8E85:  .byte $2A, $36                   ;Play note F#5 for 54 frames.
+L8E87:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L8E89:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8E8B:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8E8D:  .byte $29, $36                   ;Play note F5  for 54 frames.
+L8E8F:  .byte $29, $14                   ;Play note F5  for 20 frames.
+L8E91:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L8E93:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8E95:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8E97:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8E99:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8E9B:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8E9D:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L8E9F:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8EA1:  .byte $23, $0E                   ;Play note B4  for 14 frames.
+L8EA3:  .byte $1D, $06                   ;Play note F4  for 6 frames.
+L8EA5:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8EA7:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8EA9:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L8EAB:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L8EAD:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8EAF:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L8EB1:  .byte $1E, $1B                   ;Play note F#4 for 27 frames.
+L8EB3:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8EB5:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L8EB7:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L8EB9:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8EBB:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L8EBD:  .byte $1E, $1B                   ;Play note F#4 for 27 frames.
+L8EBF:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8EC1:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L8EC3:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L8EC5:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8EC7:  .byte $22, $0D                   ;Play note A#4 for 13 frames.
+L8EC9:  .byte $22, $1B                   ;Play note A#4 for 27 frames.
+L8ECB:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8ECD:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L8ECF:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L8ED1:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8ED3:  .byte $22, $0D                   ;Play note A#4 for 13 frames.
+L8ED5:  .byte $22, $1B                   ;Play note A#4 for 27 frames.
+L8ED7:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8ED9:  .byte CHN_ASR, $36               ;Set ASR data index to 04.
+L8EDB:  .byte $19, $1B                   ;Play note C#4 for 27 frames.
+L8EDD:  .byte $19, $1B                   ;Play note C#4 for 27 frames.
+L8EDF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8EE1:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8EE3:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8EE5:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8EE7:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8EE9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8EEB:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8EED:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8EEF:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L8EF1:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8EF3:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8EF5:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8EF7:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8EF9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8EFB:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8EFD:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L8EFF:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8F01:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L8F03:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F05:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8F07:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8F09:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L8F0B:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L8F0D:  .byte $17, $0E                   ;Play note B3  for 14 frames.
+L8F0F:  .byte CHN_VOLUME, $09            ;Set channel volume to 9.
+L8F11:  .byte CHN_ASR, $38               ;Set ASR data index to 06.
+L8F13:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F15:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8F17:  .byte $25, $07                   ;Play note C#5 for 7 frames.
+L8F19:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8F1B:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8F1D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F1F:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8F21:  .byte $25, $07                   ;Play note C#5 for 7 frames.
+L8F23:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8F25:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8F27:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F29:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8F2B:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8F2D:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8F2F:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8F31:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F33:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8F35:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8F37:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8F39:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8F3B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F3D:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8F3F:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8F41:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8F43:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8F45:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F47:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8F49:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8F4B:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8F4D:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8F4F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F51:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8F53:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8F55:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8F57:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8F59:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F5B:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8F5D:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8F5F:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8F61:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8F63:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8F65:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8F67:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8F69:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8F6B:  .byte $26, $1B                   ;Play note D5  for 27 frames.
+L8F6D:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8F6F:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8F71:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8F73:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8F75:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L8F77:  .byte $1A, $1B                   ;Play note D4  for 27 frames.
+L8F79:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8F7B:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8F7D:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8F7F:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L8F81:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8F83:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L8F85:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L8F87:  .byte $14, $06                   ;Play note G#3 for 6 frames.
+L8F89:  .byte $17, $07                   ;Play note B3  for 7 frames.
+L8F8B:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8F8D:  .byte $1C, $0D                   ;Play note E4  for 13 frames.
+L8F8F:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8F91:  .byte $14, $06                   ;Play note G#3 for 6 frames.
+L8F93:  .byte $17, $07                   ;Play note B3  for 7 frames.
+L8F95:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8F97:  .byte $1C, $0D                   ;Play note E4  for 13 frames.
+L8F99:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L8F9B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8F9D:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8F9F:  .byte $25, $07                   ;Play note C#5 for 7 frames.
+L8FA1:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8FA3:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8FA5:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8FA7:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8FA9:  .byte $25, $07                   ;Play note C#5 for 7 frames.
+L8FAB:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8FAD:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8FAF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8FB1:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8FB3:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8FB5:  .byte $2A, $0D                   ;Play note F#5 for 13 frames.
+L8FB7:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8FB9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8FBB:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L8FBD:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L8FBF:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8FC1:  .byte $28, $0E                   ;Play note E5  for 14 frames.
+L8FC3:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8FC5:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8FC7:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8FC9:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L8FCB:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8FCD:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8FCF:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8FD1:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8FD3:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8FD5:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L8FD7:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8FD9:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8FDB:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8FDD:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8FDF:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8FE1:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L8FE3:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L8FE5:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L8FE7:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L8FE9:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L8FEB:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8FED:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8FEF:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8FF1:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8FF3:  .byte $26, $1B                   ;Play note D5  for 27 frames.
+L8FF5:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L8FF7:  .byte $26, $0D                   ;Play note D5  for 13 frames.
+L8FF9:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L8FFB:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L8FFD:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L8FFF:  .byte $26, $1B                   ;Play note D5  for 27 frames.
+L9001:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L9003:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L9005:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L9007:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L9009:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L900B:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L900D:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L900F:  .byte $25, $0D                   ;Play note C#5 for 13 frames.
+L9011:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L9013:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L9015:  .byte $28, $1B                   ;Play note E5  for 27 frames.
+L9017:  .byte $25, $1B                   ;Play note C#5 for 27 frames.
+L9019:  .byte $2D, $1B                   ;Play note A5  for 27 frames.
+L901B:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L901D:  .byte $1A, $51                   ;Play note D4  for 81 frames.
+L901F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9021:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L9023:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L9025:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L9027:  .byte $21, $0D                   ;Play note A4  for 13 frames.
+L9029:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L902B:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L902D:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L902F:  .byte $20, $14                   ;Play note G#4 for 20 frames.
+L9031:  .byte $20, $14                   ;Play note G#4 for 20 frames.
+L9033:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L9035:  .byte $20, $14                   ;Play note G#4 for 20 frames.
+L9037:  .byte $1C, $14                   ;Play note E4  for 20 frames.
+L9039:  .byte $19, $5F                   ;Play note C#4 for 95 frames.
+L903B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L903D:  .byte $1E, $1B                   ;Play note F#4 for 27 frames.
+L903F:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L9041:  .byte $1A, $51                   ;Play note D4  for 81 frames.
+L9043:  .byte $1A, $0D                   ;Play note D4  for 13 frames.
+L9045:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L9047:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L9049:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L904B:  .byte $1E, $1B                   ;Play note F#4 for 27 frames.
+L904D:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L904F:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L9051:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L9053:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L9055:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L9057:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L9059:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L905B:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L905D:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L905F:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L9061:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L9063:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L9065:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L9067:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L9069:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L906B:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L906D:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L906F:  .byte $1C, $1B                   ;Play note E4  for 27 frames.
+L9071:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L9073:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L9075:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L9077:  .byte $17, $0D                   ;Play note B3  for 13 frames.
+L9079:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L907B:  .byte $19, $0D                   ;Play note C#4 for 13 frames.
+L907D:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L907F:  .byte $17, $0D                   ;Play note B3  for 13 frames.
+L9081:  .byte $19, $0E                   ;Play note C#4 for 14 frames.
+L9083:  .byte $21, $14                   ;Play note A4  for 20 frames.
+L9085:  .byte $23, $14                   ;Play note B4  for 20 frames.
+L9087:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L9089:  .byte $21, $14                   ;Play note A4  for 20 frames.
+L908B:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L908D:  .byte $23, $1B                   ;Play note B4  for 27 frames.
+L908F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9091:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L9093:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L9095:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L9097:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L9099:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L909B:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L909D:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L909F:  .byte $1E, $14                   ;Play note F#4 for 20 frames.
+L90A1:  .byte $1E, $14                   ;Play note F#4 for 20 frames.
+L90A3:  .byte $1C, $5F                   ;Play note E4  for 95 frames.
+L90A5:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L90A7:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L90A9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L90AB:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L90AD:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L90AF:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L90B1:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L90B3:  .byte $26, $14                   ;Play note D5  for 20 frames.
+L90B5:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L90B7:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L90B9:  .byte $2A, $36                   ;Play note F#5 for 54 frames.
+L90BB:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L90BD:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L90BF:  .byte $28, $0D                   ;Play note E5  for 13 frames.
+L90C1:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L90C3:  .byte $2C, $28                   ;Play note G#5 for 40 frames.
+L90C5:  .byte $29, $0E                   ;Play note F5  for 14 frames.
+L90C7:  .byte $29, $36                   ;Play note F5  for 54 frames.
+L90C9:  .byte $1D, $06                   ;Play note F4  for 6 frames.
+L90CB:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L90CD:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L90CF:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L90D1:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L90D3:  .byte $23, $0E                   ;Play note B4  for 14 frames.
+L90D5:  .byte $25, $06                   ;Play note C#5 for 6 frames.
+L90D7:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L90D9:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L90DB:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L90DD:  .byte $1E, $06                   ;Play note F#4 for 6 frames.
+L90DF:  .byte $1D, $07                   ;Play note F4  for 7 frames.
+L90E1:  .byte $1A, $07                   ;Play note D4  for 7 frames.
+L90E3:  .byte $19, $07                   ;Play note C#4 for 7 frames.
+L90E5:  .byte $21, $14                   ;Play note A4  for 20 frames.
+L90E7:  .byte $23, $14                   ;Play note B4  for 20 frames.
+L90E9:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L90EB:  .byte $21, $14                   ;Play note A4  for 20 frames.
+L90ED:  .byte $23, $07                   ;Play note B4  for 7 frames.
+L90EF:  .byte $23, $1B                   ;Play note B4  for 27 frames.
+L90F1:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L90F3:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L90F5:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L90F7:  .byte $21, $0E                   ;Play note A4  for 14 frames.
+L90F9:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L90FB:  .byte $21, $1B                   ;Play note A4  for 27 frames.
+L90FD:  .byte $20, $07                   ;Play note G#4 for 7 frames.
+L90FF:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L9101:  .byte $1E, $14                   ;Play note F#4 for 20 frames.
+L9103:  .byte $1E, $14                   ;Play note F#4 for 20 frames.
+L9105:  .byte $1C, $5F                   ;Play note E4  for 95 frames.
+L9107:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9109:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L910B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L910D:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L910F:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L9111:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L9113:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L9115:  .byte $26, $14                   ;Play note D5  for 20 frames.
+L9117:  .byte $28, $14                   ;Play note E5  for 20 frames.
+L9119:  .byte $2A, $0E                   ;Play note F#5 for 14 frames.
+L911B:  .byte $2A, $36                   ;Play note F#5 for 54 frames.
+L911D:  .byte $2A, $14                   ;Play note F#5 for 20 frames.
+L911F:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L9121:  .byte $26, $0E                   ;Play note D5  for 14 frames.
+L9123:  .byte $29, $36                   ;Play note F5  for 54 frames.
+L9125:  .byte $29, $14                   ;Play note F5  for 20 frames.
+L9127:  .byte $2C, $14                   ;Play note G#5 for 20 frames.
+L9129:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L912B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L912D:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L912F:  .byte $23, $0D                   ;Play note B4  for 13 frames.
+L9131:  .byte $25, $0E                   ;Play note C#5 for 14 frames.
+L9133:  .byte $20, $06                   ;Play note G#4 for 6 frames.
+L9135:  .byte $21, $07                   ;Play note A4  for 7 frames.
+L9137:  .byte $23, $0E                   ;Play note B4  for 14 frames.
+L9139:  .byte $1D, $06                   ;Play note F4  for 6 frames.
+L913B:  .byte $1E, $07                   ;Play note F#4 for 7 frames.
+L913D:  .byte $20, $0E                   ;Play note G#4 for 14 frames.
+L913F:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L9141:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L9143:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L9145:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L9147:  .byte $1E, $1B                   ;Play note F#4 for 27 frames.
+L9149:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L914B:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L914D:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L914F:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L9151:  .byte $1E, $0D                   ;Play note F#4 for 13 frames.
+L9153:  .byte $1E, $1B                   ;Play note F#4 for 27 frames.
+L9155:  .byte $1A, $0E                   ;Play note D4  for 14 frames.
+L9157:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L9159:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L915B:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L915D:  .byte $22, $0D                   ;Play note A#4 for 13 frames.
+L915F:  .byte $22, $1B                   ;Play note A#4 for 27 frames.
+L9161:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L9163:  .byte $20, $1B                   ;Play note G#4 for 27 frames.
+L9165:  .byte $20, $0D                   ;Play note G#4 for 13 frames.
+L9167:  .byte $1C, $0E                   ;Play note E4  for 14 frames.
+L9169:  .byte $22, $0D                   ;Play note A#4 for 13 frames.
+L916B:  .byte $22, $1B                   ;Play note A#4 for 27 frames.
+L916D:  .byte $1E, $0E                   ;Play note F#4 for 14 frames.
+L916F:  .byte CHN_JUMP, $00, $98, $FA    ;Jump back 1384 bytes to $8C07.
+
+;----------------------------------------------------------------------------------------------------
+
+;Character creation music triangle data.
+
+ChrCreateTri:
+L9173:  .byte CHN_VOLUME, $0F            ;Set channel volume to 15.
+L9175:  .byte CHN_VIBRATO, $00, $08, $18 ;Set vibrato speed=8, intensity=24.
+L9179:  .byte CHN_ASR, $34               ;Set ASR data index to 02.
+L917B:  .byte $09, $1B                   ;Play note A1  for 27 frames.
+L917D:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L917F:  .byte $10, $0E                   ;Play note E2  for 14 frames.
+L9181:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9183:  .byte $08, $0E                   ;Play note G#1 for 14 frames.
+L9185:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9187:  .byte $10, $0E                   ;Play note E2  for 14 frames.
+L9189:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L918B:  .byte $12, $0E                   ;Play note F#2 for 14 frames.
+L918D:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L918F:  .byte $0B, $0E                   ;Play note B1  for 14 frames.
+L9191:  .byte $09, $1B                   ;Play note A1  for 27 frames.
+L9193:  .byte $08, $1B                   ;Play note G#1 for 27 frames.
+L9195:  .byte $09, $1B                   ;Play note A1  for 27 frames.
+L9197:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9199:  .byte $10, $0E                   ;Play note E2  for 14 frames.
+L919B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L919D:  .byte $08, $0E                   ;Play note G#1 for 14 frames.
+L919F:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91A1:  .byte $10, $0E                   ;Play note E2  for 14 frames.
+L91A3:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L91A5:  .byte $12, $0E                   ;Play note F#2 for 14 frames.
+L91A7:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L91A9:  .byte $0B, $0E                   ;Play note B1  for 14 frames.
+L91AB:  .byte $09, $1B                   ;Play note A1  for 27 frames.
+L91AD:  .byte $08, $1B                   ;Play note G#1 for 27 frames.
+L91AF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91B1:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91B3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91B5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91B7:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91B9:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91BB:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91BD:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91BF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91C1:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91C3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91C5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91C7:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91C9:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91CB:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91CD:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91CF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91D1:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91D3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91D5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91D7:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91D9:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91DB:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91DD:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91DF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91E1:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91E3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91E5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91E7:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91E9:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91EB:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91ED:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L91EF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L91F1:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L91F3:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L91F5:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L91F7:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L91F9:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L91FB:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L91FD:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L91FF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9201:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9203:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9205:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9207:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9209:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L920B:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L920D:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L920F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9211:  .byte $0B, $0E                   ;Play note B1  for 14 frames.
+L9213:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9215:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9217:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9219:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L921B:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L921D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L921F:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9221:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9223:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9225:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9227:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9229:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L922B:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L922D:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L922F:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9231:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9233:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9235:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9237:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9239:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L923B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L923D:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L923F:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9241:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9243:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9245:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9247:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L9249:  .byte $08, $0E                   ;Play note G#1 for 14 frames.
+L924B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L924D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L924F:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9251:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9253:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9255:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9257:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9259:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L925B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L925D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L925F:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9261:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L9263:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9265:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9267:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9269:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L926B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L926D:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L926F:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9271:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L9273:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9275:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9277:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9279:  .byte $0B, $0E                   ;Play note B1  for 14 frames.
+L927B:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L927D:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L927F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9281:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9283:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9285:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9287:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9289:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L928B:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L928D:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L928F:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9291:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9293:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L9295:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9297:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9299:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L929B:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L929D:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L929F:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L92A1:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L92A3:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L92A5:  .byte $0D, $1B                   ;Play note C#2 for 27 frames.
+L92A7:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L92A9:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L92AB:  .byte $0D, $1B                   ;Play note C#2 for 27 frames.
+L92AD:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L92AF:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L92B1:  .byte $0D, $1B                   ;Play note C#2 for 27 frames.
+L92B3:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L92B5:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L92B7:  .byte $0D, $1B                   ;Play note C#2 for 27 frames.
+L92B9:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L92BB:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L92BD:  .byte $1A, $0E                   ;Play note D3  for 14 frames.
+L92BF:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92C1:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92C3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L92C5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L92C7:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92C9:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92CB:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L92CD:  .byte $1A, $0E                   ;Play note D3  for 14 frames.
+L92CF:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92D1:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92D3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L92D5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L92D7:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92D9:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92DB:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L92DD:  .byte $19, $0E                   ;Play note C#3 for 14 frames.
+L92DF:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92E1:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92E3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L92E5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L92E7:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92E9:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92EB:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L92ED:  .byte $19, $0E                   ;Play note C#3 for 14 frames.
+L92EF:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92F1:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92F3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L92F5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L92F7:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92F9:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92FB:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L92FD:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L92FF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9301:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L9303:  .byte $08, $0D                   ;Play note G#1 for 13 frames.
+L9305:  .byte $12, $0E                   ;Play note F#2 for 14 frames.
+L9307:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9309:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L930B:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L930D:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L930F:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9311:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L9313:  .byte $08, $0D                   ;Play note G#1 for 13 frames.
+L9315:  .byte $12, $0E                   ;Play note F#2 for 14 frames.
+L9317:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9319:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L931B:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L931D:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L931F:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9321:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9323:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9325:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9327:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9329:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L932B:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L932D:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L932F:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9331:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9333:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9335:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9337:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9339:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L933B:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L933D:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L933F:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9341:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9343:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9345:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9347:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9349:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L934B:  .byte $09, $28                   ;Play note A1  for 40 frames.
+L934D:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L934F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9351:  .byte $0D, $29                   ;Play note C#2 for 41 frames.
+L9353:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L9355:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9357:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9359:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L935B:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L935D:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L935F:  .byte $09, $06                   ;Play note A1  for 6 frames.
+L9361:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L9363:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L9365:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L9367:  .byte $08, $0D                   ;Play note G#1 for 13 frames.
+L9369:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L936B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L936D:  .byte $08, $0E                   ;Play note G#1 for 14 frames.
+L936F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9371:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L9373:  .byte $14, $07                   ;Play note G#2 for 7 frames.
+L9375:  .byte $15, $06                   ;Play note A2  for 6 frames.
+L9377:  .byte $14, $07                   ;Play note G#2 for 7 frames.
+L9379:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L937B:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L937D:  .byte $04, $0D                   ;Play note E1  for 13 frames.
+L937F:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9381:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9383:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9385:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9387:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L9389:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L938B:  .byte $08, $06                   ;Play note G#1 for 6 frames.
+L938D:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L938F:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L9391:  .byte $0B, $07                   ;Play note B1  for 7 frames.
+L9393:  .byte $04, $0D                   ;Play note E1  for 13 frames.
+L9395:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9397:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9399:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L939B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L939D:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L939F:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L93A1:  .byte $14, $06                   ;Play note G#2 for 6 frames.
+L93A3:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L93A5:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L93A7:  .byte $17, $07                   ;Play note B2  for 7 frames.
+L93A9:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L93AB:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L93AD:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93AF:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L93B1:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93B3:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L93B5:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L93B7:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L93B9:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L93BB:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93BD:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L93BF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93C1:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L93C3:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L93C5:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L93C7:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L93C9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93CB:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L93CD:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93CF:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L93D1:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L93D3:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L93D5:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L93D7:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93D9:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L93DB:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93DD:  .byte $0B, $07                   ;Play note B1  for 7 frames.
+L93DF:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L93E1:  .byte $0D, $06                   ;Play note C#2 for 6 frames.
+L93E3:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L93E5:  .byte $0B, $07                   ;Play note B1  for 7 frames.
+L93E7:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L93E9:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L93EB:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L93ED:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L93EF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L93F1:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L93F3:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L93F5:  .byte $09, $06                   ;Play note A1  for 6 frames.
+L93F7:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L93F9:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L93FB:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L93FD:  .byte $08, $0D                   ;Play note G#1 for 13 frames.
+L93FF:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9401:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9403:  .byte $08, $0E                   ;Play note G#1 for 14 frames.
+L9405:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9407:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L9409:  .byte $14, $07                   ;Play note G#2 for 7 frames.
+L940B:  .byte $15, $06                   ;Play note A2  for 6 frames.
+L940D:  .byte $14, $07                   ;Play note G#2 for 7 frames.
+L940F:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L9411:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L9413:  .byte $04, $0D                   ;Play note E1  for 13 frames.
+L9415:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9417:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9419:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L941B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L941D:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L941F:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L9421:  .byte $08, $06                   ;Play note G#1 for 6 frames.
+L9423:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L9425:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L9427:  .byte $0B, $07                   ;Play note B1  for 7 frames.
+L9429:  .byte $04, $0D                   ;Play note E1  for 13 frames.
+L942B:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L942D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L942F:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9431:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9433:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L9435:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L9437:  .byte $14, $06                   ;Play note G#2 for 6 frames.
+L9439:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L943B:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L943D:  .byte $17, $07                   ;Play note B2  for 7 frames.
+L943F:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9441:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9443:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9445:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9447:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9449:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L944B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L944D:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L944F:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9451:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9453:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9455:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9457:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9459:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L945B:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L945D:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L945F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9461:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9463:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9465:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9467:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9469:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L946B:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L946D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L946F:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9471:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9473:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9475:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9477:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9479:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L947B:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L947D:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L947F:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9481:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9483:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9485:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9487:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9489:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L948B:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L948D:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L948F:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9491:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9493:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L9495:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9497:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L9499:  .byte $06, $1B                   ;Play note F#1 for 27 frames.
+L949B:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L949D:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L949F:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L94A1:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L94A3:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L94A5:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L94A7:  .byte $06, $1B                   ;Play note F#1 for 27 frames.
+L94A9:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L94AB:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L94AD:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L94AF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94B1:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94B3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94B5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94B7:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94B9:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94BB:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94BD:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94BF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94C1:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94C3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94C5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94C7:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94C9:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94CB:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94CD:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94CF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94D1:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94D3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94D5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94D7:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94D9:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94DB:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94DD:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94DF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94E1:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94E3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94E5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94E7:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94E9:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94EB:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94ED:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L94EF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L94F1:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L94F3:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L94F5:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L94F7:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L94F9:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L94FB:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L94FD:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L94FF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9501:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9503:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9505:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9507:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9509:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L950B:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L950D:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L950F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9511:  .byte $0B, $0E                   ;Play note B1  for 14 frames.
+L9513:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9515:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9517:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9519:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L951B:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L951D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L951F:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9521:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9523:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9525:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9527:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9529:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L952B:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L952D:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L952F:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9531:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9533:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9535:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9537:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9539:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L953B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L953D:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L953F:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9541:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9543:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9545:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9547:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L9549:  .byte $08, $0E                   ;Play note G#1 for 14 frames.
+L954B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L954D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L954F:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9551:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9553:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9555:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9557:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9559:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L955B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L955D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L955F:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9561:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L9563:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9565:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9567:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9569:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L956B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L956D:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L956F:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9571:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L9573:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9575:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9577:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9579:  .byte $0B, $0E                   ;Play note B1  for 14 frames.
+L957B:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L957D:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L957F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9581:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9583:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9585:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9587:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9589:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L958B:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L958D:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L958F:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9591:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9593:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L9595:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9597:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9599:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L959B:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L959D:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L959F:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L95A1:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L95A3:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L95A5:  .byte $0D, $1B                   ;Play note C#2 for 27 frames.
+L95A7:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L95A9:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L95AB:  .byte $0D, $1B                   ;Play note C#2 for 27 frames.
+L95AD:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L95AF:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L95B1:  .byte $0D, $1B                   ;Play note C#2 for 27 frames.
+L95B3:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L95B5:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L95B7:  .byte $0D, $1B                   ;Play note C#2 for 27 frames.
+L95B9:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L95BB:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L95BD:  .byte $1A, $0E                   ;Play note D3  for 14 frames.
+L95BF:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95C1:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95C3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L95C5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L95C7:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95C9:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95CB:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L95CD:  .byte $1A, $0E                   ;Play note D3  for 14 frames.
+L95CF:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95D1:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95D3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L95D5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L95D7:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95D9:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95DB:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L95DD:  .byte $19, $0E                   ;Play note C#3 for 14 frames.
+L95DF:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95E1:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95E3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L95E5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L95E7:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95E9:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95EB:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L95ED:  .byte $19, $0E                   ;Play note C#3 for 14 frames.
+L95EF:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95F1:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95F3:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L95F5:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L95F7:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95F9:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95FB:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L95FD:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L95FF:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9601:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L9603:  .byte $08, $0D                   ;Play note G#1 for 13 frames.
+L9605:  .byte $12, $0E                   ;Play note F#2 for 14 frames.
+L9607:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9609:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L960B:  .byte $0B, $0D                   ;Play note B1  for 13 frames.
+L960D:  .byte $17, $0E                   ;Play note B2  for 14 frames.
+L960F:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9611:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L9613:  .byte $08, $0D                   ;Play note G#1 for 13 frames.
+L9615:  .byte $12, $0E                   ;Play note F#2 for 14 frames.
+L9617:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9619:  .byte $15, $0E                   ;Play note A2  for 14 frames.
+L961B:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L961D:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L961F:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9621:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9623:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9625:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9627:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9629:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L962B:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L962D:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L962F:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9631:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9633:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9635:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L9637:  .byte $09, $0D                   ;Play note A1  for 13 frames.
+L9639:  .byte $09, $0E                   ;Play note A1  for 14 frames.
+L963B:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L963D:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L963F:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9641:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9643:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9645:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9647:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9649:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L964B:  .byte $09, $28                   ;Play note A1  for 40 frames.
+L964D:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L964F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9651:  .byte $0D, $29                   ;Play note C#2 for 41 frames.
+L9653:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L9655:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9657:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9659:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L965B:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L965D:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L965F:  .byte $09, $06                   ;Play note A1  for 6 frames.
+L9661:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L9663:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L9665:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L9667:  .byte $08, $0D                   ;Play note G#1 for 13 frames.
+L9669:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L966B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L966D:  .byte $08, $0E                   ;Play note G#1 for 14 frames.
+L966F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9671:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L9673:  .byte $14, $07                   ;Play note G#2 for 7 frames.
+L9675:  .byte $15, $06                   ;Play note A2  for 6 frames.
+L9677:  .byte $14, $07                   ;Play note G#2 for 7 frames.
+L9679:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L967B:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L967D:  .byte $04, $0D                   ;Play note E1  for 13 frames.
+L967F:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9681:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9683:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9685:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9687:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L9689:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L968B:  .byte $08, $06                   ;Play note G#1 for 6 frames.
+L968D:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L968F:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L9691:  .byte $0B, $07                   ;Play note B1  for 7 frames.
+L9693:  .byte $04, $0D                   ;Play note E1  for 13 frames.
+L9695:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9697:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9699:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L969B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L969D:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L969F:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L96A1:  .byte $14, $06                   ;Play note G#2 for 6 frames.
+L96A3:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L96A5:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L96A7:  .byte $17, $07                   ;Play note B2  for 7 frames.
+L96A9:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L96AB:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L96AD:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96AF:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L96B1:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96B3:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L96B5:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L96B7:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L96B9:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L96BB:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96BD:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L96BF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96C1:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L96C3:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L96C5:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L96C7:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L96C9:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96CB:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L96CD:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96CF:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L96D1:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L96D3:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L96D5:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L96D7:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96D9:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L96DB:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96DD:  .byte $0B, $07                   ;Play note B1  for 7 frames.
+L96DF:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L96E1:  .byte $0D, $06                   ;Play note C#2 for 6 frames.
+L96E3:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L96E5:  .byte $0B, $07                   ;Play note B1  for 7 frames.
+L96E7:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L96E9:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L96EB:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L96ED:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L96EF:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L96F1:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L96F3:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L96F5:  .byte $09, $06                   ;Play note A1  for 6 frames.
+L96F7:  .byte $08, $07                   ;Play note G#1 for 7 frames.
+L96F9:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L96FB:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L96FD:  .byte $08, $0D                   ;Play note G#1 for 13 frames.
+L96FF:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9701:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9703:  .byte $08, $0E                   ;Play note G#1 for 14 frames.
+L9705:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9707:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L9709:  .byte $14, $07                   ;Play note G#2 for 7 frames.
+L970B:  .byte $15, $06                   ;Play note A2  for 6 frames.
+L970D:  .byte $14, $07                   ;Play note G#2 for 7 frames.
+L970F:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L9711:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L9713:  .byte $04, $0D                   ;Play note E1  for 13 frames.
+L9715:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9717:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9719:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L971B:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L971D:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L971F:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L9721:  .byte $08, $06                   ;Play note G#1 for 6 frames.
+L9723:  .byte $06, $07                   ;Play note F#1 for 7 frames.
+L9725:  .byte $04, $07                   ;Play note E1  for 7 frames.
+L9727:  .byte $0B, $07                   ;Play note B1  for 7 frames.
+L9729:  .byte $04, $0D                   ;Play note E1  for 13 frames.
+L972B:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L972D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L972F:  .byte $04, $0E                   ;Play note E1  for 14 frames.
+L9731:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9733:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L9735:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L9737:  .byte $14, $06                   ;Play note G#2 for 6 frames.
+L9739:  .byte $12, $07                   ;Play note F#2 for 7 frames.
+L973B:  .byte $10, $07                   ;Play note E2  for 7 frames.
+L973D:  .byte $17, $07                   ;Play note B2  for 7 frames.
+L973F:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9741:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9743:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9745:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9747:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9749:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L974B:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L974D:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L974F:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L9751:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9753:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9755:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9757:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9759:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L975B:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L975D:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L975F:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9761:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9763:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9765:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9767:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9769:  .byte $0D, $0D                   ;Play note C#2 for 13 frames.
+L976B:  .byte CHN_SILENCE, $0E           ;Silence channel for 14 frames.
+L976D:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L976F:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9771:  .byte CHN_SILENCE, $0D           ;Silence channel for 13 frames.
+L9773:  .byte $0D, $0E                   ;Play note C#2 for 14 frames.
+L9775:  .byte CHN_SILENCE, $1B           ;Silence channel for 27 frames.
+L9777:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9779:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L977B:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L977D:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L977F:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9781:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9783:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9785:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9787:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9789:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L978B:  .byte $0E, $1B                   ;Play note D2  for 27 frames.
+L978D:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L978F:  .byte $0E, $0D                   ;Play note D2  for 13 frames.
+L9791:  .byte $0E, $0E                   ;Play note D2  for 14 frames.
+L9793:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L9795:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L9797:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L9799:  .byte $06, $1B                   ;Play note F#1 for 27 frames.
+L979B:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L979D:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L979F:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L97A1:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L97A3:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L97A5:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L97A7:  .byte $06, $1B                   ;Play note F#1 for 27 frames.
+L97A9:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L97AB:  .byte $06, $0D                   ;Play note F#1 for 13 frames.
+L97AD:  .byte $06, $0E                   ;Play note F#1 for 14 frames.
+L97AF:  .byte CHN_JUMP, $00, $C4, $F9    ;Jump back 1596 bytes to $9173.
+
+;----------------------------------------------------------------------------------------------------
+
+;Silver horn music SQ1 data.
+
+SQ1Attack0A:
+L97B3:  .byte $04, $84, $88, $8C, $90
+
+SQ1Sustain0A:
+L97B8:  .byte $23, $8E, $8C, $89, $8C, $8E, $8E, $8C, $89, $8C, $8E, $8E, $8C, $89, $8C, $8E
+L97C8:  .byte $8E, $8C, $89, $8C, $8E, $8E, $8C, $89, $8C, $8E, $8E, $8C, $89, $8C, $8E, $8E
+L97D8:  .byte $8C, $89, $8C, $8E
+
+SQ1Release0A:
+L97DC:  .byte $08, $8C, $8A, $88, $88, $86, $86, $84, $82, $82
+
+;----------------------------------------------------------------------------------------------------
+
+;Silver horn music SQ2 data.
+
+SQ2Attack0B:
+L97E6:  .byte $04, $84, $88, $8C, $90
+
+SQ2Sustain0B:
+L97EB:  .byte $1E, $8E, $8C, $8A, $8A, $8C, $8E, $8C, $8A, $8A, $8C, $8E, $8C, $8A, $8A, $8C
+L97FB:  .byte $8E, $8C, $8A, $8A, $8C, $8E, $8C, $8A, $8A, $8C, $8E, $8C, $8A, $8A, $8C
+
+SQ2Release0B:
+L980A:  .byte $08, $8C, $8A, $88, $88, $86, $86, $84, $82, $82
+
+;----------------------------------------------------------------------------------------------------
+
+;Unused music SQ1 data.
+
+SQ1Attack0C:
+L9814:  .byte $08, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
+
+SQ1Sustain0C:
+L981D:  .byte $18, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
+L982D:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
+
+SQ1Release0C:
+L9836:  .byte $08, $0F, $0F, $0F, $0F, $0F, $00, $00, $00, $00
+
+;----------------------------------------------------------------------------------------------------
+
+;Silver horn music SQ1 data.
+
+SlvrHornSQ1:
+L9840:  .byte CHN_VOLUME, $0E            ;Set channel volume to 14.
+L9842:  .byte CHN_VIBRATO, $00, $0F, $18 ;Set vibrato speed=15, intensity=24.
+L9846:  .byte CHN_ASR, $3C               ;Set ASR data index to 10.
+L9848:  .byte $24, $30                   ;Play note C5  for 48 frames.
+L984A:  .byte $27, $30                   ;Play note D#5 for 48 frames.
+L984C:  .byte $29, $20                   ;Play note F5  for 32 frames.
+L984E:  .byte $27, $30                   ;Play note D#5 for 48 frames.
+L9850:  .byte $24, $10                   ;Play note C5  for 16 frames.
+L9852:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L9854:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L9856:  .byte CHN_JUMP, $00, $FE, $FF    ;Jump back 2 bytes to $9854.
+
+;----------------------------------------------------------------------------------------------------
+
+;Silver horn music SQ2 data.
+
+SlvrHornSQ2:
+L985A:  .byte CHN_VOLUME, $0E            ;Set channel volume to 14.
+L985C:  .byte CHN_VIBRATO, $00, $1D, $12 ;Set vibrato speed=29, intensity=18.
+L9860:  .byte CHN_ASR, $3D               ;Set ASR data index to 11.
+L9862:  .byte $24, $30                   ;Play note C5  for 48 frames.
+L9864:  .byte $27, $30                   ;Play note D#5 for 48 frames.
+L9866:  .byte $29, $20                   ;Play note F5  for 32 frames.
+L9868:  .byte $27, $30                   ;Play note D#5 for 48 frames.
+L986A:  .byte $24, $10                   ;Play note C5  for 16 frames.
+L986C:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L986E:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L9870:  .byte CHN_JUMP, $00, $FE, $FF    ;Jump back 2 bytes to $986E.
+
+;----------------------------------------------------------------------------------------------------
+
+;Unused music SQ1 data.
+
+UnusedSQ1:
+L9874:  .byte CHN_VOLUME, $0F            ;Set channel volume to 15.
+L9876:  .byte CHN_VIBRATO, $00, $10, $10 ;Set vibrato speed=16, intensity=16.
+L987A:  .byte CHN_ASR, $3E               ;Set ASR data index to 12.
+L987C:  .byte $18, $30                   ;Play note C4  for 48 frames.
+L987E:  .byte $1B, $30                   ;Play note D#4 for 48 frames.
+L9880:  .byte $1D, $20                   ;Play note F4  for 32 frames.
+L9882:  .byte $1B, $30                   ;Play note D#4 for 48 frames.
+L9884:  .byte $18, $10                   ;Play note C4  for 16 frames.
+L9886:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L9888:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L988A:  .byte CHN_JUMP, $00, $FE, $FF    ;Jump back 2 bytes to $9888.
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by Exodus heartbeat music SQ1 and SQ2.
+
+SQ12Attack07:
+L988E:  .byte $04, $86, $89, $8C, $90
+
+SQ12Sustain07:
+L9893:  .byte $04, $90, $8E, $90, $8E
+
+SQ12Release07:
+L9898:  .byte $0C, $8D, $89, $87, $86, $86, $85, $85, $84, $84, $83, $83, $82
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by Exodus heartbeat music triangle.
+
+TriAttack08:
+L98A5:  .byte $09, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
+
+TriSustain08:
+L98AF:  .byte $08, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
+
+TriRelease08:
+L98B8:  .byte $02, $0F, $0F
+
+;----------------------------------------------------------------------------------------------------
+
+;Used by Exodus heartbeat music noise.
+
+NseAttack09:
+L98BB:  .byte $06, $08, $0C, $0F, $0D, $09, $08
+
+NseSustain09:
+L98C2:  .byte $02, $08, $08
+
+NseRelease09:
+L98C5:  .byte $0A, $07, $06, $05, $05, $04, $04, $03, $03, $02, $01, $00
+
+;----------------------------------------------------------------------------------------------------
+
+;Exodus Heartbeat music SQ1 data.
+
+ExodusHBSQ1:
+L98D1:  .byte CHN_VIBRATO, $00, $00, $00 ;Disable vibrato.
+L98D5:  .byte CHN_ASR, $39               ;Set ASR data index to 07.
+L98D7:  .byte CHN_SILENCE, $58           ;Silence channel for 88 frames.
+L98D9:  .byte CHN_JUMP, $00, $FE, $FF    ;Jump back 2 bytes to $98D7.
+
+;----------------------------------------------------------------------------------------------------
+
+;Exodus Heartbeat music SQ2 data.
+
+ExodusHBSQ2:
+L98DD:  .byte CHN_VOLUME, $0F            ;Set channel volume to 15.
+L98DF:  .byte CHN_VIBRATO, $00, $00, $00 ;Disable vibrato.
+L98E3:  .byte CHN_ASR, $39               ;Set ASR data index to 07.
+L98E5:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L98E7:  .byte CHN_JUMP, $00, $FE, $FF    ;Jump back 2 bytes to $98E5.
+
+;----------------------------------------------------------------------------------------------------
+
+;Exodus Heartbeat music Triangle data.
+
+ExodusHBTri:
+L98EB:  .byte CHN_VOLUME, $08            ;Set channel volume to 8.
+L98ED:  .byte CHN_VIBRATO, $00, $00, $00 ;Disable vibrato.
+L98F1:  .byte CHN_ASR, $3A               ;Set ASR data index to 08.
+L98F3:  .byte $02, $08                   ;Play note D1  for 8 frames.
+L98F5:  .byte $04, $08                   ;Play note E1  for 8 frames.
+L98F7:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L98F9:  .byte CHN_JUMP, $00, $FA, $FF    ;Jump back 6 bytes to $98F3.
+
+;----------------------------------------------------------------------------------------------------
+
+;Exodus Heartbeat music Noise data.
+
+ExodusHBNse:
+L98FD:  .byte CHN_VOLUME, $00            ;Set channel volume to 0.
+L98FF:  .byte CHN_VIBRATO, $00, $00, $00 ;Disable vibrato.
+L9903:  .byte CHN_ASR, $3B               ;Set ASR data index to 09.
+L9905:  .byte CHN_SILENCE, $40           ;Silence channel for 64 frames.
+L9907:  .byte CHN_JUMP, $00, $FE, $FF    ;Jump back 2 bytes to $9905.
+
+;----------------------------------------------------------------------------------------------------
+
+;Unused music data from Bank08.
+L990B:  .byte $36, $07, $FE, $0D, $3B, $06, $39, $07, $38, $06, $3B, $07, $39, $06, $38, $07
+L991B:  .byte $FB, $0D, $FD, $00, $06, $40, $FC, $11, $28, $0D, $28, $0D, $26, $0D, $28, $1A
+L992B:  .byte $26, $1A, $28, $1A, $28, $0D, $26, $1A, $28, $1A, $2B, $1A, $26, $0D, $26, $0D
+L993B:  .byte $24, $0D, $26, $1A, $24, $1A, $26, $1A, $26, $0D, $24, $1A, $26, $1A, $28, $1A
+L994B:  .byte $28, $0D, $28, $0D, $26, $0D, $28, $1A, $26, $1A, $28, $1A, $28, $0D, $26, $1A
+L995B:  .byte $28, $1A, $2B, $1A, $26, $0D, $26, $0D, $24, $0D, $26, $1A, $24, $1A, $26, $1A
+L996B:  .byte $26, $0D, $24, $1A, $26, $1A, $28, $1A, $29, $0D, $29, $0D, $29, $0D, $29, $0D
+L997B:  .byte $29, $0D, $2B, $1A, $29, $1A, $29, $0D, $28, $1A, $26, $1A, $24, $0D, $2D, $34
+L998B:  .byte $2C, $0D, $2C, $27, $2A, $0D, $2A, $27, $2A, $0D, $2A, $06, $2C, $07, $2D, $0D
+L999B:  .byte $2C, $06, $2D, $07, $2F, $0D, $FF, $00, $92, $FE, $FB, $0C, $FD, $00, $03, $80
+L99AB:  .byte $FC, $0F, $21, $0D, $18, $0D, $1C, $0D, $18, $0D, $21, $0D, $18, $0D, $1C, $0D
+L99BB:  .byte $21, $0D, $1F, $0D, $17, $0D, $1A, $0D, $17, $0D, $1F, $0D, $17, $0D, $1A, $0D
+L99CB:  .byte $1F, $0D, $1F, $0D, $18, $0D, $1C, $0D, $18, $0D, $1F, $0D, $18, $0D, $1C, $0D
+L99DB:  .byte $1F, $0D, $1F, $0D, $19, $0D, $1C, $0D, $19, $0D, $1F, $0D, $19, $0D, $1C, $0D
+L99EB:  .byte $1F, $0D, $21, $0D, $1A, $0D, $1D, $0D, $1A, $0D, $21, $0D, $19, $0D, $1D, $0D
+L99FB:  .byte $21, $0D, $21, $0D, $18, $0D, $1D, $0D, $18, $0D, $21, $0D, $17, $0D, $1A, $0D
+L9A0B:  .byte $1F, $0D, $1D, $0D, $16, $0D, $1A, $0D, $16, $0D, $1D, $0D, $16, $0D, $1A, $0D
+L9A1B:  .byte $1D, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D
+L9A2B:  .byte $1C, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D
+L9A3B:  .byte $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D
+L9A4B:  .byte $20, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D
+L9A5B:  .byte $20, $0D, $21, $0D, $18, $0D, $1C, $0D, $18, $0D, $21, $0D, $18, $0D, $1C, $0D
+L9A6B:  .byte $21, $0D, $1F, $0D, $17, $0D, $1A, $0D, $17, $0D, $1F, $0D, $17, $0D, $1A, $0D
+L9A7B:  .byte $1F, $0D, $1F, $0D, $18, $0D, $1C, $0D, $18, $0D, $1F, $0D, $18, $0D, $1C, $0D
+L9A8B:  .byte $1F, $0D, $1F, $0D, $19, $0D, $1C, $0D, $19, $0D, $1F, $0D, $19, $0D, $1C, $0D
+L9A9B:  .byte $1F, $0D, $21, $0D, $1A, $0D, $1D, $0D, $1A, $0D, $21, $0D, $19, $0D, $1D, $0D
+L9AAB:  .byte $21, $0D, $21, $0D, $18, $0D, $1D, $0D, $18, $0D, $21, $0D, $17, $0D, $1A, $0D
+L9ABB:  .byte $1F, $0D, $1D, $0D, $16, $0D, $1A, $0D, $16, $0D, $1D, $0D, $16, $0D, $1A, $0D
+L9ACB:  .byte $1D, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D
+L9ADB:  .byte $1C, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D, $1C, $0D, $18, $0D, $1D, $0D
+L9AEB:  .byte $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D
+L9AFB:  .byte $20, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D, $20, $0D, $1C, $0D, $21, $0D
+L9B0B:  .byte $20, $0D, $FB, $0D, $FC, $12, $24, $0D, $24, $0D, $23, $0D, $24, $1A, $23, $1A
+L9B1B:  .byte $24, $1A, $24, $0D, $23, $1A, $24, $1A, $28, $1A, $23, $0D, $23, $0D, $21, $0D
+L9B2B:  .byte $23, $1A, $21, $1A, $23, $1A, $23, $0D, $21, $1A, $23, $1A, $24, $1A, $24, $0D
+L9B3B:  .byte $24, $0D, $23, $0D, $24, $1A, $23, $1A, $24, $1A, $24, $0D, $23, $1A, $24, $1A
+L9B4B:  .byte $28, $1A, $23, $0D, $23, $0D, $21, $0D, $23, $1A, $21, $1A, $23, $1A, $23, $0D
+L9B5B:  .byte $21, $1A, $23, $1A, $24, $1A, $26, $0D, $26, $0D, $26, $0D, $26, $0D, $26, $0D
+L9B6B:  .byte $28, $1A, $26, $1A, $26, $0D, $24, $1A, $23, $1A, $21, $0D, $28, $34, $28, $0D
+L9B7B:  .byte $28, $27, $26, $0D, $26, $27, $26, $0D, $26, $06, $28, $07, $2A, $0D, $28, $06
+L9B8B:  .byte $2A, $07, $2C, $0D, $FF, $00, $16, $FE, $FB, $0F, $FD, $00, $03, $80, $FC, $10
+L9B9B:  .byte $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D
+L9BAB:  .byte $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D
+L9BBB:  .byte $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D
+L9BCB:  .byte $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D
+L9BDB:  .byte $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D
+L9BEB:  .byte $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D
+L9BFB:  .byte $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D
+L9C0B:  .byte $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D
+L9C1B:  .byte $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D
+L9C2B:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9C3B:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9C4B:  .byte $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D, $09, $0D
+L9C5B:  .byte $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D
+L9C6B:  .byte $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D
+L9C7B:  .byte $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D
+L9C8B:  .byte $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D
+L9C9B:  .byte $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0B, $0D, $0B, $0D, $0B, $0D, $0B, $0D
+L9CAB:  .byte $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D, $0A, $0D
+L9CBB:  .byte $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D
+L9CCB:  .byte $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D, $0C, $0D
+L9CDB:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9CEB:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9CFB:  .byte $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D
+L9D0B:  .byte $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D
+L9D1B:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9D2B:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9D3B:  .byte $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D
+L9D4B:  .byte $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D, $11, $0D
+L9D5B:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9D6B:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9D7B:  .byte $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D
+L9D8B:  .byte $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $0E, $0D, $10, $1A
+L9D9B:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D, $10, $0D
+L9DAB:  .byte $10, $0D, $10, $0D, $10, $0D, $10, $06, $0E, $07, $0B, $0D, $10, $06, $0E, $07
+L9DBB:  .byte $0B, $0D, $FF, $00, $D6, $FD, $0A, $82, $83, $84, $85, $87, $89, $8B, $8A, $8C
+L9DCB:  .byte $8D, $10, $8D, $8D, $8D, $8D, $8D, $8D, $8D, $8D, $8C, $8C, $8C, $8C, $8C, $8C
+L9DDB:  .byte $8C, $8C, $12, $8C, $8B, $8A, $89, $89, $88, $88, $87, $87, $86, $86, $86, $85
+L9DEB:  .byte $85, $85, $84, $84, $84, $84, $0A, $82, $83, $84, $85, $87, $89, $8B, $8A, $8C
+L9DFB:  .byte $8D, $10, $8D, $8D, $8D, $8D, $8D, $8D, $8D, $8D, $8C, $8C, $8C, $8C, $8C, $8C
+L9E0B:  .byte $8C, $8C, $10, $8C, $8B, $8A, $89, $89, $88, $88, $87, $87, $86, $86, $86, $85
+L9E1B:  .byte $85, $85, $84, $84, $84, $84, $08, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $10
+L9E2B:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
+L9E3B:  .byte $08, $0F, $0F, $00, $00, $00, $00, $00, $00, $00, $07, $85, $89, $8C, $8E, $90
+L9E4B:  .byte $8C, $88, $01, $88, $0D, $87, $88, $88, $88, $87, $87, $87, $87, $86, $86, $86
+L9E5B:  .byte $86, $85, $85, $08, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $20, $0F, $0F, $0F
+L9E6B:  .byte $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F
+L9E7B:  .byte $0F, $0F, $0F, $0F, $0F, $00, $00, $00, $00, $00, $00, $00, $00, $08, $00, $00
+L9E8B:  .byte $00, $00, $00, $00, $00, $00, $00, $07, $85, $89, $8C, $8E, $90, $8C, $88, $01
+L9E9B:  .byte $88, $0D, $87, $88, $88, $88, $87, $87, $87, $87, $86, $86, $86, $86, $85, $85
+L9EAB:  .byte $FB, $0E, $FD, $00, $0F, $14, $FC, $13, $1D, $4E, $1D, $13, $1F, $14, $21, $13
+L9EBB:  .byte $1A, $14, $22, $4E, $1D, $4E, $1F, $4E, $18, $27, $24, $27, $21, $9C, $FE, $27
+L9ECB:  .byte $FE, $13, $1A, $14, $21, $13, $22, $14, $24, $13, $21, $14, $22, $3A, $1A, $3B
+L9EDB:  .byte $1F, $27, $1D, $4E, $FE, $13, $1F, $0A, $20, $0A, $1F, $13, $1D, $14, $1D, $3A
+L9EEB:  .byte $1D, $0A, $1F, $0A, $1C, $4E, $1D, $4E, $1D, $13, $1F, $14, $21, $13, $1A, $14
+L9EFB:  .byte $22, $4E, $1D, $4E, $1F, $4E, $18, $27, $24, $27, $21, $9C, $FE, $27, $FE, $13
+L9F0B:  .byte $1A, $14, $21, $13, $22, $14, $24, $13, $21, $14, $22, $3A, $1A, $3B, $1F, $27
+L9F1B:  .byte $1D, $4E, $FE, $13, $1F, $0A, $20, $0A, $1F, $13, $1D, $14, $1D, $3A, $1D, $0A
+L9F2B:  .byte $1F, $0A, $1C, $4E, $28, $13, $29, $27, $2B, $14, $28, $4E, $28, $13, $29, $27
+L9F3B:  .byte $2B, $14, $2D, $13, $2B, $06, $2D, $06, $2B, $08, $29, $13, $28, $14, $26, $3A
+L9F4B:  .byte $24, $62, $24, $0C, $24, $0D, $26, $0E, $26, $0C, $28, $0D, $28, $0E, $28, $0C
+L9F5B:  .byte $28, $0D, $29, $0E, $29, $0C, $2B, $0D, $2B, $0E, $28, $13, $29, $27, $2B, $14
+L9F6B:  .byte $28, $4E, $28, $13, $29, $27, $2B, $14, $2D, $13, $2B, $06, $2D, $06, $2B, $08
+L9F7B:  .byte $29, $13, $28, $14, $26, $3A, $24, $62, $24, $0C, $24, $0D, $26, $0E, $26, $0C
+L9F8B:  .byte $28, $0D, $28, $0E, $28, $0C, $28, $0D, $29, $0E, $29, $0C, $2B, $0D, $2B, $0E
+L9F9B:  .byte $2C, $13, $29, $14, $29, $13, $26, $14, $26, $13, $23, $27, $2C, $14, $2C, $13
+L9FAB:  .byte $29, $14, $29, $13, $26, $14, $26, $13, $23, $3B, $28, $3A, $28, $0A, $29, $0A
+L9FBB:  .byte $2B, $3A, $2B, $0A, $2D, $0A, $2E, $3A, $2E, $0A, $30, $0A, $2D, $4E, $FF, $00
+L9FCB:  .byte $E2, $FE, $FB, $0C, $FD, $00, $0A, $18, $FC, $14, $FE, $13, $1A, $14, $1D, $13
+L9FDB:  .byte $1F, $14, $21, $27, $1A, $27, $FE, $13, $1A, $14, $1D, $13, $1F, $14, $22, $27
+L9FEB:  .byte $1A, $27, $FE, $13, $18, $14, $1C, $13, $1D, $14, $1F, $27, $18, $27, $FE, $13
+L9FFB:  .byte $18, $14, $1D, $13, $1F
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1291,18 +3479,23 @@ LA048:  TYA
 LA049:  STA SFXIndex,X
 LA04C:  RTS
 
-LA04D:  .byte $03, $09, $6B
-LA050:  .byte $A1, $03, $09, $81, $A1, $22, $27, $1A, $27, $FE, $13, $18, $14, $1C, $13, $1D
-LA060:  .byte $14, $1F, $27, $18, $27, $FE, $13, $18, $14, $1D, $13, $1F, $14, $21, $27, $18
-LA070:  .byte $27, $FE, $13, $1A, $14, $1E, $13, $21, $14, $24, $13, $22, $14, $21, $13, $1E
-LA080:  .byte $14, $FE, $13, $1F, $14, $1A, $13, $22, $14, $24, $13, $22, $06, $24, $06, $22
-LA090:  .byte $08, $21, $13, $1A, $14, $FE, $13, $1D, $14, $17, $13, $1A, $14, $1D, $13, $17
-LA0A0:  .byte $14, $20, $13, $1D, $14, $1A, $3A, $1A, $0A, $1C, $0A, $19, $4E, $FC, $16, $FE
-LA0B0:  .byte $13, $26, $0A, $28, $0A, $29, $09, $28, $0A, $26, $0A, $28, $0A, $FE, $13, $26
-LA0C0:  .byte $0A, $28, $0A, $29, $09, $28, $0A, $26, $0A, $28, $0A, $FE, $13, $26, $0A, $28
-LA0D0:  .byte $0A, $29, $09, $28, $0A, $26, $0A, $28, $0A, $FE, $13, $26, $0A, $28, $0A, $29
-LA0E0:  .byte $09, $28, $0A, $26, $0A, $28, $0A, $FE, $13, $24, $0A, $26, $0A, $28, $09, $26
-LA0F0:  .byte $0A, $24, $0A, $26, $0A, $FE, $13, $24, $0A, $26, $0A, $28, $09, $26, $0A, $24
+;----------------------------------------------------------------------------------------------------
+
+;Unused.
+LA04D:  .byte $03, $09, $6B, $A1, $03, $09, $81, $A1, $22, $27, $1A, $27, $FE, $13, $18, $14
+LA05D:  .byte $1C, $13, $1D, $14, $1F, $27, $18, $27, $FE, $13, $18, $14, $1D, $13, $1F, $14
+LA06D:  .byte $21, $27, $18, $27, $FE, $13, $1A, $14, $1E, $13, $21, $14, $24, $13, $22, $14
+LA07D:  .byte $21, $13, $1E, $14, $FE, $13, $1F, $14, $1A, $13, $22, $14, $24, $13, $22, $06
+LA08D:  .byte $24, $06, $22, $08, $21, $13, $1A, $14, $FE, $13, $1D, $14, $17, $13, $1A, $14
+LA09D:  .byte $1D, $13, $17, $14, $20, $13, $1D, $14, $1A, $3A, $1A, $0A, $1C, $0A, $19, $4E
+LA0AD:  .byte $FC, $16, $FE, $13, $26, $0A, $28, $0A, $29, $09, $28, $0A, $26, $0A, $28, $0A
+LA0BD:  .byte $FE, $13, $26, $0A, $28, $0A, $29, $09, $28, $0A, $26, $0A, $28, $0A, $FE, $13
+LA0CD:  .byte $26, $0A, $28, $0A, $29, $09, $28, $0A, $26, $0A, $28, $0A, $FE, $13, $26, $0A
+LA0DD:  .byte $28, $0A, $29, $09, $28, $0A, $26, $0A, $28, $0A, $FE, $13, $24, $0A, $26, $0A
+LA0ED:  .byte $28, $09, $26, $0A, $24, $0A, $26, $0A, $FE, $13, $24, $0A, $26, $0A, $28, $09
+LA0FD:  .byte $26, $0A, $24
+
+;----------------------------------------------------------------------------------------------------
 
 UpdateSFX:
 LA100:  LDX #$00                ;Start with SQ1 SFX data.
@@ -1328,7 +3521,7 @@ LA122:  INY
 LA123:  LDA (GenPtrF0),Y
 LA125:  STA ChnCntrl2,X
 LA128:  INY
-LA129:  JMP SFXDecrementTime    ;($A13F)Dec rement remining time for SFX channel.
+LA129:  JMP SFXDecrementTime    ;($A13F)Decrement remining time for SFX channel.
 
 SFX1RegUpdate:
 LA12C:  LDY SFXIndex,X
