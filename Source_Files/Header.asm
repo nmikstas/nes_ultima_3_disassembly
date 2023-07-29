@@ -1,4 +1,4 @@
-;Dragon Warrior NES Emulator Header File.
+;Ultima Exodus NES Emulator Header File.
 .org $0000
 
 ;----------------------------------------------------------------------------------------------------
