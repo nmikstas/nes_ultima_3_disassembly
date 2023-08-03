@@ -311,6 +311,7 @@
 .alias _MapDatPtr       $CF     ;Map data pointer.
 .alias _MapDatPtrLB     $CF     ;Map data pointer, lower byte.
 .alias _MapDatPtrUB     $D0     ;Map data pointer, upper byte. 
+.alias MapTypeNIndex    $D1     ;MSB set=dungeon, MSB clear=Top view, lower nibble=index for text.
 
 .alias FirstMoonPhase   $D3     ;Upper nibble: Phase of the left moon $0-$7.
                                 ;lower nibble: counter for current phase $0-$B.
@@ -637,6 +638,7 @@
 
 .alias SFXNseUnused7696 $7696   ;Not used.
 .alias SFXNseFinished   $7697   ;#$01=SFX currently playing on noise just finished.
+
 .alias SFXPtrLB         $7698   ;Base address, lower byte of SFX data being read.
 .alias SFXPtrUB         $7699   ;Base address, upper byte of SFX data being read.
 .alias SFXIndex         $769A   ;index for currenty playing SFX.
@@ -647,30 +649,37 @@
 .alias SFXSQ1PtrUB      $7699   ;Base address, upper byte of SFX SQ1 data being read.
 .alias SFXSQ1Index      $769A   ;Index of SFX SQ1 data currently being read.
 .alias SFXSQ1Left       $769B   ;Number of frames left to play in SQ1 SFX.
+
 .alias SFXSQ2PtrLB      $769C   ;Base address, lower byte of SFX SQ2 data being read.
 .alias SFXSQ2PtrUB      $769D   ;Base address, upper byte of SFX SQ2 data being read.
 .alias SFXSQ2Index      $769E   ;Index of SFX SQ2 data currently being read.
 .alias SFXSQ2Left       $769F   ;Number of frames left to play in SQ2 SFX.
+
 .alias SFXTriPtrLB      $76A0   ;Base address, lower byte of SFX Triangle data being read.
 .alias SFXTriPtrUB      $76A1   ;Base address, upper byte of SFX Triangle data being read.
 .alias SFXTriIndex      $76A2   ;Index of SFX Triangle data currently being read.
 .alias SFXTriLeft       $76A3   ;Number of frames left to play in Triangle SFX.
+
 .alias SFXNsePtrLB      $76A4   ;Base address, lower byte of SFX Noise data being read.
 .alias SFXNsePtrUB      $76A5   ;Base address, upper byte of SFX Noise data being read.
 .alias SFXNseIndex      $76A6   ;Index of SFX Noise data currently being read.
 .alias SFXNseLeft       $76A7   ;Number of frames left to play in Noise SFX.
+
 .alias SFXSQ1Channel    $76A8   ;If bit 4 set, only update control register 0 for SFX.
 .alias SFXSQ1Unused1    $76A9   ;Not used.
 .alias SFXSQ1Unused2    $76AA   ;Not used.
 .alias SFXSQ1Unused3    $76AB   ;Not used.
+
 .alias SFXSQ2Channel    $76AC   ;If bit 4 set, only update control register 0 for SFX.
 .alias SFXSQ2Unused1    $76AD   ;Not used.
 .alias SFXSQ2Unused2    $76AE   ;Not used.
 .alias SFXSQ2Unused3    $76AF   ;Not used.
+
 .alias SFXTriChannel    $76B0   ;If bit 4 set, only update control register 0 for SFX.
 .alias SFXTriUnused1    $76B1   ;Not used.
 .alias SFXTriUnused2    $76B2   ;Not used.
 .alias SFXTriUnused3    $76B3   ;Not used.
+
 .alias SFXNseChannel    $76B4   ;If bit 4 set, only update control register 0 for SFX.
 .alias SFXNseUnused1    $76B5   ;Not used.
 .alias SFXNseUnused2    $76B6   ;Not used.
@@ -868,7 +877,7 @@
 .alias BANK_NPCS        $03     ;MMC1 bank $03. NPC tile patterns.
 .alias BANK_ENEMIES     $04     ;MMC1 bank $04. Enemy tile patterns.
 .alias BANK_TEXT        $05     ;MMC1 bank $05. Game text.
-.alias BANK_GEM         $06     ;MMC1 bank $06. Overwolrg gem maps/Shrines map.
+.alias BANK_GEM         $06     ;MMC1 bank $06. Overworld gem maps/Shrines map.
 .alias BANK_CHARS       $07     ;MMC1 bank $07. Character class tile patterns
 .alias BANK_MUSIC       $08     ;MMC1 bank $08. Music routines
 .alias BANK_SFX         $09     ;MMC1 bank $09. Music/SFX routines.

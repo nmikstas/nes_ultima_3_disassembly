@@ -3447,37 +3447,41 @@ LA00B:  ASL                     ;
 LA00C:  ASL                     ;*4. 4 control registers per channel.
 LA00D:  TAX                     ;
 
-LA00E:  INY
-LA00F:  LDA SFXInitData,Y
-LA012:  STA SFXLeft,X
-LA015:  INY
-LA016:  LDA SFXInitData,Y
-LA019:  STA SFXPtrLB,X
-LA01C:  INY
-LA01D:  LDA SFXInitData,Y
-LA020:  STA SFXPtrUB,X
-LA023:  INY
-LA024:  LDA SFXPtrLB,X
-LA027:  STA GenPtrF0LB
-LA029:  LDA SFXPtrUB,X
-LA02C:  STA GenPtrF0UB
+LA00E:  INY                     ;
+LA00F:  LDA SFXInitData,Y       ;Store the length of the SFX.
+LA012:  STA SFXLeft,X           ;
 
-LA02E:  LDY #$00
-LA030:  LDA (GenPtrF0),Y
-LA032:  STA ChnCntrl0,X
-LA035:  INY
-LA036:  LDA (GenPtrF0),Y
-LA038:  STA ChnCntrl1,X
-LA03B:  INY
-LA03C:  LDA (GenPtrF0),Y
-LA03E:  STA ChnCntrl2,X
-LA041:  INY
-LA042:  LDA (GenPtrF0),Y
-LA044:  STA ChnCntrl3,X
-LA047:  INY
-LA048:  TYA
-LA049:  STA SFXIndex,X
-LA04C:  RTS
+LA015:  INY                     ;
+LA016:  LDA SFXInitData,Y       ;
+LA019:  STA SFXPtrLB,X          ;
+LA01C:  INY                     ;Save the pointer to the SFX data.
+LA01D:  LDA SFXInitData,Y       ;
+LA020:  STA SFXPtrUB,X          ;
+LA023:  INY                     ;
+
+LA024:  LDA SFXPtrLB,X          ;
+LA027:  STA GenPtrF0LB          ;Make a copy of the SFX data pointer.
+LA029:  LDA SFXPtrUB,X          ;
+LA02C:  STA GenPtrF0UB          ;
+
+LA02E:  LDY #$00                ;Zero out the index.
+
+LA030:  LDA (GenPtrF0),Y        ;
+LA032:  STA ChnCntrl0,X         ;
+LA035:  INY                     ;
+LA036:  LDA (GenPtrF0),Y        ;
+LA038:  STA ChnCntrl1,X         ;Set the initial values of the music channel registers
+LA03B:  INY                     ;for the selected SFX.
+LA03C:  LDA (GenPtrF0),Y        ;
+LA03E:  STA ChnCntrl2,X         ;
+LA041:  INY                     ;
+LA042:  LDA (GenPtrF0),Y        ;
+LA044:  STA ChnCntrl3,X         ;
+
+LA047:  INY                     ;
+LA048:  TYA                     ;Store the index to the SFX data for the next SFX update.
+LA049:  STA SFXIndex,X          ;
+LA04C:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -3509,49 +3513,56 @@ LA10A:  AND #$F0                ;Does only control register 0 needs to be update
 LA10C:  CMP #$10                ;If so, branch(does not appear to be used in this game).
 LA10E:  BEQ SFX1RegUpdate       ;
 
-LA110:  LDY SFXIndex,X
-LA113:  LDA SFXPtrLB,X
-LA116:  STA GenPtrF0LB
-LA118:  LDA SFXPtrUB,X
-LA11B:  STA GenPtrF0UB
+LA110:  LDY SFXIndex,X          ;Get the index to the current SFX data.
 
-LA11D:  LDA (GenPtrF0),Y
-LA11F:  STA ChnCntrl0,X
-LA122:  INY
-LA123:  LDA (GenPtrF0),Y
-LA125:  STA ChnCntrl2,X
-LA128:  INY
+LA113:  LDA SFXPtrLB,X          ;
+LA116:  STA GenPtrF0LB          ;Get the pointer to the base address of the SFX data.
+LA118:  LDA SFXPtrUB,X          ;
+LA11B:  STA GenPtrF0UB          ;
+
+LA11D:  LDA (GenPtrF0),Y        ;
+LA11F:  STA ChnCntrl0,X         ;
+LA122:  INY                     ;Update control registers 0 and 2 for the given audio channel.
+LA123:  LDA (GenPtrF0),Y        ;
+LA125:  STA ChnCntrl2,X         ;
+LA128:  INY                     ;
+
 LA129:  JMP SFXDecrementTime    ;($A13F)Decrement remining time for SFX channel.
 
 SFX1RegUpdate:
-LA12C:  LDY SFXIndex,X
-LA12F:  LDA SFXPtrLB,X
-LA132:  STA GenPtrF0LB
-LA134:  LDA SFXPtrUB,X
-LA137:  STA GenPtrF0UB
-LA139:  LDA (GenPtrF0),Y
-LA13B:  STA ChnCntrl0,X
-LA13E:  INY
+LA12C:  LDY SFXIndex,X          ;Get the index to the current SFX data.
+
+LA12F:  LDA SFXPtrLB,X          ;
+LA132:  STA GenPtrF0LB          ;Get the pointer to the base address of the SFX data.
+LA134:  LDA SFXPtrUB,X          ;
+LA137:  STA GenPtrF0UB          ;
+
+LA139:  LDA (GenPtrF0),Y        ;
+LA13B:  STA ChnCntrl0,X         ;Update control register 0 for the given audio channel.
+LA13E:  INY                     ;
 
 SFXDecrementTime:
-LA13F:  TYA
-LA140:  STA SFXIndex,X
-LA143:  DEC SFXLeft,X
-LA146:  BNE LA14D
-LA148:  LDA #$01
-LA14A:  STA SFXFinished,X
+LA13F:  TYA                     ;Update to index to the SFX data for the next frame.
+LA140:  STA SFXIndex,X          ;
+
+LA143:  DEC SFXLeft,X           ;Decrement frames remaining for current SFX. Has the time expired?
+LA146:  BNE FinishSFXChnUpdate  ;If not, branch.
+
+LA148:  LDA #$01                ;Indicate the SFX has completed.
+LA14A:  STA SFXFinished,X       ;
 
 FinishSFXChnUpdate:
-LA14D:  INX
-LA14E:  INX
-LA14F:  INX
-LA150:  INX
-LA151:  CPX #$10
-LA153:  BCC UpdateSFXChnLoop
+LA14D:  INX                     ;
+LA14E:  INX                     ;Move intex to next audio channel.
+LA14F:  INX                     ;
+LA150:  INX                     ;
 
-LA155:  LDA #$0F
-LA157:  STA APUCommonCntrl0
-LA15A:  RTS
+LA151:  CPX #$10                ;Have all 4 audio channels been checked?
+LA153:  BCC UpdateSFXChnLoop    ;If not, branch to check next channel.
+
+LA155:  LDA #$0F                ;
+LA157:  STA APUCommonCntrl0     ;Enable SQ1, SQ2, triangle and noise channels.
+LA15A:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -3598,24 +3609,24 @@ LA17F:  .byte $01, $33          ;SQ2 SFX, 51 frames long.
 LA181:  .word SFXDat05          ;Unused SFX.
 
 InitSFX06:
-LA183:  .byte $01, $33
-LA185:  .word $A335
+LA183:  .byte $01, $33          ;SQ2 SFX, 51 frames long.
+LA185:  .word SFXDat06          ;Unused SFX.
 
 InitSFX07:
-LA187:  .byte $01, $33
-LA189:  .word $A39F
+LA187:  .byte $01, $33          ;SQ2 SFX, 51 frames long.
+LA189:  .word SFXDat07          ;Travel through moon gate SFX.
 
 InitSFX08:
-LA18B:  .byte $03, $0F
-LA18D:  .word $A409
+LA18B:  .byte $03, $0F          ;Noise SFX, 15 frames long.
+LA18D:  .word SFXDat08          ;Unused SFX.
 
 InitSFX09:
-LA18F:  .byte $00, $1B
-LA191:  .word $A42B
+LA18F:  .byte $00, $1B          ;SQ1 SFX, 27 frames long.
+LA191:  .word SFXDat09          ;Casino SFX.
 
 InitSFX0A:
-LA193:  .byte $00, $1B
-LA195:  .word $A465
+LA193:  .byte $00, $1B          ;SQ1 SFX, 27 frames long.
+LA195:  .word SFXDat0A          ;Unused SFX.
 
 InitSFX0B:
 LA197:  .byte $00, $1B
@@ -3871,39 +3882,62 @@ LA2F0:  .byte $BC, $F9, $B0, $B9, $C8, $F9, $B8, $F8, $B0, $B8, $C4, $F8, $B4, $
 LA300:  .byte $C0, $F7, $B0, $F6, $B0, $B6, $BC, $F6, $BC, $F5, $B0, $B5, $B8, $F5, $B8, $F4
 LA310:  .byte $B0, $B4, $B4, $F4, $B4, $F3, $B0, $B3, $B0, $F3, $B0, $F2, $B0, $B2, $AC, $F2
 LA320:  .byte $BC, $F2, $B0, $B2, $A8, $F2, $B8, $F2, $B0, $B2, $A4, $F2, $B4, $F1, $B0, $B1
-LA330:  .byte $A0, $F1, $B0, $70, $20, $BF, $00, $F0, $00, $FF, $E0, $BF, $D0, $FE, $B0, $BE
+LA330:  .byte $A0, $F1, $B0, $70, $20
+
+SFXDat06:
+LA335:  .byte $BF, $00, $F0, $00, $FF, $E0, $BF, $D0, $FE, $B0, $BE
 LA340:  .byte $FC, $FE, $BC, $FD, $B0, $BD, $F8, $FD, $B8, $FC, $B0, $BC, $F4, $FC, $B4, $FB
 LA350:  .byte $B0, $BB, $F0, $FB, $B0, $FA, $B0, $BA, $EC, $FA, $BC, $F9, $B0, $B9, $E8, $F9
 LA360:  .byte $B8, $F8, $B0, $B8, $E4, $F8, $B4, $F7, $B0, $B7, $E0, $F7, $B0, $F6, $B0, $B6
 LA370:  .byte $DC, $F6, $BC, $F5, $B0, $B5, $D8, $F5, $B8, $F4, $B0, $B4, $D4, $F4, $B4, $F3
 LA380:  .byte $B0, $B3, $D0, $F3, $B0, $F2, $B0, $B2, $CC, $F2, $BC, $F2, $B0, $B2, $C8, $F2
-LA390:  .byte $B8, $F2, $B0, $B2, $C4, $F2, $B4, $F1, $B0, $B1, $C0, $F1, $B0, $70, $20, $BF
+LA390:  .byte $B8, $F2, $B0, $B2, $C4, $F2, $B4, $F1, $B0, $B1, $C0, $F1, $B0, $70, $20
+
+SFXDat07:
+LA39F:  .byte $BF
 LA3A0:  .byte $BB, $F0, $00, $FF, $E0, $BF, $D0, $FE, $B0, $BE, $FC, $FE, $BC, $FD, $B0, $BD
 LA3B0:  .byte $F8, $FD, $B8, $FC, $B0, $BC, $F4, $FC, $B4, $FB, $B0, $BB, $F0, $FB, $B0, $FA
 LA3C0:  .byte $B0, $BA, $EC, $FA, $BC, $F9, $B0, $B9, $E8, $F9, $B8, $F8, $B0, $B8, $E4, $F8
 LA3D0:  .byte $B4, $F7, $B0, $B7, $E0, $F7, $B0, $F6, $B0, $B6, $DC, $F6, $BC, $F5, $B0, $B5
 LA3E0:  .byte $D8, $F5, $B8, $F4, $B0, $B4, $D4, $F4, $B4, $F3, $B0, $B3, $D0, $F3, $B0, $F2
 LA3F0:  .byte $B0, $B2, $CC, $F2, $BC, $F2, $B0, $B2, $C8, $F2, $B8, $F2, $B0, $B2, $C4, $F2
-LA400:  .byte $B4, $F1, $B0, $B1, $C0, $F1, $B0, $70, $20, $BF, $00, $0C, $00, $FF, $0C, $BF
+LA400:  .byte $B4, $F1, $B0, $B1, $C0, $F1, $B0, $70, $20
+
+SFXDat08:
+LA409:  .byte $BF, $00, $0C, $00, $FF, $0C, $BF
 LA410:  .byte $08, $FF, $0C, $BF, $08, $FF, $0C, $FC, $08, $BC, $0C, $FA, $08, $FA, $0C, $B8
-LA420:  .byte $08, $F8, $0C, $F6, $08, $B4, $0C, $F2, $08, $70, $00, $3F, $04, $0C, $01, $3F
+LA420:  .byte $08, $F8, $0C, $F6, $08, $B4, $0C, $F2, $08, $70, $00
+
+SFXDat09:
+LA42B:  .byte $3F, $04, $0C, $01, $3F
 LA430:  .byte $04, $3F, $00, $3C, $06, $3C, $06, $3C, $06, $38, $06, $38, $06, $38, $06, $36
 LA440:  .byte $06, $36, $06, $36, $06, $34, $06, $34, $06, $34, $06, $34, $06, $34, $06, $34
 LA450:  .byte $06, $32, $06, $32, $06, $32, $06, $31, $06, $31, $06, $31, $06, $31, $06, $31
-LA460:  .byte $06, $31, $06, $70, $00, $3F, $00, $C0, $00, $3F, $F0, $3F, $E0, $3C, $D0, $7C
+LA460:  .byte $06, $31, $06, $70, $00
+
+SFXDat0A:
+LA465:  .byte $3F, $00, $C0, $00, $3F, $F0, $3F, $E0, $3C, $D0, $7C
 LA470:  .byte $C0, $BC, $F0, $38, $E0, $78, $D0, $B8, $C0, $36, $F0, $76, $E0, $B6, $D0, $34
 LA480:  .byte $C0, $74, $F0, $B4, $E0, $34, $D0, $74, $C0, $B4, $F0, $32, $E0, $72, $D0, $B2
-LA490:  .byte $C0, $31, $F0, $71, $E0, $B1, $D0, $31, $C0, $71, $F0, $B1, $E0, $70, $80, $3F
+LA490:  .byte $C0, $31, $F0, $71, $E0, $B1, $D0, $31, $C0, $71, $F0, $B1, $E0, $70, $80
+
+LA49F:  .byte $3F
 LA4A0:  .byte $00, $20, $00, $7F, $20, $FF, $20, $3C, $20, $7C, $20, $FC, $20, $38, $22, $78
 LA4B0:  .byte $22, $F8, $22, $36, $24, $76, $24, $F6, $24, $34, $26, $74, $26, $F4, $26, $34
 LA4C0:  .byte $28, $74, $28, $F4, $28, $32, $2A, $72, $2A, $F2, $2A, $31, $2C, $71, $2C, $F1
-LA4D0:  .byte $2C, $31, $2E, $71, $2E, $F1, $2E, $70, $80, $7F, $00, $30, $00, $7F, $30, $7F
+LA4D0:  .byte $2C, $31, $2E, $71, $2E, $F1, $2E, $70, $80
+
+LA4D9:  .byte $7F, $00, $30, $00, $7F, $30, $7F
 LA4E0:  .byte $30, $7C, $30, $7C, $30, $7C, $30, $78, $32, $78, $32, $78, $32, $76, $34, $76
 LA4F0:  .byte $34, $76, $34, $74, $36, $74, $36, $74, $36, $74, $38, $74, $38, $74, $38, $72
 LA500:  .byte $3A, $72, $3A, $72, $3A, $71, $3C, $71, $3C, $71, $3C, $71, $3E, $71, $3E, $71
-LA510:  .byte $3E, $70, $80, $3F, $00, $E0, $00, $3F, $D8, $3F, $D0, $3D, $C4, $3D, $D8, $3D
+LA510:  .byte $3E, $70, $80
+
+LA513:  .byte $3F, $00, $E0, $00, $3F, $D8, $3F, $D0, $3D, $C4, $3D, $D8, $3D
 LA520:  .byte $AC, $3B, $A0, $3B, $90, $3B, $80, $38, $70, $38, $60, $38, $50, $34, $40, $34
-LA530:  .byte $30, $34, $20, $70, $00, $FF, $00, $E0, $00, $FF, $D8, $FF, $D0, $FD, $C4, $FD
+LA530:  .byte $30, $34, $20, $70, $00
+
+LA535:  .byte $FF, $00, $E0, $00, $FF, $D8, $FF, $D0, $FD, $C4, $FD
 LA540:  .byte $D8, $FD, $AC, $FB, $A0, $FB, $90, $FB, $80, $F8, $70, $F8, $60, $F8, $50, $F4
 LA550:  .byte $40, $F4, $30, $F4, $20, $70, $00, $FF, $00, $80, $00, $FF, $40, $FF, $78, $FD
 LA560:  .byte $48, $FD, $70, $FD, $50, $FB, $68, $FB, $58, $FB, $60, $F8, $60, $F8, $68, $F8
@@ -4005,11 +4039,18 @@ LAB50:  .byte $B7, $32, $B7, $32, $B6, $31, $B6, $31, $B5, $31, $B5, $31, $B4, $
 LAB60:  .byte $B3, $30, $B3, $30, $B2, $2F, $B2, $2F, $38, $00, $07, $00, $3C, $07, $3F, $08
 LAB70:  .byte $38, $09, $34, $0A, $30, $0A, $30, $0A, $30, $0A, $30, $0A, $36, $00, $04, $00
 LAB80:  .byte $33, $07, $36, $04, $34, $07, $38, $04, $34, $07, $36, $04, $33, $04, $30, $0A
-LAB90:  .byte $30, $0A, $30, $0A, $B6, $00, $60, $00, $BA, $90, $BF, $70, $BC, $A0, $BA, $80
-LABA0:  .byte $B7, $C0, $B5, $90, $B2, $E0, $B1, $A0, $B0, $10, $B6, $00, $00, $01, $3A, $10
+LAB90:  .byte $30, $0A, $30, $0A
+
+LAB94:  .byte $B6, $00, $60, $00, $BA, $90, $BF, $70, $BC, $A0, $BA, $80
+LABA0:  .byte $B7, $C0, $B5, $90, $B2, $E0, $B1, $A0, $B0, $10
+
+LABAA:  .byte $B6, $00, $00, $01, $3A, $10
 LABB0:  .byte $BF, $20, $3C, $30, $BA, $40, $37, $50, $B5, $60, $32, $70, $B1, $80, $B0, $90
+
 LABC0:  .byte $B6, $00, $00, $02, $3A, $30, $BF, $10, $3C, $40, $BA, $30, $37, $60, $B5, $40
-LABD0:  .byte $32, $80, $B1, $60, $B0, $A0, $36, $00, $00, $01, $3A, $20, $3F, $40, $3C, $60
+LABD0:  .byte $32, $80, $B1, $60, $B0, $A0
+
+LABD6:  .byte $36, $00, $00, $01, $3A, $20, $3F, $40, $3C, $60
 LABE0:  .byte $3A, $80, $37, $A0, $35, $C0, $32, $E0, $31, $F0, $30, $F0
 
 SFXDat33:

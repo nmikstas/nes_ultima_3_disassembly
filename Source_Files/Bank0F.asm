@@ -700,7 +700,7 @@ LC45B:  BPL LC45F
 LC45D:  LDY #$09
 LC45F:  STY MapProperties
 LC461:  AND #$7F
-LC463:  STA $D1
+LC463:  STA MapTypeNIndex
 LC465:  JMP PrepLoadMap         ;($C146)Prepare to load a new map.
 
 EnterShrine:
@@ -9151,6 +9151,7 @@ LFE8E:  .byte $10, $30, $15, $36, $10, $30, $02, $36, $10, $06, $15, $26, $10, $
 
 ;----------------------------------------------------------------------------------------------------
 
+;Unused.
 LFE9E:  .byte $FF, $FF
 
 ;----------------------------------------------------------------------------------------------------
@@ -9160,7 +9161,7 @@ LFE9E:  .byte $FF, $FF
 ;Byte 4, byte 3 - Pointer to NPC data(not used for cave maps).
 ;Byte 5 - Y start position on map(except dungeons and overworld).
 ;Byte 6 - X start position on map(except dungeons and overworld).
-;Byte 7 - ?
+;Byte 7 - MSB set=dungeon, MSB clear=Top view, lower nibble=index for text.
 
 MapDatTbl:
 LFEA0:  .byte $00, $00, $80, $00, $B8, $16, $2A, $00 ;Overworld.
