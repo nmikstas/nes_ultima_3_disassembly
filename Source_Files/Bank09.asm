@@ -3629,164 +3629,164 @@ LA193:  .byte $00, $1B          ;SQ1 SFX, 27 frames long.
 LA195:  .word SFXDat0A          ;Unused SFX.
 
 InitSFX0B:
-LA197:  .byte $00, $1B
-LA199:  .word $A49F
+LA197:  .byte $00, $1B          ;SQ1 SFX, 27 frames long.
+LA199:  .word SFXDat0B          ;Spell variant B SFX.
 
 InitSFX0C:
-LA19B:  .byte $00, $1B
-LA19D:  .word $A4D9
+LA19B:  .byte $00, $1B          ;SQ1 SFX, 27 frames long.
+LA19D:  .word SFXDat0C          ;Unused SFX.
 
 InitSFX0D:
-LA19F:  .byte $00, $0F
-LA1A1:  .word $A513
+LA19F:  .byte $00, $0F          ;SQ1 SFX, 15 frames long.
+LA1A1:  .word SFXDat0D          ;Unused SFX.
 
 InitSFX0E:
-LA1A3:  .byte $00, $0F
-LA1A5:  .word $A535
+LA1A3:  .byte $00, $0F          ;SQ1 SFX, 15 frames long.
+LA1A5:  .word SFXDat0E          ;Chest opened/card placed SFX.
 
 InitSFX0F:
-LA1A7:  .byte $00, $11
-LA1A9:  .word $A557
+LA1A7:  .byte $00, $11          ;SQ1 SFX, 17 frames long.
+LA1A9:  .word SFXDat0F          ;Unused SFX.
 
 InitSFX10:
-LA1AB:  .byte $00, $1A
-LA1AD:  .word $A57D
+LA1AB:  .byte $00, $1A          ;SQ1 SFX, 26 frames long.
+LA1AD:  .word SFXDat10          ;Unused SFX.
 
 InitSFX11:
-LA1AF:  .byte $00, $21
-LA1B1:  .word $A5B5
+LA1AF:  .byte $00, $21          ;SQ1 SFX, 33 frames long.
+LA1B1:  .word SFXDat11          ;Time stopped SFX.
 
 InitSFX12:
-LA1B3:  .byte $00, $21
-LA1B5:  .word $A5FB
+LA1B3:  .byte $00, $21          ;SQ1 SFX, 33 frames long.
+LA1B5:  .word SFXDat12          ;Enemy miss physical attack SFX.
 
 InitSFX13:
-LA1B7:  .byte $10, $3D
-LA1B9:  .word $A641
+LA1B7:  .byte $10, $3D          ;SQ1 SFX, 61 frames long. Only update control register 0.
+LA1B9:  .word SFXDat13          ;Unused SFX.
 
 InitSFX14:
-LA1BB:  .byte $03, $1C
-LA1BD:  .word $A682
+LA1BB:  .byte $03, $1C          ;Noise SFX, 28 frames long.
+LA1BD:  .word SFXDat14          ;Player suffers fire/force damage SFX.
 
 InitSFX15:
-LA1BF:  .byte $03, $1C
-LA1C1:  .word $A6BE
+LA1BF:  .byte $03, $1C          ;Noise SFX, 28 frames long.
+LA1C1:  .word SFXDat15          ;Unused SFX.
 
 InitSFX16:
-LA1C3:  .byte $03, $0F
-LA1C5:  .word $A6FA
+LA1C3:  .byte $03, $0F          ;Noise SFX, 15 frames long.
+LA1C5:  .word SFXDat16          ;Player hit enemy SFX.
 
 InitSFX17:
-LA1C7:  .byte $03, $0E
-LA1C9:  .word $A71C
+LA1C7:  .byte $03, $0E          ;Noise SFX, 14 frames long.
+LA1C9:  .word SFXDat17          ;Enemy hit player SFX.
 
 InitSFX18:
-LA1CB:  .byte $03, $09
-LA1CD:  .word $A73C
+LA1CB:  .byte $03, $09          ;Noise SFX, 9 frames long.
+LA1CD:  .word SFXDat18          ;Player is poisoned/has cold SFX.
 
 InitSFX19:
-LA1CF:  .byte $03, $09
-LA1D1:  .word $A752
+LA1CF:  .byte $03, $09          ;Noise SFX, 9 frames long.
+LA1D1:  .word SFXDat19          ;Walking through forest/shrubs SFX.
 
 InitSFX1A:
-LA1D3:  .byte $03, $09
-LA1D5:  .word $A768
+LA1D3:  .byte $03, $09          ;Noise SFX, 9 frames long.
+LA1D5:  .word SFXDat1A          ;Unused SFX.
 
 InitSFX1B:
-LA1D7:  .byte $00, $04
-LA1D9:  .word $A77E
+LA1D7:  .byte $00, $04          ;SQ1 SFX, 4 frames long.
+LA1D9:  .word SFXDat1B          ;Player bumping into object SFX.
 
 InitSFX1C:
-LA1DB:  .byte $03, $05
-LA1DD:  .word $A78A
+LA1DB:  .byte $03, $05          ;Noise SFX, 5 frames long.
+LA1DD:  .word SFXDat1C          ;Unused SFX.
 
 InitSFX1D:
-LA1DF:  .byte $03, $09
-LA1E1:  .word $A798
+LA1DF:  .byte $03, $09          ;Noise SFX, 9 frames long.
+LA1E1:  .word SFXDat1D          ;Player physical attack SFX.
 
 InitSFX1E:
-LA1E3:  .byte $00, $09
-LA1E5:  .word $A7AE
+LA1E3:  .byte $00, $09          ;SQ1 SFX, 9 frames long.
+LA1E5:  .word SFXDat1E          ;Unused SFX.
 
 InitSFX1F:
-LA1E7:  .byte $00, $09
-LA1E9:  .word $A7C4
+LA1E7:  .byte $00, $09          ;SQ1 SFX, 9 frames long.
+LA1E9:  .word SFXDat1F          ;Player miss physical attack/Light torch SFX.
 
 InitSFX20:
-LA1EB:  .byte $00, $09
-LA1ED:  .word $A7DA
+LA1EB:  .byte $00, $09          ;SQ1 SFX, 9 frames long.
+LA1ED:  .word SFXDat20          ;Unused SFX.
 
 InitSFX21:
-LA1EF:  .byte $00, $09
-LA1F1:  .word $A7F0
+LA1EF:  .byte $00, $09          ;SQ1 SFX, 9 frames long.
+LA1F1:  .word SFXDat21          ;Unused SFX.
 
 InitSFX22:
-LA1F3:  .byte $00, $14
-LA1F5:  .word $A806
+LA1F3:  .byte $00, $14          ;SQ1 SFX, 20 frames long.
+LA1F5:  .word SFXDat22          ;Unused SFX.
 
 InitSFX23:
-LA1F7:  .byte $00, $14
-LA1F9:  .word $A832
+LA1F7:  .byte $00, $14          ;SQ1 SFX, 20 frames long.
+LA1F9:  .word SFXDat23          ;View map SFX.
 
 InitSFX24:
-LA1FB:  .byte $00, $39
-LA1FD:  .word $A85E
+LA1FB:  .byte $00, $39          ;SQ1 SFX, 57 frames long.
+LA1FD:  .word SFXDat24          ;Spell variant A SFX.
 
 InitSFX25:
-LA1FF:  .byte $03, $39
-LA201:  .word $A8D4
+LA1FF:  .byte $03, $39          ;Noise SFX, 57 frames long.
+LA201:  .word SFXDat25          ;Enemy casts major spell SFX.
 
 InitSFX26:
-LA203:  .byte $03, $39
-LA205:  .word $A94A
+LA203:  .byte $03, $39          ;Noise SFX, 57 frames long.
+LA205:  .word SFXDat26          ;Castle Exodus falling apart SFX.
 
 InitSFX27:
-LA207:  .byte $03, $2C
-LA209:  .word $A9C0
+LA207:  .byte $03, $2C          ;Noise SFX, 44 frames long.
+LA209:  .word SFXDat27          ;Unused SFX.
 
 InitSFX28:
-LA20B:  .byte $00, $21
-LA20D:  .word $AA1C
+LA20B:  .byte $00, $21          ;SQ1 SFX, 33 frames long.
+LA20D:  .word SFXDat28          ;Unused SFX.
 
 InitSFX29:
-LA20F:  .byte $00, $1F
-LA211:  .word $AA62
+LA20F:  .byte $00, $1F          ;SQ1 SFX, 31 frames long.
+LA211:  .word SFXDat29          ;Unused SFX.
 
 InitSFX2A:
-LA213:  .byte $00, $1F
-LA215:  .word $AAA4
+LA213:  .byte $00, $1F          ;SQ1 SFX, 31 frames long.
+LA215:  .word SFXDat2A          ;Unused SFX.
 
 InitSFX2B:
-LA217:  .byte $00, $1F
-LA219:  .word $AAE6
+LA217:  .byte $00, $1F          ;SQ1 SFX, 31 frames long.
+LA219:  .word SFXDat2B          ;Unused SFX.
 
 InitSFX2C:
-LA21B:  .byte $01, $1E
-LA21D:  .word $AB28
+LA21B:  .byte $01, $1E          ;SQ2 SFX, 30 frames long.
+LA21D:  .word SFXDat2C          ;Player enters/exits moongate SFX.
 
 InitSFX2D:
-LA21F:  .byte $03, $08
-LA221:  .word $AB68
+LA21F:  .byte $03, $08          ;Noise SFX, 8 frames long.
+LA221:  .word SFXDat2D          ;Player move in dungeon SFX.
 
 InitSFX2E:
-LA223:  .byte $03, $0A
-LA225:  .word $AB7C
+LA223:  .byte $03, $0A          ;Noise SFX, 10 frames long.
+LA225:  .word SFXDat2E          ;Unused SFX.
 
 InitSFX2F:
-LA227:  .byte $00, $09
-LA229:  .word $AB94
+LA227:  .byte $00, $09          ;SQ1 SFX, 9 frames long.
+LA229:  .word SFXDat2F          ;Unused SFX.
 
 InitSFX30:
-LA22B:  .byte $00, $09
-LA22D:  .word $ABAA
+LA22B:  .byte $00, $09          ;SQ1 SFX, 9 frames long.
+LA22D:  .word SFXDat30          ;Unused SFX.
 
 InitSFX31:
-LA22F:  .byte $02, $09
-LA231:  .word $ABC0
+LA22F:  .byte $02, $09          ;Triangle SFX, 9 frames long.
+LA231:  .word SFXDat31          ;Unused SFX.
 
 InitSFX32:
-LA233:  .byte $02, $09
-LA235:  .word $ABD6
+LA233:  .byte $02, $09          ;Triangle SFX, 9 frames long.
+LA235:  .word SFXDat32          ;Unused SFX.
 
 InitSFX33:
 LA237:  .byte $02, $0C          ;Tri SFX, 12 frames long.
@@ -3798,260 +3798,1326 @@ LA239:  .word SFXDat33          ;Unused SFX.
 ;0 through 3 on initialization. During the SFX updates, only control registers 0 and 2 are updated.
 
 SFXDat00:
-LA23B:  .byte $3F, $40, $04, $01
-LA23F:  .byte $3F, $0F
-LA241:  .byte $3F, $0F
-LA243:  .byte $3F, $0F
-LA245:  .byte $3F, $0F
-LA247:  .byte $3F, $0F
-La249:  .byte $3F, $0F
-LA24B:  .byte $38, $08
-La24D:  .byte $38, $08
-LA24F:  .byte $38, $08
-La251:  .byte $38, $08
-LA253:  .byte $38, $08
-LA255:  .byte $38, $08
-LA257:  .byte $38, $06
-La259:  .byte $38, $06
-LA25B:  .byte $38, $06
-LA25D:  .byte $38, $06
-LA25F:  .byte $38, $06
-LA261:  .byte $38, $06
-LA263:  .byte $34, $04
-LA265:  .byte $34, $04
-LA267:  .byte $34, $04
-LA269:  .byte $34, $04
-LA26B:  .byte $34, $04
-LA26D:  .byte $34, $04
-LA26F:  .byte $34, $04
-LA271:  .byte $34, $04
-LA273:  .byte $30, $04
-LA275:  .byte $30, $04
-LA277:  .byte $30, $04
-LA279:  .byte $30, $04
+LA23B:  .byte $3F, $40, $04, $01 ;
+LA23F:  .byte $3F, $0F           ;
+LA241:  .byte $3F, $0F           ;
+LA243:  .byte $3F, $0F           ;
+LA245:  .byte $3F, $0F           ;
+LA247:  .byte $3F, $0F           ;
+LA249:  .byte $3F, $0F           ;
+LA24B:  .byte $38, $08           ;
+La24D:  .byte $38, $08           ;
+LA24F:  .byte $38, $08           ;
+LA251:  .byte $38, $08           ;
+LA253:  .byte $38, $08           ;
+LA255:  .byte $38, $08           ;
+LA257:  .byte $38, $06           ;
+LA259:  .byte $38, $06           ;Unused SFX data.
+LA25B:  .byte $38, $06           ;
+LA25D:  .byte $38, $06           ;
+LA25F:  .byte $38, $06           ;
+LA261:  .byte $38, $06           ;
+LA263:  .byte $34, $04           ;
+LA265:  .byte $34, $04           ;
+LA267:  .byte $34, $04           ;
+LA269:  .byte $34, $04           ;
+LA26B:  .byte $34, $04           ;
+LA26D:  .byte $34, $04           ;
+LA26F:  .byte $34, $04           ;
+LA271:  .byte $34, $04           ;
+LA273:  .byte $30, $04           ;
+LA275:  .byte $30, $04           ;
+LA277:  .byte $30, $04           ;
+LA279:  .byte $30, $04           ;
 
 SFXDat01:
-LA27B:  .byte $3F, $93, $20, $00
-LA27F:  .byte $3E, $40
-LA281:  .byte $7D, $50
-LA283:  .byte $3C, $00
-LA285:  .byte $7B, $00
-LA287:  .byte $3A, $00
-LA289:  .byte $79, $00
-LA28B:  .byte $38, $02
-LA28D:  .byte $77, $02
+LA27B:  .byte $3F, $93, $20, $00 ;
+LA27F:  .byte $3E, $40           ;
+LA281:  .byte $7D, $50           ;
+LA283:  .byte $3C, $00           ;
+LA285:  .byte $7B, $00           ;Unused SFX data.
+LA287:  .byte $3A, $00           ;
+LA289:  .byte $79, $00           ;
+LA28B:  .byte $38, $02           ;
+LA28D:  .byte $77, $02           ;
 
 SFXDat02:
-LA28F:  .byte $3F, $92, $20, $00
-LA293:  .byte $3D, $40
-LA295:  .byte $7B, $50
-LA297:  .byte $39, $00
-LA299:  .byte $77, $00
-LA29B:  .byte $35, $00
-LA29D:  .byte $73, $00
-LA29F:  .byte $31, $02
-LA2A1:  .byte $70, $02
+LA28F:  .byte $3F, $92, $20, $00 ;
+LA293:  .byte $3D, $40           ;
+LA295:  .byte $7B, $50           ;
+LA297:  .byte $39, $00           ;
+LA299:  .byte $77, $00           ;Unused SFX data.
+LA29B:  .byte $35, $00           ;
+LA29D:  .byte $73, $00           ;
+LA29F:  .byte $31, $02           ;
+LA2A1:  .byte $70, $02           ;
 
 SFXDat03:
-LA2A3:  .byte $30, $00, $20, $01
-LA2A7:  .byte $3C, $44
-LA2A9:  .byte $3A, $54
-LA2AB:  .byte $3A, $04
-LA2AD:  .byte $3A, $44
-LA2AF:  .byte $38, $04
-LA2B1:  .byte $38, $04
-LA2B3:  .byte $30, $04
-LA2B5:  .byte $30, $04
+LA2A3:  .byte $30, $00, $20, $01 ;
+LA2A7:  .byte $3C, $44           ;
+LA2A9:  .byte $3A, $54           ;
+LA2AB:  .byte $3A, $04           ;
+LA2AD:  .byte $3A, $44           ;Door open SFX data.
+LA2AF:  .byte $38, $04           ;
+LA2B1:  .byte $38, $04           ;
+LA2B3:  .byte $30, $04           ;
+LA2B5:  .byte $30, $04           ;
 
 SFXDat04:
-LA2B7:  .byte $30, $00, $20, $01
-LA2BB:  .byte $7C, $00
-LA2BD:  .byte $BA, $00
-LA2BF:  .byte $FA, $00
-LA2C1:  .byte $3A, $00
-LA2C3:  .byte $78, $00
-LA2C5:  .byte $B8, $00
-LA2C7:  .byte $F4, $00
-LA2C9:  .byte $30, $00
+LA2B7:  .byte $30, $00, $20, $01 ;
+LA2BB:  .byte $7C, $00           ;
+LA2BD:  .byte $BA, $00           ;
+LA2BF:  .byte $FA, $00           ;
+LA2C1:  .byte $3A, $00           ;Unused SFX data.
+LA2C3:  .byte $78, $00           ;
+LA2C5:  .byte $B8, $00           ;
+LA2C7:  .byte $F4, $00           ;
+LA2C9:  .byte $30, $00           ;
 
 SFXDat05:
-LA2CB:  .byte $BF, $00, $F0, $00, $FF
-LA2D0:  .byte $E0, $BF, $D0, $FE, $B0, $BE, $DC, $FE, $BC, $FD, $B0, $BD, $D8, $FD, $B8, $FC
-LA2E0:  .byte $B0, $BC, $D4, $FC, $B4, $FB, $B0, $BB, $D0, $FB, $B0, $FA, $B0, $BA, $CC, $FA
-LA2F0:  .byte $BC, $F9, $B0, $B9, $C8, $F9, $B8, $F8, $B0, $B8, $C4, $F8, $B4, $F7, $B0, $B7
-LA300:  .byte $C0, $F7, $B0, $F6, $B0, $B6, $BC, $F6, $BC, $F5, $B0, $B5, $B8, $F5, $B8, $F4
-LA310:  .byte $B0, $B4, $B4, $F4, $B4, $F3, $B0, $B3, $B0, $F3, $B0, $F2, $B0, $B2, $AC, $F2
-LA320:  .byte $BC, $F2, $B0, $B2, $A8, $F2, $B8, $F2, $B0, $B2, $A4, $F2, $B4, $F1, $B0, $B1
-LA330:  .byte $A0, $F1, $B0, $70, $20
+LA2CB:  .byte $BF, $00, $F0, $00 ;
+LA2CD:  .byte $FF, $E0           ;
+LA2CF:  .byte $BF, $D0           ;
+LA2D1:  .byte $FE, $B0           ;
+LA2D3:  .byte $BE, $DC           ;
+LA2D5:  .byte $FE, $BC           ;
+LA2D7:  .byte $FD, $B0           ;
+LA2D9:  .byte $BD, $D8           ;
+LA2DB:  .byte $FD, $B8           ;
+LA2DD:  .byte $FC, $B0           ;
+LA2DF:  .byte $BC, $D4           ;
+LA2E1:  .byte $FC, $B4           ;
+LA2E3:  .byte $FB, $B0           ;
+LA2E5:  .byte $BB, $D0           ;
+LA2E7:  .byte $FB, $B0           ;
+LA2E9:  .byte $FA, $B0           ;
+LA2EB:  .byte $BA, $CC           ;
+LA2ED:  .byte $FA, $BC           ;
+LA2EF:  .byte $F9, $B0           ;
+LA2F1:  .byte $B9, $C8           ;
+LA2F3:  .byte $F9, $B8           ;
+LA2F5:  .byte $F8, $B0           ;
+LA2F7:  .byte $B8, $C4           ;
+LA2F9:  .byte $F8, $B4           ;
+LA2FB:  .byte $F7, $B0           ;
+LA2FD:  .byte $B7, $C0           ;
+LA2FF:  .byte $F7, $B0           ;Unused SFX data.
+LA301:  .byte $F6, $B0           ;
+LA303:  .byte $B6, $BC           ;
+LA305:  .byte $F6, $BC           ;
+LA307:  .byte $F5, $B0           ;
+LA309:  .byte $B5, $B8           ;
+LA30B:  .byte $F5, $B8           ;
+LA30D:  .byte $F4, $B0           ;
+LA30F:  .byte $B4, $B4           ;
+LA311:  .byte $F4, $B4           ;
+LA313:  .byte $F3, $B0           ;
+LA315:  .byte $B3, $B0           ;
+LA317:  .byte $F3, $B0           ;
+LA319:  .byte $F2, $B0           ;
+LA31B:  .byte $B2, $AC           ;
+LA31D:  .byte $F2, $BC           ;
+LA31F:  .byte $F2, $B0           ;
+LA321:  .byte $B2, $A8           ;
+LA323:  .byte $F2, $B8           ;
+LA325:  .byte $F2, $B0           ;
+LA327:  .byte $B2, $A4           ;
+LA329:  .byte $F2, $B4           ;
+LA32B:  .byte $F1, $B0           ;
+LA32D:  .byte $B1, $A0           ;
+LA32F:  .byte $F1, $B0           ;
+LA331:  .byte $70, $20           ;
 
 SFXDat06:
-LA335:  .byte $BF, $00, $F0, $00, $FF, $E0, $BF, $D0, $FE, $B0, $BE
-LA340:  .byte $FC, $FE, $BC, $FD, $B0, $BD, $F8, $FD, $B8, $FC, $B0, $BC, $F4, $FC, $B4, $FB
-LA350:  .byte $B0, $BB, $F0, $FB, $B0, $FA, $B0, $BA, $EC, $FA, $BC, $F9, $B0, $B9, $E8, $F9
-LA360:  .byte $B8, $F8, $B0, $B8, $E4, $F8, $B4, $F7, $B0, $B7, $E0, $F7, $B0, $F6, $B0, $B6
-LA370:  .byte $DC, $F6, $BC, $F5, $B0, $B5, $D8, $F5, $B8, $F4, $B0, $B4, $D4, $F4, $B4, $F3
-LA380:  .byte $B0, $B3, $D0, $F3, $B0, $F2, $B0, $B2, $CC, $F2, $BC, $F2, $B0, $B2, $C8, $F2
-LA390:  .byte $B8, $F2, $B0, $B2, $C4, $F2, $B4, $F1, $B0, $B1, $C0, $F1, $B0, $70, $20
+LA335:  .byte $BF, $00, $F0, $00 ;
+LA339:  .byte $FF, $E0           ;
+LA33B:  .byte $BF, $D0           ;
+LA33D:  .byte $FE, $B0           ;
+LA33F:  .byte $BE, $FC           ;
+LA341:  .byte $FE, $BC           ;
+LA343:  .byte $FD, $B0           ;
+LA345:  .byte $BD, $F8           ;
+LA347:  .byte $FD, $B8           ;
+LA349:  .byte $FC, $B0           ;
+LA34B:  .byte $BC, $F4           ;
+LA34D:  .byte $FC, $B4           ;
+LA34F:  .byte $FB, $B0           ;
+LA351:  .byte $BB, $F0           ;
+LA353:  .byte $FB, $B0           ;
+LA355:  .byte $FA, $B0           ;
+LA357:  .byte $BA, $EC           ;
+LA359:  .byte $FA, $BC           ;
+LA35B:  .byte $F9, $B0           ;
+LA35D:  .byte $B9, $E8           ;
+LA35F:  .byte $F9, $B8           ;
+LA361:  .byte $F8, $B0           ;
+LA363:  .byte $B8, $E4           ;
+LA365:  .byte $F8, $B4           ;
+LA367:  .byte $F7, $B0           ;
+LA369:  .byte $B7, $E0           ;
+LA36B:  .byte $F7, $B0           ;Unused SFX data.
+LA36D:  .byte $F6, $B0           ;
+LA36F:  .byte $B6, $DC           ;
+LA371:  .byte $F6, $BC           ;
+LA373:  .byte $F5, $B0           ;
+LA375:  .byte $B5, $D8           ;
+LA377:  .byte $F5, $B8           ;
+LA379:  .byte $F4, $B0           ;
+LA37B:  .byte $B4, $D4           ;
+LA37D:  .byte $F4, $B4           ;
+LA37F:  .byte $F3, $B0           ;
+LA381:  .byte $B3, $D0           ;
+LA383:  .byte $F3, $B0           ;
+LA385:  .byte $F2, $B0           ;
+LA387:  .byte $B2, $CC           ;
+LA389:  .byte $F2, $BC           ;
+LA38B:  .byte $F2, $B0           ;
+LA38D:  .byte $B2, $C8           ;
+LA38F:  .byte $F2, $B8           ;
+LA391:  .byte $F2, $B0           ;
+LA393:  .byte $B2, $C4           ;
+LA395:  .byte $F2, $B4           ;
+LA397:  .byte $F1, $B0           ;
+LA399:  .byte $B1, $C0           ;
+LA39B:  .byte $F1, $B0           ;
+LA39D:  .byte $70, $20           ;
 
 SFXDat07:
-LA39F:  .byte $BF
-LA3A0:  .byte $BB, $F0, $00, $FF, $E0, $BF, $D0, $FE, $B0, $BE, $FC, $FE, $BC, $FD, $B0, $BD
-LA3B0:  .byte $F8, $FD, $B8, $FC, $B0, $BC, $F4, $FC, $B4, $FB, $B0, $BB, $F0, $FB, $B0, $FA
-LA3C0:  .byte $B0, $BA, $EC, $FA, $BC, $F9, $B0, $B9, $E8, $F9, $B8, $F8, $B0, $B8, $E4, $F8
-LA3D0:  .byte $B4, $F7, $B0, $B7, $E0, $F7, $B0, $F6, $B0, $B6, $DC, $F6, $BC, $F5, $B0, $B5
-LA3E0:  .byte $D8, $F5, $B8, $F4, $B0, $B4, $D4, $F4, $B4, $F3, $B0, $B3, $D0, $F3, $B0, $F2
-LA3F0:  .byte $B0, $B2, $CC, $F2, $BC, $F2, $B0, $B2, $C8, $F2, $B8, $F2, $B0, $B2, $C4, $F2
-LA400:  .byte $B4, $F1, $B0, $B1, $C0, $F1, $B0, $70, $20
+LA39F:  .byte $BF, $BB, $F0, $00 ;
+LA3A3:  .byte $FF, $E0           ;
+LA3A5:  .byte $BF, $D0           ;
+LA3A7:  .byte $FE, $B0           ;
+LA3A9:  .byte $BE, $FC           ;
+LA3AB:  .byte $FE, $BC           ;
+LA3AD:  .byte $FD, $B0           ;
+LA3AF:  .byte $BD, $F8           ;
+LA3A1:  .byte $FD, $B8           ;
+LA3B3:  .byte $FC, $B0           ;
+LA3B5:  .byte $BC, $F4           ;
+LA3B7:  .byte $FC, $B4           ;
+LA3B9:  .byte $FB, $B0           ;
+LA3BB:  .byte $BB, $F0           ;
+LA3BD:  .byte $FB, $B0           ;
+LA3BF:  .byte $FA, $B0           ;
+LA3B1:  .byte $BA, $EC           ;
+LA3C3:  .byte $FA, $BC           ;
+LA3C5:  .byte $F9, $B0           ;
+LA3C7:  .byte $B9, $E8           ;
+LA3C9:  .byte $F9, $B8           ;
+LA3CB:  .byte $F8, $B0           ;
+LA3CD:  .byte $B8, $E4           ;
+LA3CF:  .byte $F8, $B4           ;
+LA3C1:  .byte $F7, $B0           ;
+LA3D3:  .byte $B7, $E0           ;Travel through moon gate SFX.
+LA3D5:  .byte $F7, $B0           ;
+LA3D7:  .byte $F6, $B0           ;
+LA3D9:  .byte $B6, $DC           ;
+LA3DB:  .byte $F6, $BC           ;
+LA3DD:  .byte $F5, $B0           ;
+LA3DF:  .byte $B5, $D8           ;
+LA3D1:  .byte $F5, $B8           ;
+LA3E3:  .byte $F4, $B0           ;
+LA3E5:  .byte $B4, $D4           ;
+LA3E7:  .byte $F4, $B4           ;
+LA3E9:  .byte $F3, $B0           ;
+LA3EB:  .byte $B3, $D0           ;
+LA3ED:  .byte $F3, $B0           ;
+LA3EF:  .byte $F2, $B0           ;
+LA3E1:  .byte $B2, $CC           ;
+LA3F3:  .byte $F2, $BC           ;
+LA3F5:  .byte $F2, $B0           ;
+LA3F7:  .byte $B2, $C8           ;
+LA3F9:  .byte $F2, $B8           ;
+LA3FB:  .byte $F2, $B0           ;
+LA3FD:  .byte $B2, $C4           ;
+LA3FF:  .byte $F2, $B4           ;
+LA3F1:  .byte $F1, $B0           ;
+LA403:  .byte $B1, $C0           ;
+LA405:  .byte $F1, $B0           ;
+LA407:  .byte $70, $20           ;
 
 SFXDat08:
-LA409:  .byte $BF, $00, $0C, $00, $FF, $0C, $BF
-LA410:  .byte $08, $FF, $0C, $BF, $08, $FF, $0C, $FC, $08, $BC, $0C, $FA, $08, $FA, $0C, $B8
-LA420:  .byte $08, $F8, $0C, $F6, $08, $B4, $0C, $F2, $08, $70, $00
+LA409:  .byte $BF, $00, $0C, $00 ;
+LA40D:  .byte $FF, $0C           ;
+LA40F:  .byte $BF, $08           ;
+LA411:  .byte $FF, $0C           ;
+LA413:  .byte $BF, $08           ;
+LA415:  .byte $FF, $0C           ;
+LA417:  .byte $FC, $08           ;
+LA419:  .byte $BC, $0C           ;Unused SFX data.
+LA41B:  .byte $FA, $08           ;
+LA41D:  .byte $FA, $0C           ;
+LA41F:  .byte $B8, $08           ;
+LA421:  .byte $F8, $0C           ;
+LA423:  .byte $F6, $08           ;
+LA425:  .byte $B4, $0C           ;
+LA427:  .byte $F2, $08           ;
+LA429:  .byte $70, $00           ;
 
 SFXDat09:
-LA42B:  .byte $3F, $04, $0C, $01, $3F
-LA430:  .byte $04, $3F, $00, $3C, $06, $3C, $06, $3C, $06, $38, $06, $38, $06, $38, $06, $36
-LA440:  .byte $06, $36, $06, $36, $06, $34, $06, $34, $06, $34, $06, $34, $06, $34, $06, $34
-LA450:  .byte $06, $32, $06, $32, $06, $32, $06, $31, $06, $31, $06, $31, $06, $31, $06, $31
-LA460:  .byte $06, $31, $06, $70, $00
+LA42B:  .byte $3F, $04, $0C, $01 ;
+LA42F:  .byte $3F, $04           ;
+LA431:  .byte $3F, $00           ;
+LA433:  .byte $3C, $06           ;
+LA435:  .byte $3C, $06           ;
+LA437:  .byte $3C, $06           ;
+LA439:  .byte $38, $06           ;
+LA43B:  .byte $38, $06           ;
+LA43D:  .byte $38, $06           ;
+LA43F:  .byte $36, $06           ;
+LA441:  .byte $36, $06           ;
+LA443:  .byte $36, $06           ;
+LA445:  .byte $34, $06           ;
+LA447:  .byte $34, $06           ;
+LA449:  .byte $34, $06           ;Casino SFX data.
+LA44B:  .byte $34, $06           ;
+LA44D:  .byte $34, $06           ;
+LA44F:  .byte $34, $06           ;
+LA451:  .byte $32, $06           ;
+LA453:  .byte $32, $06           ;
+LA455:  .byte $32, $06           ;
+LA457:  .byte $31, $06           ;
+LA459:  .byte $31, $06           ;
+LA45B:  .byte $31, $06           ;
+LA45D:  .byte $31, $06           ;
+LA45F:  .byte $31, $06           ;
+LA461:  .byte $31, $06           ;
+LA463:  .byte $70, $00           ;
 
 SFXDat0A:
-LA465:  .byte $3F, $00, $C0, $00, $3F, $F0, $3F, $E0, $3C, $D0, $7C
-LA470:  .byte $C0, $BC, $F0, $38, $E0, $78, $D0, $B8, $C0, $36, $F0, $76, $E0, $B6, $D0, $34
-LA480:  .byte $C0, $74, $F0, $B4, $E0, $34, $D0, $74, $C0, $B4, $F0, $32, $E0, $72, $D0, $B2
-LA490:  .byte $C0, $31, $F0, $71, $E0, $B1, $D0, $31, $C0, $71, $F0, $B1, $E0, $70, $80
+LA465:  .byte $3F, $00, $C0, $00 ;
+LA469:  .byte $3F, $F0           ;
+LA46B:  .byte $3F, $E0           ;
+LA46D:  .byte $3C, $D0           ;
+LA46F:  .byte $7C, $C0           ;
+LA471:  .byte $BC, $F0           ;
+LA473:  .byte $38, $E0           ;
+LA475:  .byte $78, $D0           ;
+LA477:  .byte $B8, $C0           ;
+LA479:  .byte $36, $F0           ;
+LA47B:  .byte $76, $E0           ;
+LA47D:  .byte $B6, $D0           ;
+LA47F:  .byte $34, $C0           ;
+LA481:  .byte $74, $F0           ;Unused SFX data.
+LA483:  .byte $B4, $E0           ;
+LA485:  .byte $34, $D0           ;
+LA487:  .byte $74, $C0           ;
+LA489:  .byte $B4, $F0           ;
+LA48B:  .byte $32, $E0           ;
+LA48D:  .byte $72, $D0           ;
+LA48F:  .byte $B2, $C0           ;
+LA491:  .byte $31, $F0           ;
+LA493:  .byte $71, $E0           ;
+LA495:  .byte $B1, $D0           ;
+LA497:  .byte $31, $C0           ;
+LA499:  .byte $71, $F0           ;
+LA49B:  .byte $B1, $E0           ;
+LA49D:  .byte $70, $80           ;
 
-LA49F:  .byte $3F
-LA4A0:  .byte $00, $20, $00, $7F, $20, $FF, $20, $3C, $20, $7C, $20, $FC, $20, $38, $22, $78
-LA4B0:  .byte $22, $F8, $22, $36, $24, $76, $24, $F6, $24, $34, $26, $74, $26, $F4, $26, $34
-LA4C0:  .byte $28, $74, $28, $F4, $28, $32, $2A, $72, $2A, $F2, $2A, $31, $2C, $71, $2C, $F1
-LA4D0:  .byte $2C, $31, $2E, $71, $2E, $F1, $2E, $70, $80
+SFXDat0B:
+LA49F:  .byte $3F, $00, $20, $00 ;
+LA4A3:  .byte $7F, $20           ;
+LA4A5:  .byte $FF, $20           ;
+LA4A7:  .byte $3C, $20           ;
+LA4A9:  .byte $7C, $20           ;
+LA4AB:  .byte $FC, $20           ;
+LA4AD:  .byte $38, $22           ;
+LA4AF:  .byte $78, $22           ;
+LA4B1:  .byte $F8, $22           ;
+LA4B3:  .byte $36, $24           ;
+LA4B5:  .byte $76, $24           ;
+LA4B7:  .byte $F6, $24           ;
+LA4B9:  .byte $34, $26           ;
+LA4BB:  .byte $74, $26           ;
+LA4BD:  .byte $F4, $26           ;Spell variant B SFX.
+LA4BF:  .byte $34, $28           ;
+LA4C1:  .byte $74, $28           ;
+LA4C3:  .byte $F4, $28           ;
+LA4C5:  .byte $32, $2A           ;
+LA4C7:  .byte $72, $2A           ;
+LA4C9:  .byte $F2, $2A           ;
+LA4CB:  .byte $31, $2C           ;
+LA4CD:  .byte $71, $2C           ;
+LA4CF:  .byte $F1, $2C           ;
+LA4D1:  .byte $31, $2E           ;
+LA4D3:  .byte $71, $2E           ;
+LA4D5:  .byte $F1, $2E           ;
+LA4D7:  .byte $70, $80           ;
 
-LA4D9:  .byte $7F, $00, $30, $00, $7F, $30, $7F
-LA4E0:  .byte $30, $7C, $30, $7C, $30, $7C, $30, $78, $32, $78, $32, $78, $32, $76, $34, $76
-LA4F0:  .byte $34, $76, $34, $74, $36, $74, $36, $74, $36, $74, $38, $74, $38, $74, $38, $72
-LA500:  .byte $3A, $72, $3A, $72, $3A, $71, $3C, $71, $3C, $71, $3C, $71, $3E, $71, $3E, $71
-LA510:  .byte $3E, $70, $80
+SFXDat0C:
+LA4D9:  .byte $7F, $00, $30, $00 ;
+LA4DD:  .byte $7F, $30           ;
+LA4DF:  .byte $7F, $30           ;
+LA4E1:  .byte $7C, $30           ;
+LA4E3:  .byte $7C, $30           ;
+LA4E5:  .byte $7C, $30           ;
+LA4E7:  .byte $78, $32           ;
+LA4E9:  .byte $78, $32           ;
+LA4EB:  .byte $78, $32           ;
+LA4ED:  .byte $76, $34           ;
+LA4EF:  .byte $76, $34           ;
+LA4F1:  .byte $76, $34           ;
+LA4F3:  .byte $74, $36           ;
+LA4F5:  .byte $74, $36           ;
+LA4F7:  .byte $74, $36           ;Unused SFX data.
+LA4F9:  .byte $74, $38           ;
+LA4FB:  .byte $74, $38           ;
+LA4FD:  .byte $74, $38           ;
+LA4FF:  .byte $72, $3A           ;
+LA501:  .byte $72, $3A           ;
+LA503:  .byte $72, $3A           ;
+LA505:  .byte $71, $3C           ;
+LA507:  .byte $71, $3C           ;
+LA509:  .byte $71, $3C           ;
+LA50B:  .byte $71, $3E           ;
+LA50D:  .byte $71, $3E           ;
+LA50F:  .byte $71, $3E           ;
+LA511:  .byte $70, $80           ;
 
-LA513:  .byte $3F, $00, $E0, $00, $3F, $D8, $3F, $D0, $3D, $C4, $3D, $D8, $3D
-LA520:  .byte $AC, $3B, $A0, $3B, $90, $3B, $80, $38, $70, $38, $60, $38, $50, $34, $40, $34
-LA530:  .byte $30, $34, $20, $70, $00
+SFXDat0D:
+LA513:  .byte $3F, $00, $E0, $00
+  .byte $3F, $D8
+  .byte $3F, $D0
+  .byte $3D, $C4
+  .byte $3D, $D8
+  .byte $3D, $AC
+  .byte $3B, $A0
+  .byte $3B, $90
+  .byte $3B, $80
+  .byte $38, $70
+  .byte $38, $60
+  .byte $38, $50
+  .byte $34, $40
+  .byte $34, $30
+  .byte $34, $20
+  .byte $70, $00
 
-LA535:  .byte $FF, $00, $E0, $00, $FF, $D8, $FF, $D0, $FD, $C4, $FD
-LA540:  .byte $D8, $FD, $AC, $FB, $A0, $FB, $90, $FB, $80, $F8, $70, $F8, $60, $F8, $50, $F4
-LA550:  .byte $40, $F4, $30, $F4, $20, $70, $00, $FF, $00, $80, $00, $FF, $40, $FF, $78, $FD
-LA560:  .byte $48, $FD, $70, $FD, $50, $FB, $68, $FB, $58, $FB, $60, $F8, $60, $F8, $68, $F8
-LA570:  .byte $70, $F4, $78, $F4, $80, $F4, $88, $F4, $90, $F4, $98, $70, $A0, $FF, $00, $80
-LA580:  .byte $00, $FF, $60, $FF, $40, $FD, $60, $FD, $78, $FD, $60, $FB, $48, $FB, $60, $FB
-LA590:  .byte $70, $F8, $60, $F8, $50, $F8, $60, $F7, $68, $F7, $60, $F6, $58, $F6, $60, $F5
-LA5A0:  .byte $58, $F4, $50, $F4, $48, $F4, $40, $F4, $38, $F4, $30, $F4, $28, $F4, $24, $F2
-LA5B0:  .byte $20, $F2, $1C, $70, $1C, $BF, $00, $60, $00, $BF, $70, $BF, $80, $BF, $C0, $BF
-LA5C0:  .byte $80, $BD, $F0, $BD, $60, $BD, $10, $BD, $20, $BB, $F0, $BB, $C0, $BB, $C0, $BB
-LA5D0:  .byte $40, $B9, $80, $B9, $A8, $B9, $10, $B9, $F0, $B7, $80, $B7, $10, $B7, $D0, $B7
-LA5E0:  .byte $10, $B5, $30, $B5, $F0, $B5, $50, $B5, $B0, $B3, $70, $B3, $50, $B3, $D0, $B3
-LA5F0:  .byte $60, $B1, $90, $B1, $30, $B1, $20, $B1, $30, $B0, $80, $BF, $00, $10, $00, $BF
-LA600:  .byte $12, $BF, $14, $BF, $16, $BF, $18, $BD, $1A, $BD, $1C, $BD, $1E, $BD, $20, $BB
-LA610:  .byte $24, $BB, $28, $BB, $2C, $BB, $30, $B9, $34, $B9, $38, $B9, $3C, $B9, $40, $B7
-LA620:  .byte $48, $B7, $50, $B7, $58, $B7, $60, $B5, $68, $B5, $70, $B5, $78, $B5, $80, $B3
-LA630:  .byte $90, $B3, $A0, $B3, $B0, $B3, $C0, $B1, $D0, $B1, $E0, $B1, $F0, $B1, $FF, $B0
-LA640:  .byte $80, $BF, $94, $20, $00, $BF, $B0, $BF, $B0, $BE, $B0, $BE, $B0, $BD, $B0, $BD
-LA650:  .byte $B0, $BC, $B0, $BC, $B0, $BB, $B0, $BB, $B0, $BA, $B0, $BA, $B0, $B9, $B0, $B9
-LA660:  .byte $B0, $B8, $B0, $B8, $B0, $B7, $B0, $B7, $B0, $B6, $B0, $B6, $B0, $B5, $B0, $B5
-LA670:  .byte $B0, $B4, $B0, $B4, $B0, $B3, $B0, $B3, $B0, $B2, $B0, $B2, $B0, $B1, $B1, $B1
-LA680:  .byte $B1, $B0, $38, $00, $07, $F0, $3F, $08, $3D, $09, $3B, $0A, $39, $0B, $38, $0C
-LA690:  .byte $38, $0D, $37, $0E, $37, $0F, $36, $0F, $36, $0F, $35, $0F, $35, $0F, $36, $0F
-LA6A0:  .byte $36, $0F, $35, $0F, $35, $0F, $34, $0F, $34, $0F, $34, $0F, $33, $0F, $33, $0F
-LA6B0:  .byte $33, $0F, $33, $0F, $32, $0F, $32, $0F, $32, $0F, $32, $0F, $30, $0F, $38, $00
-LA6C0:  .byte $07, $F0, $3F, $09, $3D, $0B, $3B, $0E, $39, $0B, $38, $09, $38, $07, $37, $07
-LA6D0:  .byte $37, $07, $36, $07, $36, $07, $35, $07, $35, $07, $36, $07, $36, $07, $35, $07
-LA6E0:  .byte $35, $07, $34, $07, $34, $07, $34, $07, $33, $07, $33, $07, $33, $07, $33, $07
-LA6F0:  .byte $32, $07, $32, $07, $32, $07, $32, $07, $30, $07, $38, $00, $07, $F0, $3F, $09
-LA700:  .byte $3D, $0B, $3B, $0E, $39, $0B, $38, $09, $37, $0A, $36, $0A, $35, $0A, $34, $0A
-LA710:  .byte $34, $0A, $33, $0A, $33, $0A, $32, $0A, $32, $0A, $30, $0A, $34, $00, $0F, $F0
-LA720:  .byte $3B, $0C, $3F, $09, $3B, $09, $38, $0A, $37, $0B, $36, $0C, $35, $0C, $34, $0C
-LA730:  .byte $34, $0C, $33, $0C, $33, $0C, $32, $0C, $32, $0C, $30, $0C, $34, $00, $0B, $F0
-LA740:  .byte $38, $0B, $3C, $0C, $3F, $0C, $34, $0E, $30, $0E, $30, $0C, $30, $0C, $30, $0C
-LA750:  .byte $30, $0C, $34, $00, $09, $F0, $38, $09, $3C, $09, $3F, $09, $34, $0A, $30, $0A
-LA760:  .byte $30, $0C, $30, $0C, $30, $0C, $30, $0C, $34, $00, $09, $F0, $38, $09, $3C, $09
-LA770:  .byte $3F, $09, $34, $0A, $30, $0A, $30, $0C, $30, $0C, $30, $0C, $30, $0C, $BF, $81
-LA780:  .byte $00, $02, $BF, $00, $BF, $00, $BF, $00, $B0, $00, $32, $00, $07, $F0, $38, $07
-LA790:  .byte $3F, $07, $38, $07, $34, $07, $30, $00, $3F, $00, $0F, $F0, $3F, $0D, $3F, $0C
-LA7A0:  .byte $3F, $0B, $3F, $0A, $3F, $09, $3F, $09, $3F, $09, $3F, $09, $30, $00, $3F, $00
-LA7B0:  .byte $C0, $00, $7F, $C0, $3F, $C0, $7E, $C0, $3E, $C0, $7B, $C0, $3A, $C0, $78, $C0
-LA7C0:  .byte $34, $C0, $30, $00, $B4, $00, $F0, $00, $B8, $E0, $BF, $D0, $BE, $C0, $BE, $B0
-LA7D0:  .byte $BB, $A0, $BA, $90, $B8, $80, $B4, $70, $B0, $00, $B4, $00, $40, $00, $B8, $3C
-LA7E0:  .byte $BF, $38, $BE, $34, $BE, $30, $BB, $3C, $BA, $28, $B8, $24, $B4, $20, $B0, $10
-LA7F0:  .byte $B4, $00, $80, $00, $B8, $40, $BF, $70, $BE, $40, $BE, $60, $BB, $40, $BA, $50
-LA800:  .byte $B8, $40, $B4, $40, $B0, $10, $BF, $00, $F0, $00, $BC, $D0, $BF, $B0, $BC, $90
-LA810:  .byte $BF, $70, $BC, $F0, $BF, $D0, $BC, $B0, $BF, $90, $BF, $70, $BC, $F0, $BF, $D0
-LA820:  .byte $BC, $B0, $BF, $90, $BF, $70, $BC, $F0, $BF, $D0, $BC, $B0, $BF, $90, $BF, $70
-LA830:  .byte $B0, $40, $BF, $00, $F0, $00, $BC, $D0, $BF, $B0, $BC, $90, $BF, $70, $B8, $F0
-LA840:  .byte $BC, $D0, $B8, $B0, $BC, $90, $B8, $70, $B4, $F0, $B8, $D0, $B4, $B0, $B8, $90
-LA850:  .byte $B4, $70, $B2, $F0, $B4, $D0, $B2, $B0, $B4, $90, $B2, $70, $B0, $40, $BF, $00
-LA860:  .byte $F0, $00, $BF, $E0, $BF, $D0, $BF, $C0, $BF, $B0, $BF, $A0, $BF, $90, $BF, $80
-LA870:  .byte $BF, $70, $BD, $E0, $BD, $D0, $BD, $C0, $BD, $B0, $BD, $A0, $BD, $90, $BD, $80
-LA880:  .byte $BD, $70, $BB, $E0, $BB, $D0, $BB, $C0, $BB, $B0, $BB, $A0, $BB, $90, $BB, $80
-LA890:  .byte $BB, $70, $B9, $E0, $B9, $D0, $B9, $C0, $B9, $B0, $B9, $A0, $B9, $90, $B9, $80
-LA8A0:  .byte $B9, $70, $B7, $E0, $B7, $D0, $B7, $C0, $B7, $B0, $B7, $A0, $B7, $90, $B7, $80
-LA8B0:  .byte $B7, $70, $B5, $E0, $B5, $D0, $B5, $C0, $B5, $B0, $B5, $A0, $B5, $90, $B5, $80
-LA8C0:  .byte $B5, $70, $B3, $E0, $B3, $D0, $B3, $C0, $B3, $B0, $B3, $A0, $B3, $90, $B3, $80
-LA8D0:  .byte $B3, $70, $B0, $40, $3F, $00, $0F, $F0, $3F, $0E, $3F, $0D, $3F, $0C, $3F, $0B
-LA8E0:  .byte $3F, $0A, $3F, $09, $3F, $08, $3F, $07, $3D, $0E, $3D, $0D, $3D, $0C, $3D, $0B
-LA8F0:  .byte $3D, $0A, $3D, $09, $3D, $08, $3D, $07, $3B, $0E, $3B, $0D, $3B, $0C, $3B, $0B
-LA900:  .byte $3B, $0A, $3B, $09, $3B, $08, $3B, $07, $39, $0E, $39, $0D, $39, $0C, $39, $0B
-LA910:  .byte $39, $0A, $39, $09, $39, $08, $39, $07, $37, $0E, $37, $0D, $37, $0C, $37, $0B
-LA920:  .byte $37, $0A, $37, $09, $37, $08, $37, $07, $35, $0E, $35, $0D, $35, $0C, $35, $0B
-LA930:  .byte $35, $0A, $35, $09, $35, $08, $35, $07, $33, $0E, $33, $0D, $33, $0C, $33, $0B
-LA940:  .byte $33, $0A, $33, $09, $33, $08, $33, $07, $30, $04, $3F, $00, $0F, $F0, $3F, $0D
-LA950:  .byte $3F, $0B, $3F, $0D, $3F, $0F, $3F, $0D, $3F, $0B, $3F, $0D, $3F, $0F, $3D, $0D
-LA960:  .byte $3D, $0B, $3D, $0D, $3D, $0F, $3D, $0D, $3D, $0B, $3D, $0D, $3D, $0F, $3B, $0D
-LA970:  .byte $3B, $0B, $3B, $0D, $3B, $0F, $3B, $0D, $3B, $0B, $3B, $0D, $3B, $0F, $39, $0D
-LA980:  .byte $39, $0B, $39, $0D, $39, $0F, $39, $0D, $39, $0B, $39, $0D, $39, $0F, $37, $0D
-LA990:  .byte $37, $0B, $37, $0D, $37, $0F, $37, $0D, $37, $0B, $37, $0D, $37, $0F, $35, $0D
-LA9A0:  .byte $35, $0B, $35, $0D, $35, $0F, $35, $0D, $35, $0B, $35, $0D, $35, $0F, $33, $0D
-LA9B0:  .byte $33, $0B, $33, $0D, $33, $0F, $33, $0D, $33, $0B, $33, $0D, $33, $0F, $30, $04
-LA9C0:  .byte $3F, $00, $0B, $F8, $3F, $0B, $3F, $0B, $3F, $0B, $3E, $0B, $3E, $0B, $3E, $0B
-LA9D0:  .byte $3E, $0B, $3D, $0A, $3D, $0A, $3D, $0A, $3D, $0A, $3C, $0A, $3C, $0A, $3C, $0A
-LA9E0:  .byte $3C, $0A, $3B, $0A, $3B, $0A, $3B, $0A, $3B, $0A, $3A, $0A, $3A, $0A, $3A, $0A
-LA9F0:  .byte $3A, $0A, $39, $09, $39, $09, $39, $09, $39, $09, $38, $09, $38, $09, $38, $09
-LAA00:  .byte $38, $09, $37, $09, $37, $09, $37, $09, $37, $09, $36, $09, $36, $09, $36, $09
-LAA10:  .byte $36, $09, $35, $09, $35, $09, $35, $09, $35, $09, $30, $04, $BF, $00, $80, $00
-LAA20:  .byte $BF, $A0, $BF, $C0, $BF, $A0, $BF, $80, $BD, $68, $BD, $58, $BD, $68, $BD, $84
-LAA30:  .byte $BB, $A0, $BB, $C0, $BB, $A0, $BB, $80, $B9, $68, $B9, $58, $B9, $68, $B9, $84
-LAA40:  .byte $B7, $A0, $B7, $C0, $B7, $A0, $B7, $80, $B5, $68, $B5, $58, $B5, $68, $B5, $84
-LAA50:  .byte $B3, $A0, $B3, $C0, $B3, $A0, $B3, $80, $B1, $68, $B1, $58, $B1, $68, $B1, $84
-LAA60:  .byte $B0, $80, $BF, $00, $8C, $00, $BF, $61, $BF, $86, $BE, $FB, $BE, $C0, $BD, $D5
-LAA70:  .byte $BD, $3A, $BC, $EF, $BC, $F4, $BB, $49, $BB, $EE, $BA, $E3, $BA, $28, $B9, $BD
-LAA80:  .byte $B9, $A2, $B8, $D7, $B8, $5C, $B7, $31, $B7, $56, $B6, $CB, $B6, $90, $B5, $A5
-LAA90:  .byte $B5, $0A, $B4, $BF, $B4, $C4, $B3, $19, $B3, $BE, $B2, $B3, $B2, $F8, $B1, $8D
-LAAA0:  .byte $B1, $72, $B0, $10, $B4, $00, $8C, $01, $B4, $61, $B8, $86, $BC, $FB, $BE, $C0
-LAAB0:  .byte $BD, $D5, $BD, $3A, $BC, $EF, $BC, $F4, $BB, $49, $BB, $EE, $BA, $E3, $BA, $28
-LAAC0:  .byte $B9, $BD, $B9, $A2, $B8, $D7, $B8, $5C, $B7, $31, $B7, $56, $B6, $CB, $B6, $90
-LAAD0:  .byte $B5, $A5, $B5, $0A, $B4, $BF, $B4, $C4, $B3, $19, $B3, $BE, $B2, $B3, $B2, $F8
-LAAE0:  .byte $B1, $8D, $B1, $72, $B0, $10, $B4, $00, $5C, $00, $B4, $41, $B8, $56, $BC, $6B
-LAAF0:  .byte $BE, $50, $BD, $45, $BD, $5A, $BC, $6F, $BC, $54, $BB, $49, $BB, $5E, $BA, $63
-LAB00:  .byte $BA, $58, $B9, $4D, $B9, $52, $B8, $67, $B8, $55, $B7, $41, $B7, $56, $B6, $6B
-LAB10:  .byte $B6, $50, $B5, $45, $B5, $5A, $B4, $6F, $B4, $54, $B3, $49, $B3, $5E, $B2, $63
-LAB20:  .byte $B2, $58, $B1, $4D, $B1, $52, $B0, $10, $BF, $00, $36, $00, $BF, $36, $BF, $36
-LAB30:  .byte $BF, $36, $BF, $36, $BE, $35, $BE, $35, $BD, $35, $BD, $35, $BC, $34, $BC, $34
-LAB40:  .byte $BB, $34, $BB, $34, $BA, $33, $BA, $33, $B9, $33, $B9, $33, $B8, $32, $B8, $32
-LAB50:  .byte $B7, $32, $B7, $32, $B6, $31, $B6, $31, $B5, $31, $B5, $31, $B4, $30, $B4, $30
-LAB60:  .byte $B3, $30, $B3, $30, $B2, $2F, $B2, $2F, $38, $00, $07, $00, $3C, $07, $3F, $08
-LAB70:  .byte $38, $09, $34, $0A, $30, $0A, $30, $0A, $30, $0A, $30, $0A, $36, $00, $04, $00
-LAB80:  .byte $33, $07, $36, $04, $34, $07, $38, $04, $34, $07, $36, $04, $33, $04, $30, $0A
-LAB90:  .byte $30, $0A, $30, $0A
+SFXDat0E:
+LA535:  .byte $FF, $00, $E0, $00
+  .byte $FF, $D8
+  .byte $FF, $D0
+  .byte $FD, $C4
+  .byte $FD, $D8
+  .byte $FD, $AC
+  .byte $FB, $A0
+  .byte $FB, $90
+  .byte $FB, $80
+  .byte $F8, $70
+  .byte $F8, $60
+  .byte $F8, $50
+  .byte $F4, $40
+  .byte $F4, $30
+  .byte $F4, $20
+  .byte $70, $00
 
-LAB94:  .byte $B6, $00, $60, $00, $BA, $90, $BF, $70, $BC, $A0, $BA, $80
-LABA0:  .byte $B7, $C0, $B5, $90, $B2, $E0, $B1, $A0, $B0, $10
+SFXDat0F:
+LA557:  .byte $FF, $00, $80, $00
+  .byte $FF, $40
+  .byte $FF, $78
+  .byte $FD, $48
+  .byte $FD, $70
+  .byte $FD, $50
+  .byte $FB, $68
+  .byte $FB, $58
+  .byte $FB, $60
+  .byte $F8, $60
+  .byte $F8, $68
+  .byte $F8, $70
+  .byte $F4, $78
+  .byte $F4, $80
+  .byte $F4, $88
+  .byte $F4, $90
+  .byte $F4, $98
+  .byte $70, $A0
 
-LABAA:  .byte $B6, $00, $00, $01, $3A, $10
-LABB0:  .byte $BF, $20, $3C, $30, $BA, $40, $37, $50, $B5, $60, $32, $70, $B1, $80, $B0, $90
+SFXDat10:
+LA57D:  .byte $FF, $00, $80, $00
+  .byte $FF, $60
+  .byte $FF, $40
+  .byte $FD, $60
+  .byte $FD, $78
+  .byte $FD, $60
+  .byte $FB, $48
+  .byte $FB, $60
+  .byte $FB, $70
+  .byte $F8, $60
+  .byte $F8, $50
+  .byte $F8, $60
+  .byte $F7, $68
+  .byte $F7, $60
+  .byte $F6, $58
+  .byte $F6, $60
+  .byte $F5, $58
+  .byte $F4, $50
+  .byte $F4, $48
+  .byte $F4, $40
+  .byte $F4, $38
+  .byte $F4, $30
+  .byte $F4, $28
+  .byte $F4, $24
+  .byte $F2, $20
+  .byte $F2, $1C
+  .byte $70, $1C
 
-LABC0:  .byte $B6, $00, $00, $02, $3A, $30, $BF, $10, $3C, $40, $BA, $30, $37, $60, $B5, $40
-LABD0:  .byte $32, $80, $B1, $60, $B0, $A0
+SFXDat11:
+LA5B5:  .byte $BF, $00, $60, $00
+  .byte $BF, $70
+  .byte $BF, $80
+  .byte $BF, $C0
+  .byte $BF, $80
+  .byte $BD, $F0
+  .byte $BD, $60
+  .byte $BD, $10
+  .byte $BD, $20
+  .byte $BB, $F0
+  .byte $BB, $C0
+  .byte $BB, $C0
+  .byte $BB, $40
+  .byte $B9, $80
+  .byte $B9, $A8
+  .byte $B9, $10
+  .byte $B9, $F0
+  .byte $B7, $80
+  .byte $B7, $10
+  .byte $B7, $D0
+  .byte $B7, $10
+  .byte $B5, $30
+  .byte $B5, $F0
+  .byte $B5, $50
+  .byte $B5, $B0
+  .byte $B3, $70
+  .byte $B3, $50
+  .byte $B3, $D0
+  .byte $B3, $60
+  .byte $B1, $90
+  .byte $B1, $30
+  .byte $B1, $20
+  .byte $B1, $30
+  .byte $B0, $80
 
-LABD6:  .byte $36, $00, $00, $01, $3A, $20, $3F, $40, $3C, $60
-LABE0:  .byte $3A, $80, $37, $A0, $35, $C0, $32, $E0, $31, $F0, $30, $F0
+SFXDat12:
+LA5FB:  .byte $BF, $00, $10, $00
+  .byte $BF, $12
+  .byte $BF, $14
+  .byte $BF, $16
+  .byte $BF, $18
+  .byte $BD, $1A
+  .byte $BD, $1C
+  .byte $BD, $1E
+  .byte $BD, $20
+  .byte $BB, $24
+  .byte $BB, $28
+  .byte $BB, $2C
+  .byte $BB, $30
+  .byte $B9, $34
+  .byte $B9, $38
+  .byte $B9, $3C
+  .byte $B9, $40
+  .byte $B7, $48
+  .byte $B7, $50
+  .byte $B7, $58
+  .byte $B7, $60
+  .byte $B5, $68
+  .byte $B5, $70
+  .byte $B5, $78
+  .byte $B5, $80
+  .byte $B3, $90
+  .byte $B3, $A0
+  .byte $B3, $B0
+  .byte $B3, $C0
+  .byte $B1, $D0
+  .byte $B1, $E0
+  .byte $B1, $F0
+  .byte $B1, $FF
+  .byte $B0, $80
+
+SFXDat13:
+LA641:  .byte $BF, $94, $20, $00
+LA645:  .byte $BF
+LA646:  .byte $B0
+LA647:  .byte $BF
+LA648:  .byte $B0
+LA649:  .byte $BE
+LA64A:  .byte $B0
+LA64B:  .byte $BE
+LA64C:  .byte $B0
+LA64D:  .byte $BD
+LA64E:  .byte $B0
+LA64F:  .byte $BD
+LA650:  .byte $B0
+LA651:  .byte $BC
+LA652:  .byte $B0
+LA653:  .byte $BC
+LA654:  .byte $B0
+LA655:  .byte $BB
+LA656:  .byte $B0
+LA657:  .byte $BB
+LA658:  .byte $B0
+LA659:  .byte $BA
+LA65A:  .byte $B0
+LA65B:  .byte $BA
+LA65C:  .byte $B0
+LA65D:  .byte $B9
+LA65E:  .byte $B0
+LA65F:  .byte $B9
+LA660:  .byte $B0
+LA661:  .byte $B8
+LA662:  .byte $B0
+LA663:  .byte $B8
+LA664:  .byte $B0
+LA665:  .byte $B7
+LA666:  .byte $B0
+LA667:  .byte $B7
+LA668:  .byte $B0
+LA669:  .byte $B6
+LA66A:  .byte $B0
+LA66B:  .byte $B6
+LA66C:  .byte $B0
+LA66D:  .byte $B5
+LA66E:  .byte $B0
+LA66F:  .byte $B5
+LA670:  .byte $B0
+LA671:  .byte $B4
+LA672:  .byte $B0
+LA673:  .byte $B4
+LA674:  .byte $B0
+LA675:  .byte $B3
+LA676:  .byte $B0
+LA677:  .byte $B3
+LA678:  .byte $B0
+LA679:  .byte $B2
+LA67A:  .byte $B0
+LA67B:  .byte $B2
+LA67C:  .byte $B0
+LA67D:  .byte $B1
+LA67E:  .byte $B1
+LA67F:  .byte $B1
+LA680:  .byte $B1
+LA681:  .byte $B0
+
+SFXDat14:
+LA682:  .byte $38, $00, $07, $F0
+  .byte $3F, $08
+  .byte $3D, $09
+  .byte $3B, $0A
+  .byte $39, $0B
+  .byte $38, $0C
+LA690:  .byte $38, $0D
+  .byte $37, $0E
+  .byte $37, $0F
+  .byte $36, $0F
+  .byte $36, $0F
+  .byte $35, $0F
+  .byte $35, $0F
+  .byte $36, $0F
+LA6A0:  .byte $36, $0F
+  .byte $35, $0F
+  .byte $35, $0F
+  .byte $34, $0F
+  .byte $34, $0F
+  .byte $34, $0F
+  .byte $33, $0F
+  .byte $33, $0F
+LA6B0:  .byte $33, $0F
+  .byte $33, $0F
+  .byte $32, $0F
+  .byte $32, $0F
+  .byte $32, $0F
+  .byte $32, $0F
+  .byte $30, $0F
+
+SFXDat15:
+LA6BE:  .byte $38, $00, $07, $F0
+  .byte $3F, $09
+  .byte $3D, $0B
+  .byte $3B, $0E
+  .byte $39, $0B
+  .byte $38, $09
+  .byte $38, $07
+  .byte $37, $07
+LA6D0:  .byte $37, $07
+  .byte $36, $07
+  .byte $36, $07
+  .byte $35, $07
+  .byte $35, $07
+  .byte $36, $07
+  .byte $36, $07
+  .byte $35, $07
+LA6E0:  .byte $35, $07
+  .byte $34, $07
+  .byte $34, $07
+  .byte $34, $07
+  .byte $33, $07
+  .byte $33, $07
+  .byte $33, $07
+  .byte $33, $07
+LA6F0:  .byte $32, $07
+  .byte $32, $07
+  .byte $32, $07
+  .byte $32, $07
+  .byte $30, $07
+
+SFXDat16:
+LA6FA:  .byte $38, $00, $07, $F0
+  .byte $3F, $09
+LA700:  .byte $3D, $0B
+  .byte $3B, $0E
+  .byte $39, $0B
+  .byte $38, $09
+  .byte $37, $0A
+  .byte $36, $0A
+  .byte $35, $0A
+  .byte $34, $0A
+LA710:  .byte $34, $0A
+  .byte $33, $0A
+  .byte $33, $0A
+  .byte $32, $0A
+  .byte $32, $0A
+  .byte $30, $0A
+
+SFXDat17:
+LA71C:  .byte $34, $00, $0F, $F0
+LA720:  .byte $3B, $0C
+  .byte $3F, $09
+  .byte $3B, $09
+  .byte $38, $0A
+  .byte $37, $0B
+  .byte $36, $0C
+  .byte $35, $0C
+  .byte $34, $0C
+LA730:  .byte $34, $0C
+  .byte $33, $0C
+  .byte $33, $0C
+  .byte $32, $0C
+  .byte $32, $0C
+  .byte $30, $0C
+
+SFXDat18:
+LA73C:  .byte $34, $00, $0B, $F0
+LA740:  .byte $38, $0B
+  .byte $3C, $0C
+  .byte $3F, $0C
+  .byte $34, $0E
+  .byte $30, $0E
+  .byte $30, $0C
+  .byte $30, $0C
+  .byte $30, $0C
+LA750:  .byte $30, $0C
+
+SFXDat19:
+LA752:  .byte $34, $00, $09, $F0
+  .byte $38, $09
+  .byte $3C, $09
+  .byte $3F, $09
+  .byte $34, $0A
+  .byte $30, $0A
+LA760:  .byte $30, $0C
+  .byte $30, $0C
+  .byte $30, $0C
+  .byte $30, $0C
+
+SFXDat1A:
+LA768:  .byte $34, $00, $09, $F0
+  .byte $38, $09
+  .byte $3C, $09
+LA770:  .byte $3F, $09
+  .byte $34, $0A
+  .byte $30, $0A
+  .byte $30, $0C
+  .byte $30, $0C
+  .byte $30, $0C
+  .byte $30, $0C
+
+SFXDat1B:
+LA77E:  .byte $BF, $81, $00, $02
+  .byte $BF, $00
+  .byte $BF, $00
+  .byte $BF, $00
+  .byte $B0, $00
+
+SFXDat1C:
+LA78A:  .byte $32, $00, $07, $F0
+  .byte $38, $07
+LA790:  .byte $3F, $07
+  .byte $38, $07
+  .byte $34, $07
+  .byte $30, $00
+
+SFXDat1D:
+LA798:  .byte $3F, $00, $0F, $F0
+  .byte $3F, $0D
+  .byte $3F, $0C
+LA7A0:  .byte $3F, $0B
+  .byte $3F, $0A
+  .byte $3F, $09
+  .byte $3F, $09
+  .byte $3F, $09
+  .byte $3F, $09
+  .byte $30, $00
+
+SFXDat1E:
+LA7AE:  .byte $3F, $00, $C0, $00
+  .byte $7F, $C0
+  .byte $3F, $C0
+  .byte $7E, $C0
+  .byte $3E, $C0
+  .byte $7B, $C0
+  .byte $3A, $C0
+  .byte $78, $C0
+LA7C0:  .byte $34, $C0
+  .byte $30, $00
+
+SFXDat1F:
+LA7C4:  .byte $B4, $00, $F0, $00
+  .byte $B8, $E0
+  .byte $BF, $D0
+  .byte $BE, $C0
+  .byte $BE, $B0
+LA7D0:  .byte $BB, $A0
+  .byte $BA, $90
+  .byte $B8, $80
+  .byte $B4, $70
+  .byte $B0, $00
+
+SFXDat20:
+LA7DA:  .byte $B4, $00, $40, $00
+  .byte $B8, $3C
+LA7E0:  .byte $BF, $38
+  .byte $BE, $34
+  .byte $BE, $30
+  .byte $BB, $3C
+  .byte $BA, $28
+  .byte $B8, $24
+  .byte $B4, $20
+  .byte $B0, $10
+
+SFXDat21:
+LA7F0:  .byte $B4, $00, $80, $00
+  .byte $B8, $40
+  .byte $BF, $70
+  .byte $BE, $40
+  .byte $BE, $60
+  .byte $BB, $40
+  .byte $BA, $50
+LA800:  .byte $B8, $40
+  .byte $B4, $40
+  .byte $B0, $10
+
+SFXDat22:
+LA806:  .byte $BF, $00, $F0, $00
+  .byte $BC, $D0
+  .byte $BF, $B0
+  .byte $BC, $90
+LA810:  .byte $BF, $70
+  .byte $BC, $F0
+  .byte $BF, $D0
+  .byte $BC, $B0
+  .byte $BF, $90
+  .byte $BF, $70
+  .byte $BC, $F0
+  .byte $BF, $D0
+LA820:  .byte $BC, $B0
+  .byte $BF, $90
+  .byte $BF, $70
+  .byte $BC, $F0
+  .byte $BF, $D0
+  .byte $BC, $B0
+  .byte $BF, $90
+  .byte $BF, $70
+LA830:  .byte $B0, $40
+
+SFXDat23:
+LA832:  .byte $BF, $00, $F0, $00
+  .byte $BC, $D0
+  .byte $BF, $B0
+  .byte $BC, $90
+  .byte $BF, $70
+  .byte $B8, $F0
+LA840:  .byte $BC, $D0
+  .byte $B8, $B0
+  .byte $BC, $90
+  .byte $B8, $70
+  .byte $B4, $F0
+  .byte $B8, $D0
+  .byte $B4, $B0
+  .byte $B8, $90
+LA850:  .byte $B4, $70
+  .byte $B2, $F0
+  .byte $B4, $D0
+  .byte $B2, $B0
+  .byte $B4, $90
+  .byte $B2, $70
+  .byte $B0, $40
+
+SFXDat24:
+LA85E:  .byte $BF, $00, $F0, $00
+  .byte $BF, $E0
+  .byte $BF, $D0
+  .byte $BF, $C0
+  .byte $BF, $B0
+  .byte $BF, $A0
+  .byte $BF, $90
+  .byte $BF, $80
+LA870:  .byte $BF, $70
+  .byte $BD, $E0
+  .byte $BD, $D0
+  .byte $BD, $C0
+  .byte $BD, $B0
+  .byte $BD, $A0
+  .byte $BD, $90
+  .byte $BD, $80
+LA880:  .byte $BD, $70
+  .byte $BB, $E0
+  .byte $BB, $D0
+  .byte $BB, $C0
+  .byte $BB, $B0
+  .byte $BB, $A0
+  .byte $BB, $90
+  .byte $BB, $80
+LA890:  .byte $BB, $70
+  .byte $B9, $E0
+  .byte $B9, $D0
+  .byte $B9, $C0
+  .byte $B9, $B0
+  .byte $B9, $A0
+  .byte $B9, $90
+  .byte $B9, $80
+LA8A0:  .byte $B9, $70
+  .byte $B7, $E0
+  .byte $B7, $D0
+  .byte $B7, $C0
+  .byte $B7, $B0
+  .byte $B7, $A0
+  .byte $B7, $90
+  .byte $B7, $80
+LA8B0:  .byte $B7, $70
+  .byte $B5, $E0
+  .byte $B5, $D0
+  .byte $B5, $C0
+  .byte $B5, $B0
+  .byte $B5, $A0
+  .byte $B5, $90
+  .byte $B5, $80
+LA8C0:  .byte $B5, $70
+  .byte $B3, $E0
+  .byte $B3, $D0
+  .byte $B3, $C0
+  .byte $B3, $B0
+  .byte $B3, $A0
+  .byte $B3, $90
+  .byte $B3, $80
+LA8D0:  .byte $B3, $70
+  .byte $B0, $40
+
+SFXDat25:
+LA8D4:  .byte $3F, $00, $0F, $F0
+  .byte $3F, $0E
+  .byte $3F, $0D
+  .byte $3F, $0C
+  .byte $3F, $0B
+LA8E0:  .byte $3F, $0A
+  .byte $3F, $09
+  .byte $3F, $08
+  .byte $3F, $07
+  .byte $3D, $0E
+  .byte $3D, $0D
+  .byte $3D, $0C
+  .byte $3D, $0B
+LA8F0:  .byte $3D, $0A
+  .byte $3D, $09
+  .byte $3D, $08
+  .byte $3D, $07
+  .byte $3B, $0E
+  .byte $3B, $0D
+  .byte $3B, $0C
+  .byte $3B, $0B
+LA900:  .byte $3B, $0A
+  .byte $3B, $09
+  .byte $3B, $08
+  .byte $3B, $07
+  .byte $39, $0E
+  .byte $39, $0D
+  .byte $39, $0C
+  .byte $39, $0B
+LA910:  .byte $39, $0A
+  .byte $39, $09
+  .byte $39, $08
+  .byte $39, $07
+  .byte $37, $0E
+  .byte $37, $0D
+  .byte $37, $0C
+  .byte $37, $0B
+LA920:  .byte $37, $0A
+  .byte $37, $09
+  .byte $37, $08
+  .byte $37, $07
+  .byte $35, $0E
+  .byte $35, $0D
+  .byte $35, $0C
+  .byte $35, $0B
+LA930:  .byte $35, $0A
+  .byte $35, $09
+  .byte $35, $08
+  .byte $35, $07
+  .byte $33, $0E
+  .byte $33, $0D
+  .byte $33, $0C
+  .byte $33, $0B
+LA940:  .byte $33, $0A
+  .byte $33, $09
+  .byte $33, $08
+  .byte $33, $07
+  .byte $30, $04
+
+SFXDat26:
+LA94A:  .byte $3F, $00, $0F, $F0
+  .byte $3F, $0D
+LA950:  .byte $3F, $0B
+  .byte $3F, $0D
+  .byte $3F, $0F
+  .byte $3F, $0D
+  .byte $3F, $0B
+  .byte $3F, $0D
+  .byte $3F, $0F
+  .byte $3D, $0D
+LA960:  .byte $3D, $0B
+  .byte $3D, $0D
+  .byte $3D, $0F
+  .byte $3D, $0D
+  .byte $3D, $0B
+  .byte $3D, $0D
+  .byte $3D, $0F
+  .byte $3B, $0D
+LA970:  .byte $3B, $0B
+  .byte $3B, $0D
+  .byte $3B, $0F
+  .byte $3B, $0D
+  .byte $3B, $0B
+  .byte $3B, $0D
+  .byte $3B, $0F
+  .byte $39, $0D
+LA980:  .byte $39, $0B
+  .byte $39, $0D
+  .byte $39, $0F
+  .byte $39, $0D
+  .byte $39, $0B
+  .byte $39, $0D
+  .byte $39, $0F
+  .byte $37, $0D
+LA990:  .byte $37, $0B
+  .byte $37, $0D
+  .byte $37, $0F
+  .byte $37, $0D
+  .byte $37, $0B
+  .byte $37, $0D
+  .byte $37, $0F
+  .byte $35, $0D
+LA9A0:  .byte $35, $0B
+  .byte $35, $0D
+  .byte $35, $0F
+  .byte $35, $0D
+  .byte $35, $0B
+  .byte $35, $0D
+  .byte $35, $0F
+  .byte $33, $0D
+LA9B0:  .byte $33, $0B
+  .byte $33, $0D
+  .byte $33, $0F
+  .byte $33, $0D
+  .byte $33, $0B
+  .byte $33, $0D
+  .byte $33, $0F
+  .byte $30, $04
+
+SFXDat27:
+LA9C0:  .byte $3F, $00, $0B, $F8
+  .byte $3F, $0B
+  .byte $3F, $0B
+  .byte $3F, $0B
+  .byte $3E, $0B
+  .byte $3E, $0B
+  .byte $3E, $0B
+LA9D0:  .byte $3E, $0B
+  .byte $3D, $0A
+  .byte $3D, $0A
+  .byte $3D, $0A
+  .byte $3D, $0A
+  .byte $3C, $0A
+  .byte $3C, $0A
+  .byte $3C, $0A
+LA9E0:  .byte $3C, $0A
+  .byte $3B, $0A
+  .byte $3B, $0A
+  .byte $3B, $0A
+  .byte $3B, $0A
+  .byte $3A, $0A
+  .byte $3A, $0A
+  .byte $3A, $0A
+LA9F0:  .byte $3A, $0A
+  .byte $39, $09
+  .byte $39, $09
+  .byte $39, $09
+  .byte $39, $09
+  .byte $38, $09
+  .byte $38, $09
+  .byte $38, $09
+LAA00:  .byte $38, $09
+  .byte $37, $09
+  .byte $37, $09
+  .byte $37, $09
+  .byte $37, $09
+  .byte $36, $09
+  .byte $36, $09
+  .byte $36, $09
+LAA10:  .byte $36, $09
+  .byte $35, $09
+  .byte $35, $09
+  .byte $35, $09
+  .byte $35, $09
+  .byte $30, $04
+
+SFXDat28:
+LAA1C:  .byte $BF, $00, $80, $00
+LAA20:  .byte $BF, $A0
+  .byte $BF, $C0
+  .byte $BF, $A0
+  .byte $BF, $80
+  .byte $BD, $68
+  .byte $BD, $58
+  .byte $BD, $68
+  .byte $BD, $84
+LAA30:  .byte $BB, $A0
+  .byte $BB, $C0
+  .byte $BB, $A0
+  .byte $BB, $80
+  .byte $B9, $68
+  .byte $B9, $58
+  .byte $B9, $68
+  .byte $B9, $84
+LAA40:  .byte $B7, $A0
+  .byte $B7, $C0
+  .byte $B7, $A0
+  .byte $B7, $80
+  .byte $B5, $68
+  .byte $B5, $58
+  .byte $B5, $68
+  .byte $B5, $84
+LAA50:  .byte $B3, $A0
+  .byte $B3, $C0
+  .byte $B3, $A0
+  .byte $B3, $80
+  .byte $B1, $68
+  .byte $B1, $58
+  .byte $B1, $68
+  .byte $B1, $84
+LAA60:  .byte $B0, $80
+
+SFXDat29:
+LAA62:  .byte $BF, $00, $8C, $00
+  .byte $BF, $61
+  .byte $BF, $86
+  .byte $BE, $FB
+  .byte $BE, $C0
+  .byte $BD, $D5
+LAA70:  .byte $BD, $3A
+  .byte $BC, $EF
+  .byte $BC, $F4
+  .byte $BB, $49
+  .byte $BB, $EE
+  .byte $BA, $E3
+  .byte $BA, $28
+  .byte $B9, $BD
+LAA80:  .byte $B9, $A2
+  .byte $B8, $D7
+  .byte $B8, $5C
+  .byte $B7, $31
+  .byte $B7, $56
+  .byte $B6, $CB
+  .byte $B6, $90
+  .byte $B5, $A5
+LAA90:  .byte $B5, $0A
+  .byte $B4, $BF
+  .byte $B4, $C4
+  .byte $B3, $19
+  .byte $B3, $BE
+  .byte $B2, $B3
+  .byte $B2, $F8
+  .byte $B1, $8D
+LAAA0:  .byte $B1, $72
+  .byte $B0, $10
+
+SFXDat2A:
+LAAA4:  .byte $B4, $00, $8C, $01
+  .byte $B4, $61
+  .byte $B8, $86
+  .byte $BC, $FB
+  .byte $BE, $C0
+LAAB0:  .byte $BD, $D5
+  .byte $BD, $3A
+  .byte $BC, $EF
+  .byte $BC, $F4
+  .byte $BB, $49
+  .byte $BB, $EE
+  .byte $BA, $E3
+  .byte $BA, $28
+LAAC0:  .byte $B9, $BD
+  .byte $B9, $A2
+  .byte $B8, $D7
+  .byte $B8, $5C
+  .byte $B7, $31
+  .byte $B7, $56
+  .byte $B6, $CB
+  .byte $B6, $90
+LAAD0:  .byte $B5, $A5
+  .byte $B5, $0A
+  .byte $B4, $BF
+  .byte $B4, $C4
+  .byte $B3, $19
+  .byte $B3, $BE
+  .byte $B2, $B3
+  .byte $B2, $F8
+LAAE0:  .byte $B1, $8D
+  .byte $B1, $72
+  .byte $B0, $10
+
+SFXDat2B:
+LAAE6:  .byte $B4, $00, $5C, $00
+  .byte $B4, $41
+  .byte $B8, $56
+  .byte $BC, $6B
+LAAF0:  .byte $BE, $50
+  .byte $BD, $45
+  .byte $BD, $5A
+  .byte $BC, $6F
+  .byte $BC, $54
+  .byte $BB, $49
+  .byte $BB, $5E
+  .byte $BA, $63
+LAB00:  .byte $BA, $58
+  .byte $B9, $4D
+  .byte $B9, $52
+  .byte $B8, $67
+  .byte $B8, $55
+  .byte $B7, $41
+  .byte $B7, $56
+  .byte $B6, $6B
+LAB10:  .byte $B6, $50
+  .byte $B5, $45
+  .byte $B5, $5A
+  .byte $B4, $6F
+  .byte $B4, $54
+  .byte $B3, $49
+  .byte $B3, $5E
+  .byte $B2, $63
+LAB20:  .byte $B2, $58
+  .byte $B1, $4D
+  .byte $B1, $52
+  .byte $B0, $10
+
+SFXDat2C:
+LAB28:  .byte $BF, $00, $36, $00
+  .byte $BF, $36
+  .byte $BF, $36
+LAB30:  .byte $BF, $36
+  .byte $BF, $36
+  .byte $BE, $35
+  .byte $BE, $35
+  .byte $BD, $35
+  .byte $BD, $35
+  .byte $BC, $34
+  .byte $BC, $34
+LAB40:  .byte $BB, $34
+  .byte $BB, $34
+  .byte $BA, $33
+  .byte $BA, $33
+  .byte $B9, $33
+  .byte $B9, $33
+  .byte $B8, $32
+  .byte $B8, $32
+LAB50:  .byte $B7, $32
+  .byte $B7, $32
+  .byte $B6, $31
+  .byte $B6, $31
+  .byte $B5, $31
+  .byte $B5, $31
+  .byte $B4, $30
+  .byte $B4, $30
+LAB60:  .byte $B3, $30
+  .byte $B3, $30
+  .byte $B2, $2F
+  .byte $B2, $2F
+
+SFXDat2D:
+LAB86:  .byte $38, $00, $07, $00
+  .byte $3C, $07
+  .byte $3F, $08
+LAB70:  .byte $38, $09
+  .byte $34, $0A
+  .byte $30, $0A
+  .byte $30, $0A
+  .byte $30, $0A
+  .byte $30, $0A
+
+SFXDat2E:
+LAB7C:  .byte $36, $00, $04, $00
+LAB80:  .byte $33, $07
+  .byte $36, $04
+  .byte $34, $07
+  .byte $38, $04
+  .byte $34, $07
+  .byte $36, $04
+  .byte $33, $04
+  .byte $30, $0A
+LAB90:  .byte $30, $0A
+  .byte $30, $0A
+
+SFXDat2F:
+LAB94:  .byte $B6, $00, $60, $00
+  .byte $BA, $90
+  .byte $BF, $70
+  .byte $BC, $A0
+  .byte $BA, $80
+LABA0:  .byte $B7, $C0
+  .byte $B5, $90
+  .byte $B2, $E0
+  .byte $B1, $A0
+  .byte $B0, $10
+
+SFXDat30:
+LABAA:  .byte $B6, $00, $00, $01
+  .byte $3A, $10
+LABB0:  .byte $BF, $20
+  .byte $3C, $30
+  .byte $BA, $40
+  .byte $37, $50
+  .byte $B5, $60
+  .byte $32, $70
+  .byte $B1, $80
+  .byte $B0, $90
+
+SFXDat31:
+LABC0:  .byte $B6, $00, $00, $02
+  .byte $3A, $30
+  .byte $BF, $10
+  .byte $3C, $40
+  .byte $BA, $30
+  .byte $37, $60
+  .byte $B5, $40
+LABD0:  .byte $32, $80
+  .byte $B1, $60
+  .byte $B0, $A0
+
+SFXDat32:
+LABD6:  .byte $36, $00, $00, $01
+  .byte $3A, $20
+  .byte $3F, $40
+  .byte $3C, $60
+LABE0:  .byte $3A, $80
+  .byte $37, $A0
+  .byte $35, $C0
+  .byte $32, $E0
+  .byte $31, $F0
+  .byte $30, $F0
 
 SFXDat33:
 LABEC:  .byte $36, $00, $30, $00 ;

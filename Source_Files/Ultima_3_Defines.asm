@@ -144,6 +144,8 @@
 .alias WndXPos          $2A     ;X position of window to draw.
 .alias WndHeight        $2D     ;Height of window to draw.
 .alias WndWidth         $2E     ;Width of window to draw.
+.alias WndRowRemain     $2E     ;Number of tiles left to draw in current window row.
+
 
 .alias ChrNum           $2B     ;Keep track of character number when previewing.
 .alias ChrRow           $2C     ;Row character data will appear on when previewing.
@@ -904,7 +906,7 @@
 ;$08                            ;Unused SFX.
 .alias SFX_CASINO       $09     ;Randomly choose paper, rock, scissors.
 ;$0A                            ;Unused SFX.
-.alias SFX_SPELL_B      $0B     ;Spell SFX variant B.
+.alias SFX_SPELL_B      $0B     ;Spell variant B.
 ;$0C                            ;Unused SFX.
 ;$0D                            ;Unused SFX.
 .alias SFX_CHST_OPEN    $0E     ;Chest opened/card placed.
@@ -928,8 +930,8 @@
 ;$20                            ;Unused SFX.
 ;$21                            ;Unused SFX.
 ;$22                            ;Unused SFX.
-.alias SFX_MAP          $23     ;Use gem SFX.
-.alias SFX_SPELL_A      $24     ;Spell SFX variant A.
+.alias SFX_MAP          $23     ;View map.
+.alias SFX_SPELL_A      $24     ;Spell variant A.
 .alias SFX_EN_MJ_SPL    $25     ;Enemy casts major spell.
 .alias SFX_EX_FALL      $26     ;Castle Exodus falling apart.
 ;$27                            ;Unused SFX.
@@ -1154,7 +1156,7 @@
 .alias HM_OK_CANCEL     $03     ;Choosing to accept character or cancel.
 .alias HM_NAME          $04     ;Setting character's name.
 
-;Majic types useable by characters.
+;Magic types useable by characters.
 .alias MAGIC_NONE       $00     ;Class cannot use magic.
 .alias MAGIC_CLERIC     $01     ;Class can use cleric magic.
 .alias MAGIC_WIZARD     $02     ;Class can use wizard magic.
@@ -1165,6 +1167,16 @@
 .alias SPL_BATTLE       $02     ;Spell can be used in battles.
 .alias SPL_OVRWRLD      $04     ;Spell can be used on the overworld.
 .alias SPL_ALWAYS       $0F     ;Spell can always be used.
+
+;Window border constants.
+.alias BRDR_TOP_LT      $7E     ;Top left corner.
+.alias BRDR_TOP         $7F     ;Top border.
+.alias BRDR_TOP_RT      $80     ;Top right corner.
+.alias BRDR_LT          $81     ;Left border.
+.alias BRDR_RT          $82     ;Right border.
+.alias BRDR_BTM_LT      $83     ;Bottom left corner.
+.alias BRDR_BTM         $84     ;Bottom border
+.alias BRDR_BTM_RT      $85     ;Bottom right corner.
 
 ;Yes/No selector.
 .alias WND_YES          $00     ;YES selected in dialog box.

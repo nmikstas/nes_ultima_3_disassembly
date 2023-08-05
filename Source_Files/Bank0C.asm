@@ -4129,86 +4129,104 @@ L97A8:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 DrawWndBrdr:
-L97A9:  LDA $2A
+L97A9:  LDA WndXPos
 L97AB:  STA $19
-L97AD:  LDA $29
+L97AD:  LDA WndYPos
 L97AF:  STA $2A
+
 L97B1:  LDA #$00
 L97B3:  STA $29
+
 L97B5:  LSR $2A
 L97B7:  ROR $29
 L97B9:  LSR $2A
 L97BB:  ROR $29
 L97BD:  LSR $2A
 L97BF:  ROR $29
+
 L97C1:  CLC
 L97C2:  LDA $19
 L97C4:  ADC $29
 L97C6:  STA $29
+
 L97C8:  LDA #$20
 L97CA:  ADC $2A
 L97CC:  STA $2A
+
 L97CE:  LDA $2E
 L97D0:  STA $2C
 L97D2:  LDA $2D
 L97D4:  STA $2B
+
 L97D6:  LDA $2E
 L97D8:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
+
 L97DB:  LDA $2A
 L97DD:  STA PPUBufBase,X
 L97E0:  LDA $29
 L97E2:  INX
 L97E3:  STA PPUBufBase,X
-L97E6:  LDA #$7E
+L97E6:  LDA #BRDR_TOP_LT
 L97E8:  INX
 L97E9:  STA PPUBufBase,X
-L97EC:  DEC $2E
-L97EE:  DEC $2E
-L97F0:  BEQ L97FC
-L97F2:  LDA #$7F
+L97EC:  DEC WndRowRemain
+L97EE:  DEC WndRowRemain
+L97F0:  BEQ TopBrdrLast
+
+TopBrdrLoop:
+L97F2:  LDA #BRDR_TOP
 L97F4:  INX
 L97F5:  STA PPUBufBase,X
-L97F8:  DEC $2E
-L97FA:  BNE L97F2
-L97FC:  LDA #$80
+L97F8:  DEC WndRowRemain
+L97FA:  BNE TopBrdrLoop
+
+TopBrdrLast:
+L97FC:  LDA #BRDR_TOP_RT
 L97FE:  INX
 L97FF:  STA PPUBufBase,X
 L9802:  LDA $2C
 L9804:  STA $2E
 L9806:  DEC $2D
+
 L9808:  CLC
 L9809:  LDA $29
 L980B:  ADC #$20
 L980D:  STA $29
+
 L980F:  LDA $2A
 L9811:  ADC #$00
 L9813:  STA $2A
+
 L9815:  LDA $2E
 L9817:  JSR UpdatePPUBufSize    ;($99A8)Update number of bytes filled in PPU buffer.
 L981A:  DEC $2D
 L981C:  BEQ L984C
+
 L981E:  LDA $2A
 L9820:  STA PPUBufBase,X
 L9823:  INX
 L9824:  LDA $29
 L9826:  STA PPUBufBase,X
 L9829:  INX
-L982A:  LDA #$81
+L982A:  LDA #BRDR_LT
 L982C:  STA PPUBufBase,X
-L982F:  DEC $2E
-L9831:  DEC $2E
+L982F:  DEC WndRowRemain
+L9831:  DEC WndRowRemain
 L9833:  BEQ L983F
+
 L9835:  LDA #$00
 L9837:  INX
 L9838:  STA PPUBufBase,X
 L983B:  DEC $2E
 L983D:  BNE L9835
+
 L983F:  INX
-L9840:  LDA #$82
+L9840:  LDA #BRDR_RT
 L9842:  STA PPUBufBase,X
 L9845:  LDA $2C
 L9847:  STA $2E
 L9849:  JMP L9808
+
 L984C:  LDA $2A
 L984E:  STA PPUBufBase,X
 L9851:  INX
@@ -4216,25 +4234,29 @@ L9852:  LDA $29
 L9854:  STA PPUBufBase,X
 L9857:  LDA $2B
 L9859:  STA $2D
-L985B:  LDA #$83
+L985B:  LDA #BRDR_BTM_LT
 L985D:  INX
 L985E:  STA PPUBufBase,X
 L9861:  DEC $2E
 L9863:  DEC $2E
 L9865:  BEQ L9871
-L9867:  LDA #$84
+
+BtmBrdrLoop:
+L9867:  LDA #BRDR_BTM
 L9869:  INX
 L986A:  STA PPUBufBase,X
 L986D:  DEC $2E
-L986F:  BNE L9867
+L986F:  BNE BtmBrdrLoop
+
 L9871:  INX
-L9872:  LDA #$85
+L9872:  LDA #BRDR_BTM_RT
 L9874:  STA PPUBufBase,X
 L9877:  LDA $2C
 L9879:  STA $2E
 L987B:  JSR ChkPPUBufFull       ;($99D5)Check if PPU buffer is full and set indicator if necessary.
+
 L987E:  LDA #$00
-L9880:  STA $9E
+L9880:  STA DisSpriteAnim
 L9882:  RTS
 
 ;----------------------------------------------------------------------------------------------------
@@ -4330,6 +4352,7 @@ L98FC:  LDA InputChange
 L98FE:  BNE FinishInputPresses
 L9900:  CPY Pad1Input
 L9902:  BNE L98F2
+
 L9904:  DEX
 L9905:  BNE L98F6
 
