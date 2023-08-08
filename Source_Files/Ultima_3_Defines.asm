@@ -243,9 +243,9 @@
 .alias Pos3ChrPtrUB     $96     ;Position 3 character data pointer, upper byte.
 .alias Pos4ChrPtrLB     $97     ;Position 4 character data pointer, lower byte.
 .alias Pos4ChrPtrUB     $98     ;Position 4 character data pointer, upper byte.
-.alias CrntChrPtr       $99     ;And $9A. Pointer to current character data to change.
-.alias CrntChrPtrLB     $99     ;And $9A. Pointer to current character data to change, lower byte.
-.alias CrntChrPtrUB     $9A     ;And $9A. Pointer to current character data to change, upper byte.
+.alias CrntChrPtr       $99     ;Pointer to current character data to change.
+.alias CrntChrPtrLB     $99     ;Pointer to current character data to change, lower byte.
+.alias CrntChrPtrUB     $9A     ;Pointer to current character data to change, upper byte.
 .alias SGCharPtr        $99     ;Pointer to character data in current save game.
 .alias SGCharPtrLB      $99     ;Pointer to character data in current save game, lower byte.
 .alias SGCharPtrUB      $9A     ;Pointer to character data in current save game, upper byte.
@@ -268,7 +268,7 @@
 .alias MapProperties    $A8     ;Properties of current map:
                                 ;Bit 0 - 1=Player/NPCs invisible(dungeons).
                                 ;Bit 1 - 1=Turn based map(fight maps).
-                                ;Bit 2 - 1=Show moon phases(overworld).
+                                ;Bit 2 - 1=Show moon phases and wrap map(overworld).
                                 ;Bit 3 - 1=NPCs present(all maps except overworld).
 .alias IgnoreInput      $A9     ;1=Ignore game pad input.
 
@@ -284,14 +284,14 @@
 .alias CurPieceYVis     $B4     ;Current piece active on battefield. Upper nibble is their Y
                                 ;position on the battlefiled. 1=top row. LSB 0=invisible, 1=visible.
 
-;Random number generator.
-.alias RngInput0        $B5     ;Input to the rng. RngNum1 is between 0 and this number -1.
-.alias RngInput1        $B6     ;Input to the rng.
-.alias RngNum0          $B7     ;Output of the rng.
-.alias RngNum1          $B8     ;Output of the rng.
-.alias RngSeed          $BA     ;Seed for rng.
+;Multiplier.
+.alias MultIn0          $B5     ;input multiplication byte 0.
+.alias MultIn1          $B6     ;input multiplication byte 1.
+.alias MultOutLB        $B7     ;Output multiplication word, lower byte.
+.alias MultOutUB        $B8     ;Output multiplication word, upper byte.
 
 .alias OnBoat           $B9     ;$01=On boat, $00=Not on boat.
+.alias RngSeed          $BA     ;Seed for rng.
 
 .alias ConstPPUBufLen   $BC     ;Initial PPU buffer length. Does not change during processing.
 
@@ -1120,6 +1120,8 @@
 .alias TXT_SNGL_SPACE   $FE     ;Indicates text buffer already filles and should be single spaced.
 .alias TXT_DBL_SPACE    $FF     ;Indicates text buffer already filles and should be double spaced.
 .alias TXT_NO_WAIT      $80     ;Indicate NPC text will end without player pressing a button.
+
+.alias CHAR_ASTRK       $09     ;Asterisk text character.
 
 .alias CMD_PRAY         $01     ;LSB set allowas party to pray.
 .alias CMD_BRIBE        $02     ;Second bit set allows party to bribe.

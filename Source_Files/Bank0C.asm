@@ -6484,6 +6484,7 @@ LB591:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $
 
 ;----------------------------------------------------------------------------------------------------
 
+;Unused attribute table data.
 LB5A1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 LB5B1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 LB5C1:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $55, $11, $00, $00, $00
@@ -6504,7 +6505,7 @@ LB5F0:  STA $2E
 
 LB5F2:  LDA #$1B
 LB5F4:  PHA
-LB5F5:  JMP DoList              ;($B60C)Show list of armor.
+LB5F5:  JMP DoList              ;($B60C)Show list of armor/weapons.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6522,6 +6523,8 @@ LB607:  STA $2E
 LB609:  LDA #$0C
 LB60B:  PHA
 
+;----------------------------------------------------------------------------------------------------
+
 DoList:
 LB60C:  LDA #$06
 LB60E:  STA $2C
@@ -6534,6 +6537,7 @@ LB618:  STA ($2B),Y
 LB61A:  INY
 LB61B:  CMP #$FF
 LB61D:  BNE LB616
+
 LB61F:  LDX #$00
 LB621:  LDY #$01
 LB623:  LDA #$00
@@ -6542,45 +6546,54 @@ LB628:  PLA
 LB629:  PHA
 LB62A:  CMP #$1B
 LB62C:  BEQ LB63D
-LB62E:  LDA HandTxt,X
+
+LB62E:* LDA HandTxt,X
 LB631:  STA TextBuffer,Y
 LB634:  INX
 LB635:  INY
 LB636:  CMP #$FD
 LB638:  BEQ LB64C
-LB63A:  JMP LB62E
-LB63D:  LDA SkinTxt,X
+LB63A:  JMP -
+
+LB63D:* LDA SkinTxt,X
 LB640:  STA TextBuffer,Y
 LB643:  INX
 LB644:  INY
 LB645:  CMP #$FD
 LB647:  BEQ LB64C
-LB649:  JMP LB63D
+LB649:  JMP -
+
 LB64C:  LDA #$FF
 LB64E:  STA TextBuffer,Y
 LB651:  STY $2D
 LB653:  LDA #$00
 LB655:  STA $9D
 LB657:  LDA #$01
-LB659:  STA $9C
+LB659:  STA NumMenuItems
+
 LB65B:  LDX #$00
 LB65D:  PLA
 LB65E:  PHA
 LB65F:  TAY
+
 LB660:  TYA
 LB661:  PHA
 LB662:  LDA (CrntChrPtr),Y
 LB664:  BEQ LB6A7
-LB666:  INC $9C
+
+LB666:  INC NumMenuItems
 LB668:  JSR LB703
+
 LB66B:  LDY $2D
 LB66D:  LDA $0600,X
 LB670:  CMP #$FD
 LB672:  BEQ LB67C
+
 LB674:  STA TextBuffer,Y
 LB677:  INX
 LB678:  INY
 LB679:  JMP LB66D
+
 LB67C:  STY $2D
 LB67E:  PLA
 LB67F:  PHA
@@ -6612,12 +6625,14 @@ LB6B0:  TAY
 LB6B1:  INY
 LB6B2:  DEC $2E
 LB6B4:  BEQ LB6B9
+
 LB6B6:  JMP LB660
+
 LB6B9:  LDA #$0E
 LB6BB:  STA Wnd2XPos
 LB6BE:  LDA #$06
 LB6C0:  STA Wnd2YPos
-LB6C3:  LDA $9C
+LB6C3:  LDA NumMenuItems
 LB6C5:  CLC
 LB6C6:  ADC #$01
 LB6C8:  ASL
@@ -6651,10 +6666,15 @@ LB6FE:  PLA
 LB6FF:  LDA #$00
 LB701:  CLC
 LB702:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LB703:  CPY #$0C
 LB705:  BCC LB71A
+
 LB707:  CPY #$1B
 LB709:  BCS LB71A
+
 LB70B:  TYA
 LB70C:  SEC
 LB70D:  SBC #$0B
@@ -6664,10 +6684,13 @@ LB712:  LDA (CrntChrPtr),Y
 LB714:  BEQ LB74A
 LB716:  PLA
 LB717:  JMP LB72E
+
 LB71A:  CPY #$1B
 LB71C:  BCC LB749
+
 LB71E:  CPY #$22
 LB720:  BCS LB749
+
 LB722:  TYA
 LB723:  SEC
 LB724:  SBC #$1A
@@ -6676,6 +6699,7 @@ LB728:  PHA
 LB729:  LDA (CrntChrPtr),Y
 LB72B:  BEQ LB74A
 LB72D:  PLA
+
 LB72E:  CMP (CrntChrPtr),Y
 LB730:  BNE LB73F
 LB732:  LDY $2D
@@ -6684,73 +6708,37 @@ LB736:  STA TextBuffer,Y
 LB739:  INY
 LB73A:  STY $2D
 LB73C:  JMP LB749
+
 LB73F:  LDY $2D
 LB741:  LDA #$00
 LB743:  STA TextBuffer,Y
 LB746:  INY
 LB747:  STY $2D
 LB749:  RTS
+
 LB74A:  PLA
-LB74B:  LDA #$09
+LB74B:  LDA #CHAR_ASTRK
 LB74D:  STA TextBufferBase
 LB750:  JMP LB73F
+
 LB753:  LDA #$FF
 LB755:  STA TextBuffer,X
 LB758:  RTS
-LB759:  LDY #$91
-LB75B:  TYA
-LB75C:  BRK
-LB75D:  BRK
-LB75E:  SBC $F0A9,X
-LB761:  STA SpriteBuffer,X
-LB764:  INX
-LB765:  INX
-LB766:  INX
-LB767:  INX
-LB768:  DEY
-LB769:  BNE LB761
-LB76B:  RTS
 
-LB76C:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-LB77C:  .byte $FF, $FF, $FF, $FF
+;----------------------------------------------------------------------------------------------------
 
-LB780:  LDA $19
-LB782:  ASL
-LB783:  TAY
-LB784:  LDA $18
-LB786:  ASL
-LB787:  TAX
-LB788:  LDA $0091,Y
-LB78B:  STA $2D
-LB78D:  LDA $0092,Y
-LB790:  STA $2E
-LB792:  LDA $91,X
-LB794:  STA $0091,Y
-LB797:  LDA $92,X
-LB799:  STA $0092,Y
-LB79C:  LDA $2D
-LB79E:  STA $91,X
-LB7A0:  LDA $2E
-LB7A2:  STA $92,X
-LB7A4:  LDA $19
-LB7A6:  ASL
-LB7A7:  ASL
-LB7A8:  ASL
-LB7A9:  ASL
-LB7AA:  TAX
-LB7AB:  LDA $18
-LB7AD:  ASL
-LB7AE:  ASL
-LB7AF:  ASL
-LB7B0:  ASL
-LB7B1:  TAY
-LB7B2:  RTS
-
-LB7B3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-LB7C3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-LB7D3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-LB7E3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-LB7F3:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+;Unused.
+LB759:  .byte $A0, $91, $98, $00, $00, $FD, $A9, $F0, $9D, $00, $73, $E8, $E8, $E8, $E8, $88
+LB769:  .byte $D0, $F6, $60, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+LB779:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $A5, $19, $0A, $A8, $A5, $18, $0A, $AA, $B9
+LB789:  .byte $91, $00, $85, $2D, $B9, $92, $00, $85, $2E, $B5, $91, $99, $91, $00, $B5, $92
+LB799:  .byte $99, $92, $00, $A5, $2D, $95, $91, $A5, $2E, $95, $92, $A5, $19, $0A, $0A, $0A
+LB7A9:  .byte $0A, $AA, $A5, $18, $0A, $0A, $0A, $0A, $A8, $60, $FF, $FF, $FF, $FF, $FF, $FF
+LB7B9:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+LB7C9:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+LB7D9:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+LB7E9:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+LB7F9:  .byte $FF, $FF, $FF, $FF, $FF, $FF, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -7012,6 +7000,7 @@ LB9E7:  CMP #$C8
 LB9E9:  BMI LB9ED
 LB9EB:  LDY #$FF
 LB9ED:  RTS
+
 LB9EE:  LDA NPCSprIndex+2,X
 LB9F1:  CMP $2E
 LB9F3:  BCC LBA06
@@ -7032,21 +7021,21 @@ LBA18:  .byte $00, $00, $03, $00, $00, $02, $02, $02, $02, $02, $02, $02, $02, $
 
 ;----------------------------------------------------------------------------------------------------
 
-RngCore:
+Multiply:
 LBA27:  TXA                     ;
 LBA28:  PHA                     ;
 LBA29:  LDA #$00                ;
-LBA2B:  STA RngNum0             ;
+LBA2B:  STA MultOutLB           ;
 LBA2D:  LDX #$08                ;
-LBA2F:* LSR RngInput0           ;
-LBA31:  BCC +                   ;The core of the RNG algorithm.
-LBA33:  CLC                     ;The output will be a value between
-LBA34:  ADC RngInput1           ;0 and RngInput0-1, inclusive.
+LBA2F:* LSR MultIn0             ;
+LBA31:  BCC +                   ;
+LBA33:  CLC                     ;Take 2 8-bit number and multiply them
+LBA34:  ADC MultIn1             ;together. The result is a 16-byte number.
 LBA36:* ROR                     ;
-LBA37:  ROR RngNum0             ;
+LBA37:  ROR MultOutLB           ;
 LBA39:  DEX                     ;
 LBA3A:  BNE --                  ;
-LBA3C:  STA RngNum1             ;
+LBA3C:  STA MultOutUB           ;
 LBA3E:  PLA                     ;
 LBA3F:  TAX                     ;
 LBA40:  RTS                     ;
@@ -7109,31 +7098,30 @@ LBA91:  LDA #SG_CHR1_INDEX      ;Set an index to the 1st character's index in th
 LBA93:  STA GenByte30           ;
 
 LoadCharDatLoop:
-LBA95:  LDY GenByte30
-LBA97:  LDA (SGDatPtr),Y
-LBA99:  STA RngInput0
+LBA95:  LDY GenByte30           ;
+LBA97:  LDA (SGDatPtr),Y        ;Get the index to the character's data.
+LBA99:  STA MultIn0             ;
 
-LBA9B:  LDA #$40                ;generate a random number between 0 and 63.
-LBA9D:  STA RngInput1           ;
-LBA9F:  JSR RngCore             ;($BA27)Core of the random number generator.
+LBA9B:  LDA #$40                ;*64. 64 bytes per character.
+LBA9D:  STA MultIn1             ;
+LBA9F:  JSR Multiply            ;($BA27)Multiply 2 bytes for a 16 byte result.
 
-LBAA2:  CLC
-LBAA3:  LDA SGDatPtrLB
-LBAA5:  ADC RngNum0
-LBAA7:  STA $2B
+LBAA2:  CLC                     ;
+LBAA3:  LDA SGDatPtrLB          ;
+LBAA5:  ADC MultOutLB           ;Set the pointer to the base of the character's data.
+LBAA7:  STA ChrDestPtrLB        ;
+LBAA9:  LDA SGDatPtrUB          ;
+LBAAB:  ADC MultOutUB           ;
+LBAAD:  STA ChrDestPtrUB        ;
 
-LBAA9:  LDA SGDatPtrUB
-LBAAB:  ADC RngNum1
-LBAAD:  STA $2C
+LBAAF:  INC ChrDestPtrUB        ;Data is offset by 256 bytes.
+LBAB1:  LDY #$00                ;
 
-LBAAF:  INC $2C
-LBAB1:  LDY #$00
-
-LBAB3:* LDA ($2B),Y
-LBAB5:  STA (GenPtr29),Y
-LBAB7:  INY
-LBAB8:  CPY #$40
-LBABA:  BNE -
+LBAB3:* LDA (ChrDestPtr),Y      ;
+LBAB5:  STA (GenPtr29),Y        ;Transfer the 64 bytes of character
+LBAB7:  INY                     ;data into the given character slot.
+LBAB8:  CPY #$40                ;
+LBABA:  BNE -                   ;
 
 LBABC:  CLC                     ;
 LBABD:  LDA GenPtr29LB          ;Move pointer to the next character's data.

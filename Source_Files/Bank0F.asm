@@ -866,29 +866,29 @@ LC582: TAY
 LC583: TXA
 LC584: PHA
 LC585: LDA DirConvTbl,Y
-LC588: STA RngInput0
+LC588: STA MultIn0
 LC58A: LDA #$80
-LC58C: STA RngInput1
-LC58E: JSR RngCore              ;($FBF5)Core of the random number generator.
+LC58C: STA MultIn1
+LC58E: JSR Multiply             ;($FBF5)Multiply 2 bytes for a 16 byte result.
 LC591: CLC
 LC592: LDA $29
-LC594: ADC RngNum0
+LC594: ADC MultOutLB
 LC596: STA $29
 LC598: LDA $2A
-LC59A: ADC RngNum1
+LC59A: ADC MultOutUB
 LC59C: STA $2A
 LC59E: LDA $30
 LC5A0: LSR
-LC5A1: STA RngInput0
+LC5A1: STA MultIn0
 LC5A3: LDA #$80
-LC5A5: STA RngInput1
-LC5A7: JSR RngCore              ;($FBF5)Core of the random number generator.
+LC5A5: STA MultIn1
+LC5A7: JSR Multiply             ;($FBF5)Multiply 2 bytes for a 16 byte result.
 LC5AA: CLC
 LC5AB: LDA #$00
-LC5AD: ADC RngNum0
+LC5AD: ADC MultOutLB
 LC5AF: STA $2B
 LC5B1: LDA #$09
-LC5B3: ADC RngNum1
+LC5B3: ADC MultOutUB
 LC5B5: STA $2C
 LC5B7: LDA #BANK_NPCS
 LC5B9: JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -2356,7 +2356,7 @@ LD0ED:  LDY #$08
 LD0EF:  LDA (CrntChrPtr),Y
 LD0F1:  CLC
 LD0F2:  ADC #$64
-LD0F4:  CMP RngNum1
+LD0F4:  CMP MultOutUB
 LD0F6:  BCS LD148
 LD0F8:  JMP LD180
 LD0FB:  LDA #SFX_SWING+INIT
@@ -2400,7 +2400,7 @@ LD13A:  LDY #CHR_DEX
 LD13C:  LDA (CrntChrPtr),Y
 LD13E:  SEC
 LD13F:  ADC #$64
-LD141:  CMP RngNum1
+LD141:  CMP MultOutUB
 LD143:  BCS LD148
 LD145:  JMP LD180
 LD148:  LDY #CHR_STR
@@ -2410,17 +2410,17 @@ LD14F:  LDY #CHR_STR
 LD151:  LDA (CrntChrPtr),Y
 LD153:  LSR
 LD154:  SEC
-LD155:  ADC RngNum1
-LD157:  STA RngNum1
+LD155:  ADC MultOutUB
+LD157:  STA MultOutUB
 LD159:  CLC
 LD15A:  LDY #CHR_EQ_WEAPON
 LD15C:  LDA (CrntChrPtr),Y
 LD15E:  ASL
 LD15F:  CLC
 LD160:  ADC (CrntChrPtr),Y
-LD162:  ADC RngNum1
+LD162:  ADC MultOutUB
 LD164:  ADC #$04
-LD166:  STA RngNum1
+LD166:  STA MultOutUB
 LD168:  JSR DoEnHit             ;($D1DC)Enemy hit. Init SFX and calculate damage.
 LD16B:  BCS LD170
 LD16D:  JMP LCAD0
@@ -2489,18 +2489,18 @@ LD1DB:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 DoEnHit:
-LD1DC:  LDA RngNum1
+LD1DC:  LDA MultOutUB
 LD1DE:  CMP #$FF
 LD1E0:  BEQ LD1F1
 LD1E2:  LDA $C9
 LD1E4:  BPL LD1F1
-LD1E6:  LSR RngNum1
-LD1E8:  LDA RngNum1
+LD1E6:  LSR MultOutUB
+LD1E8:  LDA MultOutUB
 LD1EA:  LSR
 LD1EB:  SEC
-LD1EC:  ADC RngNum1
+LD1EC:  ADC MultOutUB
 LD1EE:  LSR
-LD1EF:  STA RngNum1
+LD1EF:  STA MultOutUB
 
 LD1F1:  LDA #SFX_EN_HIT+INIT
 LD1F3:  STA ThisSFX
@@ -3098,7 +3098,7 @@ LD52E:  ADC $2D
 LD530:  BCC LD534
 
 LD532:  LDA #$FF
-LD534:  STA RngNum1
+LD534:  STA MultOutUB
 
 LD536:  LDA EnCounter
 LD538:  PHA
@@ -3163,7 +3163,7 @@ LD583:  CLC
 LD584:  ADC $2E
 LD586:  BCC LD58A
 LD588:  LDA #$FF
-LD58A:  STA RngNum1
+LD58A:  STA MultOutUB
 LD58C:  JSR DoEnHit             ;($D1DC)Enemy hit. Init SFX and calculate damage.
 LD58F:  LDA #$00
 LD591:  STA $7302
@@ -5567,20 +5567,20 @@ LE64D:  RTS
 GenRandomNum:
 LE64E:  PHA                     ;
 LE64F:  LDA RngSeed             ;
-LE651:  STA RngInput1           ;
+LE651:  STA MultIn1             ;
 LE653:  LDA #$11                ;
-LE655:  STA RngInput0           ;
-LE657:  JSR RngCore             ;($FBF5)Core of the random number generator.
+LE655:  STA MultIn0             ;
+LE657:  JSR Multiply            ;($FBF5)Multiply 2 bytes for a 16 byte result.
 LE65A:  CLC                     ;
-LE65B:  LDA RngNum0             ;
+LE65B:  LDA MultOutLB           ;
 LE65D:  ADC #$17                ;Generate a random number and put it in A.
-LE65F:  STA RngInput1           ;
+LE65F:  STA MultIn1             ;
 LE661:  STA RngSeed             ;
 LE663:  PLA                     ;
-LE664:  STA RngInput0           ;
-LE666:  JSR RngCore             ;($FBF5)Core of the random number generator.
+LE664:  STA MultIn0             ;
+LE666:  JSR Multiply            ;($FBF5)Multiply 2 bytes for a 16 byte result.
 LE669:  CLC                     ;
-LE66A:  LDA RngNum1             ;
+LE66A:  LDA MultOutUB           ;
 LE66C:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
@@ -8751,21 +8751,21 @@ LFBF4:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-RngCore:
+Multiply:
 LFBF5:  TXA                     ;
 LFBF6:  PHA                     ;
 LFBF7:  LDA #$00                ;
-LFBF9:  STA RngNum0             ;
+LFBF9:  STA MultOutLB           ;
 LFBFB:  LDX #$08                ;
-LFBFD:* LSR RngInput0           ;
-LFBFF:  BCC +                   ;The core of the RNG algorithm.
-LFC01:  CLC                     ;The output will be a value between
-LFC02:  ADC RngInput1           ;0 and RngInput0-1, inclusive.
+LFBFD:* LSR MultIn0             ;
+LFBFF:  BCC +                   ;
+LFC01:  CLC                     ;Take 2 8-bit number and multiply them
+LFC02:  ADC MultIn1             ;together. The result is a 16-byte number.
 LFC04:* ROR                     ;
-LFC05:  ROR RngNum0             ;
+LFC05:  ROR MultOutLB           ;
 LFC07:  DEX                     ;
 LFC08:  BNE --                  ;
-LFC0A:  STA RngNum1             ;
+LFC0A:  STA MultOutUB           ;
 LFC0C:  PLA                     ;
 LFC0D:  TAX                     ;
 LFC0E:  RTS                     ;
