@@ -12,6 +12,7 @@
 .alias  ShowSelectWnd1          $C012
 .alias  ShowWindow1             $C015
 .alias  _ShowSelectWnd1         $C018
+.alias  BinToBCD1               $C021
 .alias  FlashAndSound1          $C04E
 .alias  RESET                   $FFA0
 .alias  ConfigMMC               $FFBC
@@ -715,7 +716,7 @@ L86C4:  STA $16
 L86C6:  LDA #$29
 L86C8:  STA TextIndex
 L86CA:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L86CD:  JSR $C021
+L86CD:  JSR BinToBCD1           ;($C021)Convert binary number to BCD.
 L86D0:  PLA
 L86D1:  PHA
 L86D2:  ASL
@@ -1038,57 +1039,58 @@ L896F:  STA ChrSrcPtrUB         ;Get pointer to first character's data.
 L8971:  LDA #<Ch1Data           ;
 L8973:  STA ChrSrcPtrLB         ;
 
-L8975:  LDA #SG_CHR1_INDEX
+L8975:  LDA #SG_CHR1_INDEX      ;Get the index to the first character data.
 L8977:  STA GenByte30
 
 SaveChrsLoop:
-L8979:  LDY GenByte30
+L8979:  LDY GenByte30           ;
+L897B:  LDA (SGDatPtr),Y        ;Get the index to the first character data in the save game.
+L897D:  STA MultIn0             ;
 
-L897B:  LDA (SGDatPtr),Y
-L897D:  STA MultIn0
-L897F:  LDA #$40
-L8981:  STA MultIn1
+L897F:  LDA #$40                ;*64. 64 bytes of data per character.
+L8981:  STA MultIn1             ;
 L8983:  JSR Multiply            ;($8885)Multiply 2 bytes for a 16 byte result.
 
-L8986:  CLC
-L8987:  LDA SGDatPtrLB
-L8989:  ADC MultOutLB
-L898B:  STA ChrDestPtrLB
-L898D:  LDA SGDatPtrUB
-L898F:  ADC MultOutUB
-L8991:  STA ChrDestPtrUB
-L8993:  INC ChrDestPtrUB
-L8995:  LDY #$00
+L8986:  CLC                     ;
+L8987:  LDA SGDatPtrLB          ;
+L8989:  ADC MultOutLB           ;
+L898B:  STA ChrDestPtrLB        ;Calculate address to desired character data slot.
+L898D:  LDA SGDatPtrUB          ;
+L898F:  ADC MultOutUB           ;
+L8991:  STA ChrDestPtrUB        ;
 
-L8997:  LDA (ChrSrcPtr),Y
-L8999:  STA (ChrDestPtr),Y
-L899B:  INY
-L899C:  CPY #$40
-L899E:  BNE L8997
+L8993:  INC ChrDestPtrUB        ;Index is offset by 256 bytes.
+L8995:  LDY #$00                ;
 
-L89A0:  CLC
-L89A1:  LDA ChrSrcPtrLB
-L89A3:  ADC #$40
-L89A5:  STA ChrSrcPtrLB
+L8997:* LDA (ChrSrcPtr),Y       ;
+L8999:  STA (ChrDestPtr),Y      ;
+L899B:  INY                     ;Save character data into the save game slot.
+L899C:  CPY #$40                ;
+L899E:  BNE -                   ;
 
-L89A7:  INC GenByte30
-L89A9:  LDA GenByte30
-L89AB:  CMP #SG_CHR4_INDEX+1
-L89AD:  BNE SaveChrsLoop
+L89A0:  CLC                     ;
+L89A1:  LDA ChrSrcPtrLB         ;Move pointer to the next character data slot.
+L89A3:  ADC #$40                ;
+L89A5:  STA ChrSrcPtrLB         ;
 
-L89AF:  LDY #$10
-L89B1:  LDA Ch1Index
-L89B4:  STA (SGDatPtr),Y
-L89B6:  INY
-L89B7:  LDA Ch2Index
-L89BA:  STA (SGDatPtr),Y
-L89BC:  INY
-L89BD:  LDA Ch3Index
-L89C0:  STA (SGDatPtr),Y
-L89C2:  INY
-L89C3:  LDA Ch4Index
-L89C6:  STA (SGDatPtr),Y
-L89C8:  RTS
+L89A7:  INC GenByte30           ;
+L89A9:  LDA GenByte30           ;Has all 4 character's data been placed in the save game slot?
+L89AB:  CMP #SG_CHR4_INDEX+1    ;If not, branch to save another character's data.
+L89AD:  BNE SaveChrsLoop        ;
+
+L89AF:  LDY #SG_CHR1_INDEX      ;
+L89B1:  LDA Ch1Index            ;
+L89B4:  STA (SGDatPtr),Y        ;
+L89B6:  INY                     ;
+L89B7:  LDA Ch2Index            ;
+L89BA:  STA (SGDatPtr),Y        ;
+L89BC:  INY                     ;Save the character pool indexes of the 4 active characters.
+L89BD:  LDA Ch3Index            ;
+L89C0:  STA (SGDatPtr),Y        ;
+L89C2:  INY                     ;
+L89C3:  LDA Ch4Index            ;
+L89C6:  STA (SGDatPtr),Y        ;
+L89C8:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1101,16 +1103,20 @@ L89F9:  .byte $33, $33, $30, $00, $00, $00, $00
 ;----------------------------------------------------------------------------------------------------
 
 FortuneTalk:
-L8A00:  LDA #$64
-L8A02:  STA TextIndex
+L8A00:  LDA #$64                ;ANY WAY I MAY AID THEE? DO YOU WISH TO KNOW YOUR FORTUNE text.
+L8A02:  STA TextIndex           ;
 L8A04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+
 L8A07:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
-L8A0A:  BCC L8A0F
+L8A0A:  BCC +                   ;Did player select yes? If so, branch.
 L8A0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8A0F:  CMP #$01
+
+L8A0F:* CMP #$01
 L8A11:  BNE L8A18
+
 L8A13:  LDA #$66
-L8A15:  JMP L9475
+L8A15:  JMP LastText            ;($9475)Show last tesxt before exiting.
+
 L8A18:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8A1B:  BCC L8A20
 L8A1D:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1151,7 +1157,7 @@ L8A66:  SBC $B8
 L8A68:  BCS L8A70
 L8A6A:  PLA
 L8A6B:  LDA #$68
-L8A6D:  JMP L9475
+L8A6D:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8A70:  STA (CrntChrPtr),Y
 L8A72:  DEY
 L8A73:  LDA $2D
@@ -1165,7 +1171,7 @@ L8A81:  ADC #$C0
 L8A83:  STA TextIndex
 L8A85:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8A88:  LDA #$69
-L8A8A:  JMP L9475
+L8A8A:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8A8D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 
 L8A90:  .byte $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01
@@ -1185,11 +1191,16 @@ L8AB8:  RTS
 L8AB9:  SEC
 L8ABA:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+;Unused.
 L8ABB:  .byte $00, $07, $07, $0E, $01, $00, $01, $01, $01, $00, $01, $01, $01, $01, $00, $01
 L8ACB:  .byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $02, $03, $00, $00, $01, $03
 L8ADB:  .byte $04, $64, $00, $64, $00, $C8, $00, $F4, $01, $33, $33, $33, $33, $30, $00, $0C
 L8AEB:  .byte $BB, $BB, $BB, $BB, $BC, $BB, $B8, $99, $99, $98, $88, $C0, $03, $33, $33, $33
 L8AFB:  .byte $33, $00, $00, $00, $00
+
+;----------------------------------------------------------------------------------------------------
 
 HealerTalk:
 L8B00:  LDA #$6A
@@ -1263,7 +1274,7 @@ L8B8A:  SBC $2E
 L8B8C:  PLA
 L8B8D:  BCS L8B94
 L8B8F:  LDA #$68
-L8B91:  JMP L9475
+L8B91:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8B94:  TAX
 L8B95:  LDA $99
 L8B97:  PHA
@@ -1312,9 +1323,9 @@ L8BE6:  LDA #$EB
 L8BE8:  STA TextIndex
 L8BEA:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8BED:  LDA #$76
-L8BEF:  JMP L9475
+L8BEF:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8BF2:  LDA #$75
-L8BF4:  JMP L9475
+L8BF4:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8BF7:  CMP #$01
 L8BF9:  BNE L8C26
 L8BFB:  LDY #$0B
@@ -1333,9 +1344,9 @@ L8C15:  LDA #$EB
 L8C17:  STA TextIndex
 L8C19:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C1C:  LDA #$76
-L8C1E:  JMP L9475
+L8C1E:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8C21:  LDA #$75
-L8C23:  JMP L9475
+L8C23:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8C26:  CMP #$02
 L8C28:  BNE L8C52
 L8C2A:  LDY #$36
@@ -1355,7 +1366,7 @@ L8C46:  LDA #$EB
 L8C48:  STA TextIndex
 L8C4A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C4D:  LDA #$76
-L8C4F:  JMP L9475
+L8C4F:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8C52:  LDY #$0B
 L8C54:  LDA (CrntChrPtr),Y
 L8C56:  CMP #$03
@@ -1397,17 +1408,17 @@ L8C9D:  LDA #$EB
 L8C9F:  STA TextIndex
 L8CA1:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8CA4:  LDA #$76
-L8CA6:  JMP L9475
+L8CA6:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8CA9:  LDY #$0B
 L8CAB:  LDA #$04
 L8CAD:  STA (CrntChrPtr),Y
 L8CAF:  LDA #$71
-L8CB1:  JMP L9475
+L8CB1:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8CB4:  BCC L8CBB
 L8CB6:  LDA #$75
-L8CB8:  JMP L9475
+L8CB8:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8CBB:  LDA #$75
-L8CBD:  JMP L9475
+L8CBD:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8CC0:  LDY #$2D
 L8CC2:  SEC
 L8CC3:  LDA (CrntChrPtr),Y
@@ -1418,7 +1429,7 @@ L8CCA:  LDA (CrntChrPtr),Y
 L8CCC:  SBC #$00
 L8CCE:  BCS L8CD5
 L8CD0:  LDA #$72
-L8CD2:  JMP L9475
+L8CD2:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8CD5:  LDY #$2E
 L8CD7:  STA (CrntChrPtr),Y
 L8CD9:  DEY
@@ -1431,7 +1442,7 @@ L8CE4:  STA $2E
 L8CE6:  JSR L947A
 L8CE9:  JSR L9D5E
 L8CEC:  LDA #$73
-L8CEE:  JMP L9475
+L8CEE:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8CF1:  LDA $2A
 L8CF3:  STA $9A
 L8CF5:  LDA $29
@@ -1539,7 +1550,7 @@ L8DD0:  CMP #$01
 L8DD2:  BEQ L8DD7
 L8DD4:  JMP L8D07
 L8DD7:  LDA #$86
-L8DD9:  JMP L9475
+L8DD9:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8DDC:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8DDF:  BCC L8DE4
 L8DE1:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1718,7 +1729,7 @@ L8FBB:  CMP #$01
 L8FBD:  BEQ L8FC2
 L8FBF:  JMP L8F07
 L8FC2:  LDA #$86
-L8FC4:  JMP L9475
+L8FC4:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L8FC7:  PHA
 L8FC8:  LDY #$35
 L8FCA:  LDA (CrntChrPtr),Y
@@ -1800,7 +1811,7 @@ L907C:  CMP #$01
 L907E:  BEQ L9083
 L9080:  JMP L900F
 L9083:  LDA #$86
-L9085:  JMP L9475
+L9085:  JMP LastText            ;($9475)Show last tesxt before exiting.
 
 L9088:  .byte $0A, $32, $64
 
@@ -1862,7 +1873,7 @@ L912E:  STA $2E
 L9130:  JSR L98DB
 L9133:  BCC L913A
 L9135:  LDA #$68
-L9137:  JMP L9475
+L9137:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L913A:  JSR L9D5E
 L913D:  LDA #$74
 L913F:  STA TextIndex
@@ -1899,7 +1910,7 @@ L9186:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9189:  BCC L918E
 L918B:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L918E:  LDA #$89
-L9190:  JMP L9475
+L9190:  JMP LastText            ;($9475)Show last tesxt before exiting.
 
 L9193:  .byte $7E, $B9, $7E, $7E, $BA, $7E, $7E, $B7, $7E, $7E, $B8, $BD, $7E, $BE, $7E, $7E 
 L91A3:  .byte $7E, $BC, $BB, $BF, $7E, $7F, $7E, $7E, $BA, $7E, $7E, $B7, $7E, $7E, $B8, $BD
@@ -1909,6 +1920,8 @@ L91D3:  .byte $00, $44, $44, $44, $44, $40, $00, $04, $44, $77, $77, $74, $44, $
 L91E3:  .byte $22, $44, $44, $00, $04, $44, $00, $04, $44, $42, $22, $24, $42, $44, $44, $40
 L91F3:  .byte $00, $44, $44, $44, $44, $40, $00, $44, $44, $77, $77, $74, $44
 
+;----------------------------------------------------------------------------------------------------
+
 GuildTalk:
 L9200:  LDA #$7A
 L9202:  STA TextIndex
@@ -1916,6 +1929,7 @@ L9204:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9207:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L920A:  BCC L920F
 L920C:  JMP DialogExit          ;($94A9)Exit dialog routines.
+
 L920F:  JSR L9D5E
 L9212:  LDA #$0C
 L9214:  STA Wnd2XPos
@@ -1973,7 +1987,7 @@ L928A:  CMP #$01
 L928C:  BEQ L9291
 L928E:  JMP L9207
 L9291:  LDA #$86
-L9293:  JMP L9475
+L9293:  JMP LastText            ;($9475)Show last tesxt before exiting.
 
 L9296:  .byte $1E, $32, $4B, $5A, $64, $00, $01, $02, $03, $04
 
@@ -2018,11 +2032,11 @@ L9307:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L930A:  CMP #$01
 L930C:  BNE L9313
 L930E:  LDA #$8E
-L9310:  JMP L9475
+L9310:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L9313:  LDA OnHorse
 L9315:  BEQ L931C
 L9317:  LDA #$8D
-L9319:  JMP L9475
+L9319:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L931C:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L931F:  BCC L9324
 L9321:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2035,13 +2049,13 @@ L932F:  JSR L98DB
 L9332:  BCC L933B
 L9334:  LDA #$68
 L9336:  STA $30
-L9338:  JMP L9475
+L9338:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L933B:  JSR L9D5E
 L933E:  LDA #$01
 L9340:  STA OnHorse
 L9342:  LDA #$8F
 L9344:  STA $30
-L9346:  JMP L9475
+L9346:  JMP LastText            ;($9475)Show last tesxt before exiting.
 
 L9349:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L934C:  BCC L9351
@@ -2131,7 +2145,7 @@ L940F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9412:  JSR L893E
 L9415:  LDA #$91
 L9417:  CLC
-L9418:  JMP L9475
+L9418:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L941B:  CMP #$0E
 L941D:  BNE L9421
 L941F:  CLC
@@ -2178,9 +2192,12 @@ L946E:  BCC L9472
 L9470:  LDA #$63
 L9472:  STA (CrntChrPtr),Y
 L9474:  RTS
+
+LastText:
 L9475:  STA TextIndex
 L9477:  JMP ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L947A:  LDY #$30
+
+L947A:  LDY #CHR_GOLD
 L947C:  LDA (CrntChrPtr),Y
 L947E:  CLC
 L947F:  ADC $2D
@@ -2199,7 +2216,7 @@ L9496:  LDA #$27
 L9498:  STA $2E
 L949A:  LDA #$0F
 L949C:  STA $2D
-L949E:  LDY #$30
+L949E:  LDY #CHR_GOLD
 L94A0:  LDA $2D
 L94A2:  STA (CrntChrPtr),Y
 L94A4:  INY
@@ -2265,7 +2282,7 @@ L9528:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L952B:  CMP #$01
 L952D:  BEQ L9534
 L952F:  LDA #$94
-L9531:  JMP L9475
+L9531:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L9534:  LDA #$96
 L9536:  STA TextIndex
 L9538:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
@@ -2287,7 +2304,7 @@ L9559:  LDA (CrntChrPtr),Y
 L955B:  CMP #$84
 L955D:  BCS L9564
 L955F:  LDA #$68
-L9561:  JMP L9475
+L9561:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L9564:  LDA $99
 L9566:  PHA
 L9567:  LDA $9A
@@ -2308,7 +2325,7 @@ L9582:  LDA (CrntChrPtr),Y
 L9584:  CMP #$03
 L9586:  BCS L958D
 L9588:  LDA #$75
-L958A:  JMP L9475
+L958A:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L958D:  LDA #$03
 L958F:  STA $2E
 L9591:  LDA #$84
@@ -2330,7 +2347,7 @@ L95AD:  LDA #$04
 L95AF:  LDY #$0B
 L95B1:  STA (CrntChrPtr),Y
 L95B3:  LDA #$97
-L95B5:  JMP L9475
+L95B5:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L95B8:  LDY #$0B
 L95BA:  LDA #$00
 L95BC:  STA (CrntChrPtr),Y
@@ -2347,7 +2364,7 @@ L95D0:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L95D3:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L95D6:  JSR L9D5E
 L95D9:  LDA #$9E
-L95DB:  JMP L9475
+L95DB:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L95DE:  LDA #$D8
 L95E0:  STA TextIndex
 L95E2:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
@@ -2366,7 +2383,7 @@ L9607:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L960A:  CMP #$01
 L960C:  BNE L9613
 L960E:  LDA #$9A
-L9610:  JMP L9475
+L9610:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L9613:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9616:  BCC L961B
 L9618:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2397,7 +2414,7 @@ L9651:  STA $2E
 L9653:  JSR L98DB
 L9656:  BCC L965D
 L9658:  LDA #$68
-L965A:  JMP L9475
+L965A:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L965D:  LDA #$0A
 L965F:  STA Wnd2XPos
 L9662:  LDA #$06
@@ -2473,7 +2490,7 @@ L96F1:  STA $2E
 L96F3:  JSR L947A
 L96F6:  JSR L9D5E
 L96F9:  LDA #$9D
-L96FB:  JMP L9475
+L96FB:  JMP LastText            ;($9475)Show last tesxt before exiting.
 
 L96FE:  .byte $04, $44
 
@@ -2496,7 +2513,7 @@ L971F:  STA $2E
 L9721:  JSR L98DB
 L9724:  BCC L972B
 L9726:  LDA #$68
-L9728:  JMP L9475
+L9728:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L972B:  LDY #$05
 L972D:  LDA (CrntChrPtr),Y
 L972F:  ASL
@@ -2534,7 +2551,7 @@ L976D:  CMP #$00
 L976F:  BEQ L9716
 L9771:  LDA #$A1
 L9773:  STA $30
-L9775:  JMP L9475
+L9775:  JMP LastText            ;($9475)Show last tesxt before exiting.
 
 L9778:  .byte $7B, $7C, $7D, $9F, $09, $0A, $07, $08, $4B, $4B, $4B, $4B, $4B, $32, $4B, $63
 L9788:  .byte $32, $4B, $63, $4B, $4B, $63, $4B, $32, $63, $4B, $19, $63, $4B, $00, $C3, $00
@@ -2598,9 +2615,9 @@ L9833:  LDA $29
 L9835:  CMP #$06
 L9837:  BCS L983E
 L9839:  LDA #$CA
-L983B:  JMP L9475
+L983B:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L983E:  LDA #$D0
-L9840:  JMP L9475
+L9840:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L9843:  LDA #$19
 L9845:  STA $30
 L9847:  JSR L9872
@@ -2618,9 +2635,9 @@ L9862:  LDA $29
 L9864:  CMP #$19
 L9866:  BCS L986D
 L9868:  LDA #$CA
-L986A:  JMP L9475
+L986A:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L986D:  LDA #$CC
-L986F:  JMP L9475
+L986F:  JMP LastText            ;($9475)Show last tesxt before exiting.
 L9872:  LDY #$39
 L9874:  LDA (CrntChrPtr),Y
 L9876:  STA $29
@@ -3368,39 +3385,41 @@ LA3F0:  .byte $A4, $A4, $A4, $A4, $A4, $A4, $A4, $A4, $A4, $A4, $A4, $A4, $A4, $
 
 FountainDat:
 LA400:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA40A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA41A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA42A:  .byte $00, $00, $00, $00, $00, $00, $C7, $C7, $C7, $C7, $C7, $00, $00, $00, $00, $00
-LA43A:  .byte $00, $00, $00, $00, $00, $C1, $C5, $C5, $C5, $C5, $C5, $C3, $C7, $00, $00, $00
-LA44A:  .byte $00, $00, $00, $C7, $C1, $C5, $C5, $C5, $C5, $D4, $C5, $C5, $C5, $C3, $00, $00
-LA45A:  .byte $00, $C7, $C1, $C5, $C5, $C5, $C5, $C5, $C5, $D5, $C5, $C5, $C5, $C5, $C3, $00
-LA46A:  .byte $C1, $C5, $C5, $C5, $C5, $C5, $C5, $C5, $D6, $D7, $C5, $C5, $C5, $C5, $C5, $C3
-LA47A:  .byte $C4, $C5, $C5, $C5, $C5, $C5, $C5, $C5, $C5, $D9, $C5, $C5, $C5, $C5, $C5, $C6
-LA48A:  .byte $C4, $C5, $C5, $C5, $CC, $CB, $CE, $CC, $CB, $DB, $CD, $CD, $CE, $C5, $C5, $C6
-LA49A:  .byte $C8, $C9, $C5, $CF, $D2, $D3, $D1, $D0, $D2, $D2, $D2, $D2, $D3, $C5, $C9, $CA
-LA4AA:  .byte $C8, $C9, $C5, $C5, $D4, $C5, $C5, $C5, $C5, $D4, $C5, $C5, $C5, $C5, $C9, $CA
-LA4BA:  .byte $C8, $C9, $C9, $C9, $D8, $C9, $C5, $C5, $C5, $C5, $C5, $C5, $C9, $C9, $C9, $CA
-LA4CA:  .byte $C8, $C9, $C9, $C9, $D8, $C9, $C5, $C5, $C5, $C5, $C5, $C5, $C9, $C9, $C9, $CA
-LA4DA:  .byte $C8, $C9, $C9, $C9, $D4, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $CA
-LA4EA:  .byte $C8, $C9, $C9, $DA, $D9, $DA, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $CA
+LA410:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA420:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA430:  .byte $00, $00, $00, $00, $00, $00, $C7, $C7, $C7, $C7, $C7, $00, $00, $00, $00, $00
+LA440:  .byte $00, $00, $00, $00, $00, $C1, $C5, $C5, $C5, $C5, $C5, $C3, $C7, $00, $00, $00
+LA450:  .byte $00, $00, $00, $C7, $C1, $C5, $C5, $C5, $C5, $D4, $C5, $C5, $C5, $C3, $00, $00
+LA460:  .byte $00, $C7, $C1, $C5, $C5, $C5, $C5, $C5, $C5, $D5, $C5, $C5, $C5, $C5, $C3, $00
+LA470:  .byte $C1, $C5, $C5, $C5, $C5, $C5, $C5, $C5, $D6, $D7, $C5, $C5, $C5, $C5, $C5, $C3
+LA480:  .byte $C4, $C5, $C5, $C5, $C5, $C5, $C5, $C5, $C5, $D9, $C5, $C5, $C5, $C5, $C5, $C6
+LA490:  .byte $C4, $C5, $C5, $C5, $CC, $CB, $CE, $CC, $CB, $DB, $CD, $CD, $CE, $C5, $C5, $C6
+LA4A0:  .byte $C8, $C9, $C5, $CF, $D2, $D3, $D1, $D0, $D2, $D2, $D2, $D2, $D3, $C5, $C9, $CA
+LA4B0:  .byte $C8, $C9, $C5, $C5, $D4, $C5, $C5, $C5, $C5, $D4, $C5, $C5, $C5, $C5, $C9, $CA
+LA4C0:  .byte $C8, $C9, $C9, $C9, $D8, $C9, $C5, $C5, $C5, $C5, $C5, $C5, $C9, $C9, $C9, $CA
+LA4D0:  .byte $C8, $C9, $C9, $C9, $D8, $C9, $C5, $C5, $C5, $C5, $C5, $C5, $C9, $C9, $C9, $CA
+LA4E0:  .byte $C8, $C9, $C9, $C9, $D4, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $CA
+LA4F0:  .byte $C8, $C9, $C9, $DA, $D9, $DA, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $C9, $CA
 
 TimeLordDat:
-LA4FA:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA50A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA51A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA52A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA53A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA54A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA55A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA56A:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA57A:  .byte $00, $00, $00, $00, $00, $A4, $A5, $A6, $A7, $A8, $00, $00, $00, $00, $00, $00
-LA58A:  .byte $00, $00, $00, $00, $00, $A9, $AA, $AB, $AC, $AD, $00, $00, $00, $00, $00, $00
-LA59A:  .byte $00, $00, $00, $00, $00, $AE, $AF, $B0, $B1, $B2, $B3, $00, $00, $00, $00, $00
-LA5AA:  .byte $00, $00, $00, $00, $00, $B4, $B5, $B6, $B7, $B8, $B9, $00, $00, $00, $00, $00
-LA5BA:  .byte $00, $00, $00, $00, $00, $BA, $BB, $BC, $BD, $BE, $BF, $00, $00, $00, $00, $00
-LA5CA:  .byte $00, $00, $00, $00, $00, $C0, $C1, $C2, $C3, $C4, $C5, $00, $00, $00, $00, $00
-LA5DA:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-LA5EA:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA500:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA510:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA520:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA530:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA540:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA550:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA560:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA570:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA580:  .byte $00, $00, $00, $00, $00, $A4, $A5, $A6, $A7, $A8, $00, $00, $00, $00, $00, $00
+LA590:  .byte $00, $00, $00, $00, $00, $A9, $AA, $AB, $AC, $AD, $00, $00, $00, $00, $00, $00
+LA5A0:  .byte $00, $00, $00, $00, $00, $AE, $AF, $B0, $B1, $B2, $B3, $00, $00, $00, $00, $00
+LA5B0:  .byte $00, $00, $00, $00, $00, $B4, $B5, $B6, $B7, $B8, $B9, $00, $00, $00, $00, $00
+LA5C0:  .byte $00, $00, $00, $00, $00, $BA, $BB, $BC, $BD, $BE, $BF, $00, $00, $00, $00, $00
+LA5D0:  .byte $00, $00, $00, $00, $00, $C0, $C1, $C2, $C3, $C4, $C5, $00, $00, $00, $00, $00
+LA5E0:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+LA5F0:  .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+
+;----------------------------------------------------------------------------------------------------
 
 LA600:  LDX #$00
 LA602:  STX $2E
@@ -3573,7 +3592,7 @@ LA804:  STA $75,X
 LA806:  INX
 LA807:  CPX #$08
 LA809:  BNE LA804
-LA80B:  JSR $B628
+LA80B:  JSR GetPlyrDngPos       ;($B628)Get current block player is standing on in dungeon.
 LA80E:  CMP #$06
 LA810:  BEQ LA81A
 LA812:  CMP #$07
@@ -3827,15 +3846,15 @@ LAA0E:  LDA #$10
 LAA10:  STA $2E
 LAA12:  JSR LB918
 LAA15:  LDA $2A
-LAA17:  STA $0300,X
+LAA17:  STA PPUBuffer,X
 LAA1A:  INX
 LAA1B:  LDA $29
-LAA1D:  STA $0300,X
+LAA1D:  STA PPUBuffer,X
 LAA20:  LDA #$10
 LAA22:  STA $2E
 LAA24:  INX
 LAA25:  LDA $0400,Y
-LAA28:  STA $0300,X
+LAA28:  STA PPUBuffer,X
 LAA2B:  INY
 LAA2C:  DEC $2E
 LAA2E:  BNE LAA24
@@ -3851,27 +3870,27 @@ LAA3F:  BNE LAA0E
 LAA41:  LDA #$01
 LAA43:  JSR LB918
 LAA46:  LDA #$24
-LAA48:  STA $0300,X
+LAA48:  STA PPUBuffer,X
 LAA4B:  INX
 LAA4C:  LDA #$6A
-LAA4E:  STA $0300,X
+LAA4E:  STA PPUBuffer,X
 LAA51:  LDA $B2
 LAA53:  CLC
 LAA54:  ADC #$39
 LAA56:  INX
-LAA57:  STA $0300,X
+LAA57:  STA PPUBuffer,X
 LAA5A:  LDA #$01
 LAA5C:  JSR LB918
 LAA5F:  LDA #$24
-LAA61:  STA $0300,X
+LAA61:  STA PPUBuffer,X
 LAA64:  INX
 LAA65:  LDA #$72
-LAA67:  STA $0300,X
+LAA67:  STA PPUBuffer,X
 LAA6A:  LDY $7D
 LAA6C:  LDA $AB66,Y
 LAA6F:  INX
-LAA70:  STA $0300,X
-LAA73:  JSR LB628
+LAA70:  STA PPUBuffer,X
+LAA73:  JSR GetPlyrDngPos       ;($B628)Get current block player is standing on in dungeon.
 LAA76:  CMP #$08
 LAA78:  BNE LAAB9
 LAA7A:  JSR LADA0
@@ -3883,9 +3902,9 @@ LAA82:  CLC
 LAA83:  ADC DungeonLevel
 LAA85:  ASL
 LAA86:  TAX
-LAA87:  LDA $AAF6,X
+LAA87:  LDA CvNamePtrTbl,X
 LAA8A:  STA $29
-LAA8C:  LDA $AAF7,X
+LAA8C:  LDA CvNamePtrTbl+1,X
 LAA8F:  STA $2A
 LAA91:  LDY #$00
 LAA93:  LDA ($29),Y
@@ -3897,7 +3916,7 @@ LAA9D:  JMP LAA93
 LAAA0:  LDA #$FF
 LAAA2:  STA TextIndex
 LAAA4:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-LAAA7:  JSR $C021
+LAAA7:  JSR BinToBCD1           ;($C021)Convert binary number to BCD.
 LAAAA:  LDA #$00
 LAAAC:  STA $10
 LAAAE:  STA $14
@@ -3938,15 +3957,28 @@ LAAF0:  BNE LAAF2
 LAAF2:  JSR LB953
 LAAF5:  RTS
 
-LAAF6:  .byte $35, $B6, $43, $B6, $52, $B6, $60, $B6, $70, $B6, $7A, $B6, $88, $B6, $99, $B6
-LAB06:  .byte $A8, $B6, $B5, $B6, $BE, $B6, $C8, $B6, $D6, $B6, $E4, $B6, $EE, $B6, $F8, $B6
-LAB16:  .byte $01, $B7, $0E, $B7, $1C, $B7, $2B, $B7, $3C, $B7, $4D, $B7, $59, $B7, $5F, $B7
-LAB26:  .byte $6E, $B7, $7B, $B7, $89, $B7, $96, $B7, $A2, $B7, $B0, $B7, $BC, $B7, $CB, $B7
-LAB36:  .byte $DC, $B7, $E9, $B7, $F9, $B7, $09, $B8, $19, $B8, $21, $B8, $2B, $B8, $35, $B8
-LAB46:  .byte $42, $B8, $52, $B8, $62, $B8, $6E, $B8, $7A, $B8, $8A, $B8, $A0, $B8, $AF, $B8
-LAB56:  .byte $B9, $B8, $C5, $B8, $D5, $B8, $E7, $B8, $E8, $B8, $F5, $B8, $02, $B9, $0C, $B9
+;----------------------------------------------------------------------------------------------------
+
+CvNamePtrTbl:
+LAAF6:  .word CvDeathLv1, CvDeathLv2, CvDeathLv3, CvDeathLv4
+LAAFE:  .word CvDeathLv5, CvDeathLv6, CvDeathLv7, CvDeathLv8
+LAB06:  .word CvGoldLv1, CvGoldLv2, CvGoldLv3, CvGoldLv4
+LAB0E:  .word CvGoldLv5, CvGoldLv6, CvGoldLv7, CvGoldLv8
+LAB16:  .word CvMoonLv1, CvMoonLv2, CvMoonLv3, CvMoonLv4
+LAB1E:  .word CvMoonLv5, CvMoonLv6, CvMoonLv7, CvMoonLv8
+LAB26:  .word CvFireLv1, CvFireLv2, CvFireLv3, CvFireLv4
+LAB2E:  .word CvFireLv5, CvFireLv6, CvFireLv7, CvFireLv8
+LAB36:  .word CvFoolLv1, CvFoolLv2, CvFoolLv3, CvFoolLv4
+LAB3E:  .word CvFoolLv5, CvFoolLv6, CvFoolLv7, CvFoolLv8
+LAB46:  .word CvMadnessLv1, CvMadnessLv2, CvMadnessLv3, CvMadnessLv4
+LAB4E:  .word CvMadnessLv5, CvMadnessLv6, CvMadnessLv7, CvMadnessLv8
+LAB56:  .word CvSolLv1, CvSolLv2, CvSolLv3, CvSolLv4
+LAB5E:  .word CvSolLv5, CvSolLv6, CvSolLv7, CvSolLv8
 
 LAB66:  .byte $97, $8E, $9C, $A0
+
+;----------------------------------------------------------------------------------------------------
+
 
 LAB6A:  CMP #$06
 LAB6C:  BEQ LAB71
@@ -4001,7 +4033,7 @@ LABCF:  STA $30
 LABD1:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 LABD4:  LDA #$32
 LABD6:  JSR LAD0E
-LABD9:  JSR $C021
+LABD9:  JSR BinToBCD1           ;($C021)Convert binary number to BCD.
 LABDC:  LDA #$00
 LABDE:  STA $10
 LABE0:  STA $14
@@ -4096,7 +4128,7 @@ LAC99:  CMP #$02
 LAC9B:  BCS LACA1
 LAC9D:  LDA #$01
 LAC9F:  STA (CrntChrPtr),Y
-LACA1:  JSR $C021
+LACA1:  JSR BinToBCD1           ;($C021)Convert binary number to BCD.
 LACA4:  LDA #$00
 LACA6:  STA $10
 LACA8:  STA $14
@@ -4124,7 +4156,7 @@ LACD8:  STA $04
 LACDA:  LDA #$59
 LACDC:  STA TextIndex
 LACDE:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-LACE1:  JSR $C021
+LACE1:  JSR BinToBCD1           ;($C021)Convert binary number to BCD.
 LACE4:  LDA #$00
 LACE6:  STA $10
 LACE8:  STA $14
@@ -4532,7 +4564,7 @@ LAFF0:  JSR LB012
 LAFF3:  LDA $17
 LAFF5:  AND #$7F
 LAFF7:  STA $17
-LAFF9:  JSR LB628
+LAFF9:  JSR GetPlyrDngPos       ;($B628)Get current block player is standing on in dungeon.
 LAFFC:  CMP #$03
 LAFFE:  BCS LB00B
 LB000:  LDA #$B5
@@ -4790,6 +4822,9 @@ LB375:  STA $30
 LB377:  TAY
 LB378:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+;Unused.
 LB379:  .byte $78, $E6, $01, $4C, $78, $E7, $01, $5C, $80, $E4, $01, $4C, $80, $E8, $01, $54
 LB389:  .byte $80, $E5, $01, $5C, $88, $E6, $01, $4C, $88, $E7, $01, $5C, $90, $E4, $01, $4C
 LB399:  .byte $90, $E8, $01, $54, $90, $E5, $01, $5C, $98, $E6, $01, $4C, $98, $E7, $01, $5C
@@ -4834,158 +4869,270 @@ LB5F9:  .byte $EB, $80, $EB, $90, $EB, $A0, $EB, $B0, $EB, $C0, $EB, $D0, $EB, $
 LB609:  .byte $EB, $1F, $EB, $2F, $EB, $3F, $EB, $4F, $EB, $5F, $EB, $6F, $EB, $7F, $EB, $8F
 LB619:  .byte $EB, $9F, $EB, $AF, $EB, $BF, $EB, $CF, $EB, $DF, $EB, $EF, $EB, $FF, $EB
 
-LB628:  LDA $49
-LB62A:  ASL
-LB62B:  ASL
-LB62C:  ASL
-LB62D:  ASL
-LB62E:  CLC
-LB62F:  ADC $4A
-LB631:  TAY
-LB632:  LDA ($41),Y
-LB634:  RTS
+;----------------------------------------------------------------------------------------------------
+
+GetPlyrDngPos:
+LB628:  LDA MapYPos             ;
+LB62A:  ASL                     ;
+LB62B:  ASL                     ;*16 16 columns per dungeon map.
+LB62C:  ASL                     ;
+LB62D:  ASL                     ;
+
+LB62E:  CLC                     ;Add player's X position to get current offset on dungeon map.
+LB62F:  ADC MapXPos             ;
+
+LB631:  TAY                     ;
+LB632:  LDA (MapDatPtr),Y       ;Load current dungeon block into A.
+LB634:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+CvDeathLv1:
 ;              C    A    V    E    _    O    F    \n   D    E    A    T    H   END
 LB635:  .byte $8C, $8A, $9F, $8E, $00, $98, $8F, $FD, $8D, $8E, $8A, $9D, $91, $FF
 
+CvDeathLv2:
 ;              S    E    C    R    E    T    \n   S    L    I    D    E    S    !   END
 LB643:  .byte $9C, $8E, $8C, $9B, $8E, $9D, $FD, $9C, $95, $92, $8D, $8E, $9C, $7C, $FF
 
+CvDeathLv3:
 ;              B    E    W    A    R    E    \n   T    R    A    P    S    !   END
 LB652:  .byte $8B, $8E, $A0, $8A, $9B, $8E, $FD, $9D, $9B, $8A, $99, $9C, $7C, $FF
 
+CvDeathLv4:
 ;              E    V    E    R    \n   A    D    V    E    N    T    U    R    E    !   END
 LB660:  .byte $8E, $9F, $8E, $9B, $FD, $8A, $8D, $9F, $8E, $97, $9D, $9E, $9B, $8E, $7C, $FF
 
+CvDeathLv5:
 ;              G    R    E    M    L    I    N    S    !   END
 LB670:  .byte $90, $9B, $8E, $96, $95, $92, $97, $9C, $7C, $FF
 
+CvDeathLv6:
 ;              C    I    R    C    L    E    \n   D    E    A    T    H    !   END
 LB67A:  .byte $8C, $92, $9B, $8C, $95, $8E, $FD, $8D, $8E, $8A, $9D, $91, $7C, $FF
 
+CvDeathLv7:
 ;              C    O    L    L    A    S    A    L    \n   C    A    V    E    R    N    !
 LB688:  .byte $8C, $98, $95, $95, $8A, $9C, $8A, $95, $FD, $8C, $8A, $9F, $8E, $9B, $97, $7C
 ;             END
 LB698:  .byte $FF
 
+CvDeathLv8:
 ;              T    R    A    P    S    _    T    O    \n   G    O    L    D    !   END
 LB699:  .byte $9D, $9B, $8A, $99, $9C, $00, $9D, $98, $FD, $90, $98, $95, $8D, $7C, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+CvGoldLv1:
 ;              C    A    V    E    _    O    F    _    G    O    L    D   END
 LB6A8:  .byte $8C, $8A, $9F, $8E, $00, $98, $8F, $00, $90, $98, $95, $8D, $FF
 
+CvGoldLv2:
+;              G    O    _    B    A    C    K    !   END
 LB6B5:  .byte $90, $98, $00, $8B, $8A, $8C, $94, $7C, $FF
 
+CvGoldLv3:
+;              N    O    T    _    H    E    R    E    !   END
 LB6BE:  .byte $97, $98, $9D, $00, $91, $8E, $9B, $8E, $7C, $FF
 
+CvGoldLv4:
+;              Q    U    A    R    T    E    R    \n   E    A    C    H    !   END
 LB6C8:  .byte $9A, $9E, $8A, $9B, $9D, $8E, $9B, $FD, $8E, $8A, $8C, $91, $7C, $FF
 
+CvGoldLv5:
+;              D    E    A    T    H    \n   A    W    A    I    T    S    !   END
 LB6D6:  .byte $8D, $8E, $8A, $9D, $91, $FD, $8A, $A0, $8A, $92, $9D, $9C, $7C, $FF
 
+CvGoldLv6:
+;              M    A    P    _    W    E    L    L    !   END
 LB6E4:  .byte $96, $8A, $99, $00, $A0, $8E, $95, $95, $7C, $FF
 
+CvGoldLv7:
+;              G    R    E    M    L    I    N    S    !   END
 LB6EE:  .byte $90, $9B, $8E, $96, $95, $92, $97, $9C, $7C, $FF
 
+CvGoldLv8:
+;              G    O    _    B    A    C    K    !   END
 LB6F8:  .byte $90, $98, $00, $8B, $8A, $8C, $94, $7C, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+CvMoonLv1:
+;              C    A    V    E    _    O    F    _    M    O    O    N   END
 LB701:  .byte $8C, $8A, $9F, $8E, $00, $98, $8F, $00, $96, $98, $98, $97, $FF
 
+CvMoonLv2:
+;              G    R    E    M    L    I    N    \n   G    O    L    D    !   END
 LB70E:  .byte $90, $9B, $8E, $96, $95, $92, $97, $FD, $90, $98, $95, $8D, $7C, $FF
 
+CvMoonLv3:
+;              G    O    L    D    E    N    \n   C    E    N    T    E    R    !   END
 LB71C:  .byte $90, $98, $95, $8D, $8E, $97, $FD, $8C, $8E, $97, $9D, $8E, $9B, $7C, $FF
 
+CvMoonLv4:
+;              S    T    A    I    R    _    T    O    \n   H    E    A    V    E    N    !
 LB72B:  .byte $9C, $9D, $8A, $92, $9B, $00, $9D, $98, $FD, $91, $8E, $8A, $9F, $8E, $97, $7C
+;             END
 LB73B:  .byte $FF
 
+CvMoonLv5:
+;              T    I    M    E    _    R    U    N    S    \n   S    H    O    R    T    !
 LB73C:  .byte $9D, $92, $96, $8E, $00, $9B, $9E, $97, $9C, $FD, $9C, $91, $98, $9B, $9D, $7C
+;             END
 LB74C:  .byte $FF
 
+CvMoonLv6:
+;              L    O    N    G    _    M    A    R    C    H    !   END
 LB74D:  .byte $95, $98, $97, $90, $00, $96, $8A, $9B, $8C, $91, $7C, $FF
 
+CvMoonLv7:
+;              T    R    A    P    !   END
 LB759:  .byte $9D, $9B, $8A, $99, $7C, $FF
 
+CvMoonLv8:
+;              V    E    R    Y    _    N    E    A    R    \n   N    O    W    !   END
 LB75F:  .byte $9F, $8E, $9B, $A2, $00, $97, $8E, $8A, $9B, $FD, $97, $98, $A0, $7C, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+CvFireLv1:
+;              C    A    V    E    _    O    F    _    F    I    R    E   END
 LB76E:  .byte $8C, $8A, $9F, $8E, $00, $98, $8F, $00, $8F, $92, $9B, $8E, $FF
 
+CvFireLv2:
+;              T    R    A    P    P    E    D    \n   D    O    O    R    !   END
 LB77B:  .byte $9D, $9B, $8A, $99, $99, $8E, $8D, $FD, $8D, $98, $98, $9B, $7C, $FF
 
+CvFireLv3:
+;              T    W    I    S    T    Y    _    M    A    Z    E    !   END
 LB789:  .byte $9D, $A0, $92, $9C, $9D, $A2, $00, $96, $8A, $A3, $8E, $7C, $FF
 
+CvFireLv4:
+;              W    I    N    D    Y    _    W    A    L    K    !   END
 LB796:  .byte $A0, $92, $97, $8D, $A2, $00, $A0, $8A, $95, $94, $7C, $FF
 
+CvFireLv5:
+;              G    R    E    M    L    I    N    \n   C    I    T    Y    !   END
 LB7A2:  .byte $90, $9B, $8E, $96, $95, $92, $97, $FD, $8C, $92, $9D, $A2, $7C, $FF
 
+CvFireLv6:
+;              D    E    V    I    L    S    _    D    E    N    !   END
 LB7B0:  .byte $8D, $8E, $9F, $92, $95, $9C, $00, $8D, $8E, $97, $7C, $FF
 
+CvFireLv7:
+;              G    O    _    B    A    C    K    !    \n   P    I    T    S    !   END
 LB7BC:  .byte $90, $98, $00, $8B, $8A, $8C, $94, $7C, $FD, $99, $92, $9D, $9C, $7C, $FF
 
+CvFireLv8:
+;              C    H    A    M    B    E    R    _    O    F    \n   F    I    R    E    !
 LB7CB:  .byte $8C, $91, $8A, $96, $8B, $8E, $9B, $00, $98, $8F, $FD, $8F, $92, $9B, $8E, $7C
+;              !
 LB7DB:  .byte $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+CvFoolLv1:
+;              C    A    V    E    _    O    F    _    F    O    O    L   END
 LB7DC:  .byte $8C, $8A, $9F, $8E, $00, $98, $8F, $00, $8F, $98, $98, $95, $FF
 
+CvFoolLv2:
+;              S    E    C    R    E    T    \n   C    O    R    N    E    R    S    !   END
 LB7E9:  .byte $9C, $8E, $8C, $9B, $8E, $9D, $FD, $8C, $98, $9B, $97, $8E, $9B, $9C, $7C, $FF
 
+CvFoolLv3:
+;              T    R    A    P    _    &    \n   T    R    E    A    S    U    R    E   END
 LB7F9:  .byte $9D, $9B, $8A, $99, $00, $06, $FD, $9D, $9B, $8E, $8A, $9C, $9E, $9B, $8E, $FF
 
+CvFoolLv4:
+;              B    E    W    A    R    E    \n   T    H    E    _    W    I    N    D   END
 LB809:  .byte $8B, $8E, $A0, $8A, $9B, $8E, $FD, $9D, $91, $8E, $00, $A0, $92, $97, $8D, $FF
 
+CvFoolLv5:
+;              D    A    N    G    E    R    !   END
 LB819:  .byte $8D, $8A, $97, $90, $8E, $9B, $7C, $FF
 
+CvFoolLv6:
+;              M    A    P    _    W    E    L    L    !   END
 LB821:  .byte $96, $8A, $99, $00, $A0, $8E, $95, $95, $7C, $FF
 
+CvFoolLv7:
+;              R    E    A    C    H    _    U    P    !   END
 LB82B:  .byte $9B, $8E, $8A, $8C, $91, $00, $9E, $99, $7C, $FF
 
+CvFoolLv8:
+;              W    I    N    D    Y    _    S    E    C    R    E    T   END
 LB835:  .byte $A0, $92, $97, $8D, $A2, $00, $9C, $8E, $8C, $9B, $8E, $9D, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+CvMadnessLv1:
+;              C    A    V    E    _    O    F    \n   M    A    D    N    E    S    S   END
 LB842:  .byte $8C, $8A, $9F, $8E, $00, $98, $8F, $FD, $96, $8A, $8D, $97, $8E, $9C, $9C, $FF
 
+CvMadnessLv2:
+;              T    E    R    R    O    R    \n   T    U    N    N    E    L    S    !   END
 LB852:  .byte $9D, $8E, $9B, $9B, $98, $9B, $FD, $9D, $9E, $97, $97, $8E, $95, $9C, $7C, $FF
 
+CvMadnessLv3:
+;              L    O    N    G    _    M    A    R    C    H    !   END
 LB862:  .byte $95, $98, $97, $90, $00, $96, $8A, $9B, $8C, $91, $7C, $FF
 
+CvMadnessLv4:
+;              M    I    S    T    Y    _    C    A    V    E    !   END
 LB86E:  .byte $96, $92, $9C, $9D, $A2, $00, $8C, $8A, $9F, $8E, $7C, $FF
 
+CvMadnessLv5:
+;              C    A    V    E    _    O    F    \n   M    A    D    N    E    S    S   END
 LB87A:  .byte $8C, $8A, $9F, $8E, $00, $98, $8F, $FD, $96, $8A, $8D, $97, $8E, $9C, $9C, $FF
 
+CvMadnessLv6:
+;              G    O    L    D    _    T    R    A    P    _    &    \n   G    R    E    M
 LB88A:  .byte $90, $98, $95, $8D, $00, $9D, $9B, $8A, $99, $00, $06, $FD, $90, $9B, $8E, $96
+;              L    I    N    S    !   END
 LB89A:  .byte $95, $92, $97, $9C, $7C, $FF
 
+CvMadnessLv7:
+;              G    O    L    D    \n   P    R    E    V    A    I    L    S    !   END
 LB8A0:  .byte $8D, $8A, $9B, $94, $FD, $99, $9B, $8E, $9F, $8A, $92, $95, $9C, $7C, $FF
 
+CvMadnessLv8:
+;              D    R    Y    _    H    O    L    E    !   END
 LB8AF:  .byte $8D, $9B, $A2, $00, $91, $98, $95, $8E, $7C, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+CvSolLv1:
 ;              C    A    V    E    _    O    F    _    S    O    L   END
 LB8B9:  .byte $8C, $8A, $9F, $8E, $00, $98, $8F, $00, $9C, $98, $95, $FF
 
+CvSolLv2:
+;              P    R    A    Y    \n   T    H    E    _    A    L    T    E    R    !   END
 LB8C5:  .byte $99, $9B, $8A, $A2, $FD, $9D, $91, $8E, $00, $8A, $95, $9D, $8A, $9B, $7C, $FF
 
+CvSolLv3:
+;              P    R    A    Y    \n   T    H    E    _    S    H    R    I    N    E    S
 LB8D5:  .byte $99, $9B, $8A, $A2, $FD, $9D, $91, $8E, $00, $9C, $91, $9B, $92, $97, $8E, $9C
+;              !   END
 LB8E5:  .byte $7C, $FF
 
+CvSolLv4:
+;              _
 LB8E7:  .byte $FF
 
+CvSolLv5:
+;              D    O    N    '    T    _    D    R    I    N    K    !   END
 LB8E8:  .byte $8D, $98, $97, $04, $9D, $00, $8D, $9B, $92, $97, $94, $7C, $FF
 
+CvSolLv6:
+;              D    O    N    '    T    _    D    R    I    N    K    !   END
 LB8F5:  .byte $8D, $98, $97, $04, $9D, $00, $8D, $9B, $92, $97, $94, $7C, $FF
 
+CvSolLv7:
+;              G    R    E    M    L    I    N    S    !   END
 LB902:  .byte $90, $9B, $8E, $96, $95, $92, $97, $9C, $7C, $FF
 
+CvSolLv8:
+;              W    I    N    D    Y    _    G    O    L    D    !   END
 LB90C:  .byte $A0, $92, $97, $8D, $A2, $00, $90, $98, $95, $8D, $7C, $FF
 
 ;----------------------------------------------------------------------------------------------------

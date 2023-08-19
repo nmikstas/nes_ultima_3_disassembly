@@ -163,9 +163,9 @@ LC0A5:* STA SpriteBuffer,X      ;Set RAM $7300 through $73FF to #$F0. Hides spri
 LC0A8:  INX                     ;
 LC0A9:  BNE -                   ;
 
-LC0AB:  LDA #$81
-LC0AD:  STA RngSeed
-LC0AF:  STA $D8
+LC0AB:  LDA #$81                ;
+LC0AD:  STA RngSeed             ;Seed the RNG and indicate NPCs are not yet loaded.
+LC0AF:  STA NPCsLoaded          ;
 
 LC0B1:  LDA #BANK_MUSIC         ;Swap to the music player bank.
 LC0B3:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
@@ -176,17 +176,17 @@ LC0B8:  JSR InitMusic           ;($8000)Initialize music.
 LC0BB:  LDA #MUS_DUNGEON        ;Prepare to start the intro music.
 LC0BD:  JSR InitMusic           ;($8000)Initialize music.
 
-LC0C0:  LDA #$90
-LC0C2:  STA CurPPUConfig0
-LC0C4:  STA PPUControl0
+LC0C0:  LDA #$90                ;
+LC0C2:  STA CurPPUConfig0       ;Enable Vblank interrupt.
+LC0C4:  STA PPUControl0         ;
 
-LC0C7:  LDA #>DialogPtrTbl1
-LC0C9:  STA TextBasePtrUB
-LC0CB:  LDA #<DialogPtrTbl1
-LC0CD:  STA TextBasePtrLB
+LC0C7:  LDA #>DialogPtrTbl1     ;
+LC0C9:  STA TextBasePtrUB       ;Set the dialog pointer to the first dialog pointer table.
+LC0CB:  LDA #<DialogPtrTbl1     ;
+LC0CD:  STA TextBasePtrLB       ;
 
-LC0CF:  LDA #$01
-LC0D1:  STA TimeStopTimer
+LC0CF:  LDA #$01                ;Time stop timer set for 1 turn.
+LC0D1:  STA TimeStopTimer       ;
 
 LC0D3:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 
@@ -198,15 +198,16 @@ LC0DC:  LDA #BANK_INTRO         ;Prepare to show the intro.
 LC0DE:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LC0E1:  JSR ShowIntroText       ;($B800)Display the intro text on the screen.
 
-LC0E4:  LDA #$10
-LC0E6:  STA $9B
-LC0E8:  JSR LE6D8
+LC0E4:  LDA #BTN_START          ;Wait for start button to be pressed.
+LC0E6:  STA BtnMask             ;
+LC0E8:  JSR WaitForBtnPress     ;($E6D8)Wait for a given button press.
 
 LC0EB:* LDA #$01                ;No effect.
 LC0ED:  STA UnusedB0            ;
 
-LC0EF:  LDA #$00
-LC0F1:  STA CurPPUConfig1
+LC0EF:  LDA #SCREEN_OFF         ;Turn the screen off.
+LC0F1:  STA CurPPUConfig1       ;
+
 LC0F3:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
 LC0F6:  JSR LEE2E
 LC0F9:  JSR LEF65
@@ -383,9 +384,9 @@ LC211:  LDA $01
 LC213:  CMP #$3C
 LC215:  BNE LC1E6
 LC217:  JSR LFAE3
-LC21A:  LDA #$FF
-LC21C:  STA $9B
-LC21E:  JSR LE6D8
+LC21A:  LDA #BTN_ANY
+LC21C:  STA BtnMask
+LC21E:  JSR WaitForBtnPress     ;($E6D8)Wait for a given button press.
 LC221:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LC224:  JMP MainGameLoop        ;($C1B1)Main game engine loop.
 
@@ -1545,8 +1546,8 @@ LCA77:  LDA (CrntChrPtr),Y
 LCA79:  CMP #$03
 LCA7B:  BCS LCAD0
 LCA7D:  LDA #$CF
-LCA7F:  STA $9B
-LCA81:  JSR LE6D8
+LCA7F:  STA BtnMask
+LCA81:  JSR WaitForBtnPress     ;($E6D8)Wait for a given button press.
 LCA84:  CMP #$80
 LCA86:  BEQ LCA8F
 LCA88:  CMP #$40
@@ -2585,8 +2586,8 @@ LD270:  LDA #$00
 LD272:  STA $19
 LD274:  STA $18
 LD276:  LDA #$4F
-LD278:  STA $9B
-LD27A:  JSR LE6D8
+LD278:  STA BtnMask
+LD27A:  JSR WaitForBtnPress     ;($E6D8)Wait for a given button press.
 LD27D:  TAX
 LD27E:  CMP #$01
 LD280:  BNE LD288
@@ -3660,9 +3661,9 @@ LD912:  ADC #$3C
 LD914:  STA $7303
 LD917:  LDA #$1E
 LD919:  STA CurPPUConfig1
-LD91B:  LDA #$FF
-LD91D:  STA $9B
-LD91F:  JSR LE6D8
+LD91B:  LDA #BTN_ANY
+LD91D:  STA BtnMask
+LD91F:  JSR WaitForBtnPress     ;($E6D8)Wait for a given button press.
 LD922:  PLA
 LD923:  STA DisNPCMovement
 LD925:  JSR LoadAlphaNumMaps    ;($ED76)Load character set and map tiles.
@@ -4202,7 +4203,7 @@ LDCC4:  LDA #$00
 LDCC6:  STA OnBoat
 LDCC8:  LDA #$2F
 LDCCA:  STA BoatXPos
-LDCCD:  STA $D8
+LDCCD:  STA NPCsLoaded
 LDCCF:  LDA #$11
 LDCD1:  STA BoatYPos
 LDCD4:  PLA
@@ -5656,6 +5657,7 @@ LE6D7:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+WaitForBtnPress:
 LE6D8:  LDA #$00
 LE6DA:  STA IgnoreInput
 LE6DC:  STA InputChange
@@ -5665,10 +5667,10 @@ LE6E0:* CMP Increment0          ;Wait here until the next NMI interrupt.
 LE6E2:  BEQ -                   ;
 
 LE6E4:  LDA InputChange
-LE6E6:  BEQ LE6D8
+LE6E6:  BEQ WaitForBtnPress
 LE6E8:  LDA Pad1Input
-LE6EA:  AND $9B
-LE6EC:  BEQ LE6D8
+LE6EA:  AND BtnMask
+LE6EC:  BEQ WaitForBtnPress
 LE6EE:  RTS
 
 ;----------------------------------------------------------------------------------------------------
@@ -6714,17 +6716,17 @@ LEE2E:  LDA #BANK_MISC_GFX
 LEE30:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 
 LEE33:  LDA #$A0
-LEE35:  STA $2A
+LEE35:  STA PPUSrcPtrUB
 LEE37:  LDA #$00
-LEE39:  STA $29
+LEE39:  STA PPUSrcPtrLB
 LEE3B:  LDA #$00
-LEE3D:  STA $2C
+LEE3D:  STA PPUDstPtrUB
 LEE3F:  LDA #$00
-LEE41:  STA $2B
+LEE41:  STA PPUDstPtrLB
 LEE43:  LDA #$10
-LEE45:  STA $2E
+LEE45:  STA PPUByteCntUB
 LEE47:  LDA #$00
-LEE49:  STA $2D
+LEE49:  STA PPUByteCntLB
 LEE4B:  JSR LoadPPU             ;($EFE3)Load values into PPU.
 
 ;----------------------------------------------------------------------------------------------------
@@ -7360,9 +7362,9 @@ LF263:  BEQ LF267
 LF265:  LDX #$90
 LF267:  STX $7303
 LF26A:  JSR SetPPUUpdate        ;($F0B4)Check if PPU update flag needs to be set.
-LF26D:  LDA #$FF
-LF26F:  STA $9B
-LF271:  JSR LE6D8
+LF26D:  LDA #BTN_ANY
+LF26F:  STA BtnMask
+LF271:  JSR WaitForBtnPress     ;($E6D8)Wait for a given button press.
 LF274:  LDA #SPRT_HIDE
 LF276:  STA SpriteBuffer
 LF279:  LDA $1A
@@ -7812,15 +7814,19 @@ LF555:  LDY #$5E
 LF557:* STX $2A
 LF559:  STY $29
 LF55B:  JSR LED33
-LF55E:  LDA #$1E
+
+LF55E:  LDA #SCREEN_ON
 LF560:  STA CurPPUConfig1
+
 LF562:  LDA EntrSndAndFlsh
-LF564:  BEQ LF56F
-LF566:  LDA #$00
-LF568:  STA EntrSndAndFlsh
-LF56A:  LDA #$03
+LF564:  BEQ +
+
+LF566:  LDA #$00                ;
+LF568:  STA EntrSndAndFlsh      ;Disable flash when loading new map. Set flash counter to 3 frames.
+LF56A:  LDA #$03                ;
 LF56C:  JSR FlashAndSound       ;($DB2D)Flash screen with SFX.
-LF56F:  RTS
+
+LF56F:* RTS                     ;Exit load map function.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -7870,7 +7876,7 @@ LF5BC:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF5BF:  RTS
 
 LF5C0:  LDA ThisMap
-LF5C2:  CMP $D8
+LF5C2:  CMP NPCsLoaded
 LF5C4:  BNE LF5D6
 LF5C6:  LDX #$00
 LF5C8:  LDA #$00
@@ -7883,7 +7889,7 @@ LF5D1:  CPX #$80
 LF5D3:  BNE LF5C8
 LF5D5:  RTS
 
-LF5D6:  STA $D8
+LF5D6:  STA NPCsLoaded
 LF5D8:  LDA MapProperties
 LF5DA:  CMP #MAP_PROP_OV
 LF5DC:  BEQ LF628
@@ -8024,7 +8030,7 @@ LF6D4:  STA DungeonLevel
 LF6D6:  STA $B1
 LF6D8:  STA $D2
 LF6DA:  LDA #$FF
-LF6DC:  STA $D8
+LF6DC:  STA NPCsLoaded
 LF6DE:  LDA #BANK_DUNGEONS
 LF6E0:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LF6E3:  LDA ThisMap
@@ -8086,8 +8092,8 @@ LF73D:  LDA #$1E
 LF73F:  STA CurPPUConfig1
 LF741:  JMP LF8B5
 LF744:  LDA #$8F
-LF746:  STA $9B
-LF748:  JSR LE6D8
+LF746:  STA BtnMask
+LF748:  JSR WaitForBtnPress     ;($E6D8)Wait for a given button press.
 LF74B:  LDA Pad1Input
 LF74D:  CMP #BTN_A
 LF74F:  BNE LF757

@@ -249,7 +249,7 @@
 .alias SGCharPtr        $99     ;Pointer to character data in current save game.
 .alias SGCharPtrLB      $99     ;Pointer to character data in current save game, lower byte.
 .alias SGCharPtrUB      $9A     ;Pointer to character data in current save game, upper byte.
-
+.alias BtnMask          $9B     ;A mask for buttons that will allow game to progress.
 .alias NumMenuItems     $9C     ;The number of items in a given menu.
 
 .alias DisSpriteAnim    $9E     ;Non-zero value disables sprite animations.
@@ -321,6 +321,8 @@
                                 ;lower nibble: counter for current phase $0-$3.
 
 .alias ThisSFX          $D6     ;Current SFX to play. MSB set=initialize SFX.
+
+.alias NPCsLoaded       $D8     ;If not equal to current map number, NPCs need to be loaded.
 
 .alias BribePray        $DA     ;LSB set=party can pray, 2nd bit set=party can bribe.
 .alias PrevMapProp      $DB     ;Properties of the previous map before a fight was started.
@@ -771,6 +773,7 @@
 .alias BTN_SELECT       $20     ;Controller button select.
 .alias BTN_B            $40     ;Controller button B.
 .alias BTN_A            $80     ;Controller button A.
+.alias BTN_ANY          $FF     ;Mask for any button press.
 
 .alias PPU_PT0_UB       $00     ;Base address of pattern table 0, upper byte.
 .alias PPU_PT0_LB       $00     ;Base address of pattern table 0, lower byte.
