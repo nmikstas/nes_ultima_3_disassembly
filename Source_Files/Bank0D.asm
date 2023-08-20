@@ -7,6 +7,7 @@
 ;Forward declarations.
 
 .alias  Reset1                  $C000
+.alias  DisplayText1            $C003
 .alias  ChooseChar1             $C00C
 .alias  ShowDialog1             $C00F
 .alias  ShowSelectWnd1          $C012
@@ -22,9 +23,9 @@
 ;----------------------------------------------------------------------------------------------------
 
 L8000:  LDX #$00
-L8002:  LDA $0700,X
+L8002:  LDA ScreenBlocks,X
 L8005:  AND #$1F
-L8007:  STA $0700,X
+L8007:  STA ScreenBlocks,X
 L800A:  INX
 L800B:  CPX #SPRT_HIDE
 L800D:  BNE L8002
@@ -38,12 +39,12 @@ L801D:  STA $19
 L801F:  LDA #$FF
 L8021:  STA $18
 L8023:  LDY $2D
-L8025:  LDA $0700,X
+L8025:  LDA ScreenBlocks,X
 L8028:  BIT $8331
 L802B:  BNE L8057
 L802D:  AND #$10
 L802F:  BNE L8057
-L8031:  LDA $0700,X
+L8031:  LDA ScreenBlocks,X
 L8034:  AND #$0F
 L8036:  CMP #$02
 L8038:  BEQ L8050
@@ -55,8 +56,8 @@ L8042:  CMP #$0C
 L8044:  BEQ L8050
 L8046:  CMP #$05
 L8048:  BNE L8057
-L804A:  LDA $A8
-L804C:  CMP #$0C
+L804A:  LDA MapProperties
+L804C:  CMP #MAP_PROP_OV
 L804E:  BEQ L8057
 L8050:  TYA
 L8051:  PHA
@@ -102,8 +103,8 @@ L8098:  JMP L8023
 
 L809B:  .byte $F0, $01, $10, $FF
 
-L809F:  LDA $A8
-L80A1:  AND #$04
+L809F:  LDA MapProperties
+L80A1:  AND #MAP_MOON_PH
 L80A3:  BEQ L80A6
 L80A5:  RTS
 L80A6:  LDA $4A
@@ -160,7 +161,7 @@ L80FD:  LDX $19
 L80FF:  LDA #$0F
 L8101:  STA $2D
 L8103:  LDA #$40
-L8105:  STA $0700,X
+L8105:  STA ScreenBlocks,X
 L8108:  TXA
 L8109:  CLC
 L810A:  ADC #$10
@@ -176,7 +177,7 @@ L8119:  LDX $19
 L811B:  LDA #$10
 L811D:  STA $2D
 L811F:  LDA #$40
-L8121:  STA $0700,X
+L8121:  STA ScreenBlocks,X
 L8124:  INX
 L8125:  DEC $2D
 L8127:  BNE L8121
@@ -197,7 +198,7 @@ L8143:  LDY #$61
 L8145:  JSR L8149
 L8148:  RTS
 L8149:  LDX $82B1,Y
-L814C:  LDA $0700,X
+L814C:  LDA ScreenBlocks,X
 L814F:  JSR L821F
 L8152:  BCS L815B
 L8154:  INY
@@ -207,7 +208,7 @@ L8158:  BNE L8149
 L815A:  RTS
 L815B:  STY $35
 L815D:  LDX $82B1,Y
-L8160:  LDA $0700,X
+L8160:  LDA ScreenBlocks,X
 L8163:  JSR L821F
 L8166:  BCC L816F
 L8168:  INY
@@ -240,7 +241,7 @@ L8194:  CLC
 L8195:  ADC $36
 L8197:  STA $35
 L8199:  LDX $82B9,Y
-L819C:  LDA $0700,X
+L819C:  LDA ScreenBlocks,X
 L819F:  JSR L821F
 L81A2:  BCS L81AB
 L81A4:  INY
@@ -272,7 +273,7 @@ L81DB:  CLC
 L81DC:  ADC $36
 L81DE:  STA $35
 L81E0:  LDX $82C3,Y
-L81E3:  LDA $0700,X
+L81E3:  LDA ScreenBlocks,X
 L81E6:  JSR L821F
 L81E9:  BCS L81F2
 L81EB:  INY
@@ -309,8 +310,8 @@ L822B:  CMP #$0C
 L822D:  BEQ L823B
 L822F:  CMP #$05
 L8231:  BNE L8239
-L8233:  LDA $A8
-L8235:  CMP #$0C
+L8233:  LDA MapProperties
+L8235:  CMP #MAP_PROP_OV
 L8237:  BNE L823B
 L8239:  CLC
 L823A:  RTS
@@ -362,9 +363,9 @@ L8286:  TXA
 L8287:  AND #$F0
 L8289:  CMP #$F0
 L828B:  BEQ L8298
-L828D:  LDA $0700,X
+L828D:  LDA ScreenBlocks,X
 L8290:  ORA #$40
-L8292:  STA $0700,X
+L8292:  STA ScreenBlocks,X
 L8295:  JMP L827B
 L8298:  RTS
 
@@ -582,7 +583,7 @@ L856C:  RTS
 L856D:  .byte $03, $03, $03, $01, $02, $02, $02, $02, $02, $02, $02, $03, $02, $01, $01, $02
 L857D:  .byte $03, $03, $03, $03, $03, $03, $03, $03, $03, $03, $03, $03, $01, $02, $00, $00
 
-L858D:  LDA $0700,X
+L858D:  LDA ScreenBlocks,X
 L8590:  BIT $8331
 L8593:  BEQ L85A8
 L8595:  AND #$E0
@@ -600,7 +601,7 @@ L85A8:  AND #$10
 L85AA:  BEQ L85B0
 L85AC:  LDA #$03
 L85AE:  BNE L85B3
-L85B0:  LDA $0700,X
+L85B0:  LDA ScreenBlocks,X
 L85B3:  AND #$1F
 L85B5:  RTS
 
@@ -611,8 +612,8 @@ L85E6:  .byte $C9, $9B, $BB, $B0, $00, $0C, $9B, $BB, $BB, $BB, $BB, $BB, $BB, $
 L85F6:  .byte $00, $BB, $BB, $99, $C1, $00, $01, $C3, $33, $30
 
 L8600:  LDY $AA
-L8602:  LDA $A8
-L8604:  AND #$04
+L8602:  LDA MapProperties
+L8604:  AND #MAP_MOON_PH
 L8606:  BEQ L8616
 L8608:  TYA
 L8609:  AND #$03
@@ -659,10 +660,10 @@ L8650:  LDY #CHR_MARKS
 L8652:  LDA (CrntChrPtr),Y
 L8654:  AND #$02
 L8656:  BNE L8676
-L8658:  LDA $A8
+L8658:  LDA MapProperties
 L865A:  AND #$03
 L865C:  BNE L8676
-L865E:  LDA $0700,X
+L865E:  LDA ScreenBlocks,X
 L8661:  AND #$1F
 L8663:  CMP #$07
 L8665:  BNE L8676
@@ -683,7 +684,7 @@ L8683:  LDY #CHR_MARKS
 L8685:  LDA (CrntChrPtr),Y
 L8687:  AND #$01
 L8689:  BNE L86A1
-L868B:  LDA $0700,X
+L868B:  LDA ScreenBlocks,X
 L868E:  AND #$1F
 L8690:  CMP #$0E
 L8692:  BNE L86A1
@@ -1108,19 +1109,20 @@ L8A02:  STA TextIndex           ;
 L8A04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 
 L8A07:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
-L8A0A:  BCC +                   ;Did player select yes? If so, branch.
+L8A0A:  BCC +                   ;Did player push the A button? If so, branch.
 L8A0C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 
-L8A0F:* CMP #$01
-L8A11:  BNE L8A18
+L8A0F:* CMP #$01                ;Did player select NO?
+L8A11:  BNE +                   ;If not, branch.
 
-L8A13:  LDA #$66
+L8A13:  LDA #$66                ;THAT MAY BE WISE text.
 L8A15:  JMP LastText            ;($9475)Show last tesxt before exiting.
 
-L8A18:  JSR ChooseChar1         ;($C00C)Select a character from a list.
-L8A1B:  BCC L8A20
+L8A18:* JSR ChooseChar1         ;($C00C)Select a character from a list.
+L8A1B:  BCC +                   ;Did player push the A button? If so, branch.
 L8A1D:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8A20:  JSR L9D5E
+
+L8A20:* JSR L9D5E
 L8A23:  LDA #$67
 L8A25:  STA TextIndex2
 L8A28:  LDA #$0A
@@ -1355,7 +1357,7 @@ L8C2E:  STA $2D
 L8C30:  INY
 L8C31:  LDA (CrntChrPtr),Y
 L8C33:  STA $2E
-L8C35:  JSR L94AA
+L8C35:  JSR AddHP               ;($94AA)Add to character's hit points.
 L8C38:  LDA #$C8
 L8C3A:  STA $2D
 L8C3C:  LDA #$00
@@ -1439,7 +1441,7 @@ L8CDE:  LDA #$1E
 L8CE0:  STA $2D
 L8CE2:  LDA #$00
 L8CE4:  STA $2E
-L8CE6:  JSR L947A
+L8CE6:  JSR AddGold             ;(L947A)Increase character's gold.
 L8CE9:  JSR L9D5E
 L8CEC:  LDA #$73
 L8CEE:  JMP LastText            ;($9475)Show last tesxt before exiting.
@@ -1600,7 +1602,7 @@ L8E3A:  LDA $8E97,X
 L8E3D:  STA $2D
 L8E3F:  LDA $8E98,X
 L8E42:  STA $2E
-L8E44:  JSR L947A
+L8E44:  JSR AddGold             ;(L947A)Increase character's gold.
 L8E47:  PLA
 L8E48:  CLC
 L8E49:  ADC #$0C
@@ -2104,7 +2106,7 @@ L93A4:  LDA $97A0,X
 L93A7:  STA $2D
 L93A9:  LDA $97A1,X
 L93AC:  STA $2E
-L93AE:  JSR L947A
+L93AE:  JSR AddGold             ;(L947A)Increase character's gold.
 L93B1:  PLA
 L93B2:  CLC
 L93B3:  ADC #$1B
@@ -2193,10 +2195,15 @@ L9470:  LDA #$63
 L9472:  STA (CrntChrPtr),Y
 L9474:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 LastText:
-L9475:  STA TextIndex
+L9475:  STA TextIndex           ;Set the text and display it.
 L9477:  JMP ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 
+;----------------------------------------------------------------------------------------------------
+
+AddGold:
 L947A:  LDY #CHR_GOLD
 L947C:  LDA (CrntChrPtr),Y
 L947E:  CLC
@@ -2223,10 +2230,15 @@ L94A4:  INY
 L94A5:  LDA $2E
 L94A7:  STA (CrntChrPtr),Y
 
-DialogExit:
-L94A9:  RTS
+;----------------------------------------------------------------------------------------------------
 
-L94AA:  LDY #$2D
+DialogExit:
+L94A9:  RTS                     ;Exit from dialog routines.
+
+;----------------------------------------------------------------------------------------------------
+
+AddHP:
+L94AA:  LDY #CHR_HIT_PNTS
 L94AC:  LDA (CrntChrPtr),Y
 L94AE:  CLC
 L94AF:  ADC $2D
@@ -2249,7 +2261,7 @@ L94CD:  STA $2D
 L94CF:  INY
 L94D0:  LDA (CrntChrPtr),Y
 L94D2:  STA $2E
-L94D4:  LDY #$2D
+L94D4:  LDY #CHR_HIT_PNTS
 L94D6:  LDA $2D
 L94D8:  STA (CrntChrPtr),Y
 L94DA:  INY
@@ -2257,8 +2269,13 @@ L94DB:  LDA $2E
 L94DD:  STA (CrntChrPtr),Y
 L94DF:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+;Unused.
 L94E0:  .byte $00, $22, $44, $44, $22, $24, $44, $42, $22, $44, $44, $44, $44, $44, $44, $44
 L94F0:  .byte $44, $44, $40, $00, $44, $44, $00, $04, $44, $44, $44, $44, $44, $47, $74, $44
+
+;----------------------------------------------------------------------------------------------------
 
 TempleTalk:
 L9500:  LDA #$92
@@ -2487,7 +2504,7 @@ L96EC:  CLC
 L96ED:  STA $2D
 L96EF:  LDA #$00
 L96F1:  STA $2E
-L96F3:  JSR L947A
+L96F3:  JSR AddGold             ;(L947A)Increase character's gold.
 L96F6:  JSR L9D5E
 L96F9:  LDA #$9D
 L96FB:  JMP LastText            ;($9475)Show last tesxt before exiting.
@@ -2750,63 +2767,82 @@ L993C:  ADC $B8
 L993E:  STA $BA
 L9940:  LDA $B8
 L9942:  RTS
-L9943:  PHA
-L9944:  LDA #$38
-L9946:  STA $A2
-L9948:  STA $A3
-L994A:  STA $A4
-L994C:  STA $A5
-L994E:  SEC
-L994F:  LDA $A0
-L9951:  SBC #$E8
-L9953:  STA $A0
-L9955:  LDA $A1
-L9957:  SBC #$03
-L9959:  STA $A1
-L995B:  BCC L9962
-L995D:  INC $A2
-L995F:  JMP L994E
-L9962:  CLC
-L9963:  LDA $A0
-L9965:  ADC #$E8
-L9967:  STA $A0
-L9969:  LDA $A1
-L996B:  ADC #$03
-L996D:  STA $A1
-L996F:  SEC
-L9970:  LDA $A0
-L9972:  SBC #$64
-L9974:  STA $A0
-L9976:  LDA $A1
-L9978:  SBC #$00
-L997A:  STA $A1
-L997C:  BCC L9983
-L997E:  INC $A3
-L9980:  JMP L996F
-L9983:  CLC
-L9984:  LDA $A0
-L9986:  ADC #$64
-L9988:  STA $A0
-L998A:  LDA $A1
-L998C:  ADC #$00
-L998E:  STA $A1
-L9990:  SEC
-L9991:  LDA $A0
-L9993:  SBC #$0A
-L9995:  STA $A0
-L9997:  BCC L999E
-L9999:  INC $A4
-L999B:  JMP L9990
-L999E:  CLC
-L999F:  LDA $A0
-L99A1:  ADC #$0A
-L99A3:  STA $A0
-L99A5:  CLC
-L99A6:  LDA $A5
-L99A8:  ADC $A0
-L99AA:  STA $A5
-L99AC:  PLA
-L99AD:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
+DoBinToBCD:
+L9943:  PHA                     ;Save A on the stack before beginning.
+
+L9944:  LDA #TP_ZERO            ;
+L9946:  STA BCDOutput0          ;
+L9948:  STA BCDOutput1          ;Set all the output digits to zero.
+L994A:  STA BCDOutput2          ;
+L994C:  STA BCDOutput3          ;
+
+L994E:* SEC                     ;
+L994F:  LDA BinInputLB          ;
+L9951:  SBC #$E8                ;
+L9953:  STA BinInputLB          ;Keep subtracting 1,000 until number goes negative.
+L9955:  LDA BinInputUB          ;
+L9957:  SBC #$03                ;
+L9959:  STA BinInputUB          ;
+L995B:  BCC +                   ;
+
+L995D:  INC BCDOutput0          ;Increment thousands digit for each subtrct loop.
+L995F:  JMP -                   ;
+
+L9962:* CLC                     ;
+L9963:  LDA BinInputLB          ;
+L9965:  ADC #$E8                ;
+L9967:  STA BinInputLB          ;Undo last 1,000 subtract to put number positive again.
+L9969:  LDA BinInputUB          ;
+L996B:  ADC #$03                ;
+L996D:  STA BinInputUB          ;
+
+L996F:* SEC                     ;
+L9970:  LDA BinInputLB          ;
+L9972:  SBC #$64                ;
+L9974:  STA BinInputLB          ;Keep subtracting 100 until number goes negative.
+L9976:  LDA BinInputUB          ;
+L9978:  SBC #$00                ;
+L997A:  STA BinInputUB          ;
+L997C:  BCC +                   ;
+
+L997E:  INC BCDOutput1          ;Increment hundreds digit for each subtrct loop.
+L9980:  JMP -                   ;
+
+L9983:* CLC                     ;
+L9984:  LDA BinInputLB          ;
+L9986:  ADC #$64                ;
+L9988:  STA BinInputLB          ;Undo last 100 subtract to put number positive again.
+L998A:  LDA BinInputUB          ;
+L998C:  ADC #$00                ;
+L998E:  STA BinInputUB          ;
+
+L9990:* SEC                     ;
+L9991:  LDA BinInputLB          ;
+L9993:  SBC #$0A                ;Keep subtracting 100 until number goes negative.
+L9995:  STA BinInputLB          ;
+L9997:  BCC +                   ;
+
+L9999:  INC BCDOutput2          ;Increment tens digit for each subtrct loop.
+L999B:  JMP -                   ;
+
+L999E:* CLC                     ;
+L999F:  LDA BinInputLB          ;Undo last 10 subtract to put number positive again.
+L99A1:  ADC #$0A                ;
+L99A3:  STA BinInputLB          ;
+
+L99A5:  CLC                     ;
+L99A6:  LDA BCDOutput3          ;Add remainng value to the ones digit.
+L99A8:  ADC BinInputLB          ;
+L99AA:  STA BCDOutput3          ;
+
+L99AC:  PLA                     ;Restore A from the stack and return.
+L99AD:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
+
 L99AE:  PHA
 L99AF:  TXA
 L99B0:  PHA
@@ -3056,6 +3092,8 @@ L9D37:  .byte $98, $97, $00, $00, $00, $00, $00, $FD, $9C, $9D, $8E, $8E, $95, $
 L9D47:  .byte $00, $FD, $8D, $9B, $90, $97, $00, $8A, $9B, $96, $00, $FD, $96, $A2, $9C, $9D
 L9D57:  .byte $92, $8C, $00, $8A, $43, $FD, $FF
 
+;----------------------------------------------------------------------------------------------------
+
 L9D5E:  PHA
 L9D5F:  LDA #$02
 L9D61:  STA WndXPos
@@ -3067,16 +3105,16 @@ L9D6B:  LDA #$04
 L9D6D:  STA WndHeight
 L9D6F:  JSR ShowWindow1         ;($C015)Show a window on the screen.
 
-L9D72:  LDY #$30
+L9D72:  LDY #CHR_GOLD
 L9D74:  LDA (CrntChrPtr),Y
-L9D76:  STA $A0
+L9D76:  STA BinInputLB
 L9D78:  INY
 L9D79:  LDA (CrntChrPtr),Y
-L9D7B:  STA $A1
+L9D7B:  STA BinInputUB
 L9D7D:  JSR L9943
 L9D80:  LDY #$00
 L9D82:  LDX #$00
-L9D84:  LDA $00A2,Y
+L9D84:  LDA BCDOutputBase,Y
 L9D87:  CPX #$01
 L9D89:  LDX #$01
 L9D8B:  BCS L9D99
@@ -3086,18 +3124,18 @@ L9D91:  CPY #$03
 L9D93:  BEQ L9D99
 L9D95:  LDX #$00
 L9D97:  LDA #$00
-L9D99:  STA $0580,Y
+L9D99:  STA TextBuffer,Y
 L9D9C:  INY
 L9D9D:  CPY #$04
 L9D9F:  BNE L9D84
 L9DA1:  LDA #$90
-L9DA3:  STA $0580,Y
+L9DA3:  STA TextBuffer,Y
 L9DA6:  INY
 L9DA7:  LDA #$99
-L9DA9:  STA $0580,Y
+L9DA9:  STA TextBuffer,Y
 L9DAC:  INY
 L9DAD:  LDA #$FF
-L9DAF:  STA $0580,Y
+L9DAF:  STA TextBuffer,Y
 L9DB2:  LDA #$03
 L9DB4:  STA $2A
 L9DB6:  LDA #$04
@@ -3108,10 +3146,12 @@ L9DBE:  LDA #$01
 L9DC0:  STA $2D
 L9DC2:  LDA #$FF
 L9DC4:  STA $30
-L9DC6:  JSR $C003
+L9DC6:  JSR DisplayText1        ;($C003)Display text on the screen.
 L9DC9:  PLA
 L9DCA:  CLC
 L9DCB:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 L9DCC:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $30, $00, $00, $11, $11, $11, $33
 L9DDC:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $66, $33, $33, $33, $33
@@ -5236,7 +5276,7 @@ LBC15:  LDY #$00
 LBC17:  LDA ($41),Y
 LBC19:  TAX
 LBC1A:  LDA $BCA1,X
-LBC1D:  STA $0700,Y
+LBC1D:  STA ScreenBlocks,Y
 LBC20:  INY
 LBC21:  BNE LBC17
 LBC23:  LDA #$24
@@ -5257,7 +5297,7 @@ LBC40:  STA $0300,X
 LBC43:  LDA #$10
 LBC45:  STA $2E
 LBC47:  INX
-LBC48:  LDA $0700,Y
+LBC48:  LDA ScreenBlocks,Y
 LBC4B:  STA $0300,X
 LBC4E:  INY
 LBC4F:  DEC $2E
@@ -5324,7 +5364,7 @@ LBCFC:  .byte $5F
 LBCFD:  LDA $FBFF,X
 LBD00:  LDX #$00
 LBD02:  LDA #$0E
-LBD04:  STA $0700,X
+LBD04:  STA ScreenBlocks,X
 LBD07:  INX
 LBD08:  BNE LBD04
 LBD0A:  LDA #$09
@@ -5334,7 +5374,7 @@ LBD10:  STA $30
 LBD12:  LDX $30
 LBD14:  LDA #$04
 LBD16:  LDY #$09
-LBD18:  STA $0700,X
+LBD18:  STA ScreenBlocks,X
 LBD1B:  INX
 LBD1C:  DEY
 LBD1D:  BNE LBD18
@@ -5351,7 +5391,7 @@ LBD30:  STA $30
 LBD32:  LDX $30
 LBD34:  LDA #$00
 LBD36:  LDY #$03
-LBD38:  STA $0700,X
+LBD38:  STA ScreenBlocks,X
 LBD3B:  INX
 LBD3C:  DEY
 LBD3D:  BNE LBD38

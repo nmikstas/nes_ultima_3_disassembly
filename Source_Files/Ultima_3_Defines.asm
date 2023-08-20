@@ -258,6 +258,7 @@
 .alias BCDDigitBase     $00A0   ;Base address for getting BDC digit.
 .alias BinInputLB       $A0     ;Binary to BCD input binary word, lower byte.
 .alias BinInputUB       $A1     ;Binary to BCD input binary word, upper byte.
+.alias BCDOutputBase    $00A2   ;Base address for output BDC digit.
 .alias BCDOutput0       $A2     ;Binary to BCD ouput BCD digit 0(thousands).
 .alias BCDOutput1       $A3     ;Binary to BCD ouput BCD digit 1(hundreds).
 .alias BCDOutput2       $A4     ;Binary to BCD ouput BCD digit 2(tens).
@@ -994,7 +995,7 @@
 .alias MAP_SH_DEX       $18     ;Shrine of Dexterity.
 .alias MAP_DUNGEON      $01     ;NPCs not shown. Dungeon map.
 .alias MAP_TURN         $02     ;Turn based map. Fight map.
-.alias MAP_MOON_PH      $04     ;Show moon phases.
+.alias MAP_MOON_PH      $04     ;Show moon phases, wrap map.
 .alias MAP_NPC_PRES     $08     ;NPCs present on map, except overworld.
 .alias MAP_PROP_FIGHT   $0A     ;Combo of other 2 properties, fight map.
 .alias MAP_PROP_OV      $0C     ;Combo of other 2 properties, overworld map.
