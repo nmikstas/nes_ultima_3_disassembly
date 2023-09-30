@@ -6567,7 +6567,7 @@ LB64C:  LDA #$FF
 LB64E:  STA TextBuffer,Y
 LB651:  STY $2D
 LB653:  LDA #$00
-LB655:  STA $9D
+LB655:  STA MultiWindow
 LB657:  LDA #$01
 LB659:  STA NumMenuItems
 
@@ -7231,7 +7231,7 @@ LBBEB:  .byte $9C, $94, $92, $97, $00, $00, $00, $00, $00, $00, $00, $00, $FD
 ;----------------------------------------------------------------------------------------------------
 
 LBBF8:  LDA HideUprSprites
-LBBFA:  STA $E1
+LBBFA:  STA HideSpriteTemp
 
 LBBFC:  LDA Wnd2XPos
 LBBFF:  STA $2A
@@ -7263,7 +7263,7 @@ LBC34:  SBC #$02
 LBC36:  LSR
 LBC37:  STA $2D
 
-LBC39:  LDA $E1
+LBC39:  LDA HideSpriteTemp
 LBC3B:  STA HideUprSprites
 
 LBC3D:  JSR ShowTextString      ;($995C)Show a text string on the screen.
@@ -7303,13 +7303,13 @@ LBC78:  JSR LBCE9
 LBC7B:  BCS LBC40
 LBC7D:  CMP #$FF
 LBC7F:  BNE LBCD5
-LBC81:  LDA $9D
+LBC81:  LDA MultiWindow
 LBC83:  BEQ LBC40
 LBC85:  AND #$80
 LBC87:  BEQ LBCA0
-LBC89:  LDA $9D
+LBC89:  LDA MultiWindow
 LBC8B:  AND #$7F
-LBC8D:  STA $9D
+LBC8D:  STA MultiWindow
 LBC8F:  LDA #$08
 LBC91:  STA $9C
 LBC93:  LDA #$12
@@ -7317,9 +7317,9 @@ LBC95:  STA Wnd2Height
 LBC98:  LDA TextIndex2
 LBC9B:  STA $30
 LBC9D:  JMP LBBF8
-LBCA0:  LDA $9D
+LBCA0:  LDA MultiWindow
 LBCA2:  ORA #$80
-LBCA4:  STA $9D
+LBCA4:  STA MultiWindow
 LBCA6:  AND #$7F
 LBCA8:  SEC
 LBCA9:  SBC #$08
@@ -7344,7 +7344,7 @@ LBCD0:  STA $30
 LBCD2:  JMP LBC18
 LBCD5:  STA $2E
 LBCD7:  LDX #$00
-LBCD9:  LDA $9D
+LBCD9:  LDA MultiWindow
 LBCDB:  BPL LBCDF
 LBCDD:  LDX #$08
 LBCDF:  CLC
@@ -7356,6 +7356,9 @@ LBCE5:  CLC
 LBCE6:  RTS
 LBCE7:  SEC
 LBCE8:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 LBCE9:  LDA #$00
 LBCEB:  STA $2C
 LBCED:  LDA $BF
@@ -7525,8 +7528,9 @@ LBE11:  PLA
 LBE12:  TAX
 LBE13:  PLA
 LBE14:  RTS
+
 LBE15:  LDA #$00
-LBE17:  STA $A9
+LBE17:  STA IgnoreInput
 LBE19:  STA InputChange
 LBE1B:  LDA $00
 LBE1D:  CMP $00
@@ -7537,6 +7541,7 @@ LBE25:  LDA Pad1Input
 LBE27:  AND $9B
 LBE29:  BEQ LBE15
 LBE2B:  RTS
+
 LBE2C:  LDX #$00
 LBE2E:  LDY #$00
 LBE30:  LDA TextBuffer,X
@@ -7548,12 +7553,15 @@ LBE3B:  CMP #$09
 LBE3D:  BNE LBE43
 LBE3F:  STY $BF
 LBE41:  RTS
+
 LBE42:  INY
 LBE43:  INX
 LBE44:  BNE LBE30
 LBE46:  LDA #$00
 LBE48:  STA $BF
 LBE4A:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 WaitSomeFrames:
 LBE4B:  CLC

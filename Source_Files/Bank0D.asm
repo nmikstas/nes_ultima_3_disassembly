@@ -86,6 +86,7 @@ L8079:  BEQ L808C
 L807B:  CMP #$0E
 L807D:  BNE L8080
 L807F:  RTS
+
 L8080:  INC $2D
 L8082:  INC $2D
 L8084:  TXA
@@ -714,8 +715,8 @@ L86BE:  LDA $11
 L86C0:  STA $15
 L86C2:  LDA $12
 L86C4:  STA $16
-L86C6:  LDA #$29
-L86C8:  STA TextIndex
+L86C6:  LDA #$29                ;CHARACTER IS KILLED text.
+L86C8:  STA TextIndex           ;
 L86CA:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L86CD:  JSR BinToBCD1           ;($C021)Convert binary number to BCD.
 L86D0:  PLA
@@ -799,9 +800,9 @@ L8760:  STA $2E
 L8762:  LDA $29
 L8764:  STA $2D
 L8766:  BEQ L876D
-L8768:  LDY #$2D
+L8768:  LDY #CHR_HIT_PNTS
 L876A:  JSR L8793
-L876D:  LDY #$36
+L876D:  LDY #CHR_MAX_HP
 L876F:  LDA (CrntChrPtr),Y
 L8771:  STA $29
 L8773:  INY
@@ -1116,71 +1117,86 @@ L8A0F:* CMP #$01                ;Did player select NO?
 L8A11:  BNE +                   ;If not, branch.
 
 L8A13:  LDA #$66                ;THAT MAY BE WISE text.
-L8A15:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8A15:  JMP LastText            ;($9475)Show last text before exiting.
 
 L8A18:* JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8A1B:  BCC +                   ;Did player push the A button? If so, branch.
 L8A1D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 
-L8A20:* JSR L9D5E
-L8A23:  LDA #$67
-L8A25:  STA TextIndex2
-L8A28:  LDA #$0A
-L8A2A:  STA Wnd2XPos
-L8A2D:  LDA #$06
-L8A2F:  STA Wnd2YPos
-L8A32:  LDA #$0C
-L8A34:  STA Wnd2Width
-L8A37:  LDA #$0E
-L8A39:  STA Wnd2Height
-L8A3C:  LDA #$05
-L8A3E:  STA NumMenuItems
-L8A40:  LDA #$00
-L8A42:  STA $9D
+L8A20:* JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
+
+L8A23:  LDA #$67                ;PRICES 100GP 300GP 500GP 700GP 900GP text.
+L8A25:  STA TextIndex2          ;
+
+L8A28:  LDA #$0A                ;
+L8A2A:  STA Wnd2XPos            ;Window will be located at tile coords X,Y=10,6.
+L8A2D:  LDA #$06                ;
+L8A2F:  STA Wnd2YPos            ;
+
+L8A32:  LDA #$0C                ;
+L8A34:  STA Wnd2Width           ;Window will be 12 tiles wide and 14 tiles tall.
+L8A37:  LDA #$0E                ;
+L8A39:  STA Wnd2Height          ;
+
+L8A3C:  LDA #$05                ;Menu has 5 selections.
+L8A3E:  STA NumMenuItems        ;
+
+L8A40:  LDA #$00                ;This window does not have multiple parts.
+L8A42:  STA MultiWindow         ;
+
 L8A44:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
-L8A47:  BCC L8A4C
+L8A47:  BCC +                   ;Did player abort dialog? If so, exit. Else branch to contimue.
+
 L8A49:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8A4C:  ASL
+
+L8A4C:* ASL
 L8A4D:  PHA
 L8A4E:  CLC
 L8A4F:  ADC #$01
-L8A51:  STA $B5
+L8A51:  STA MultIn0
 L8A53:  LDA #$64
-L8A55:  STA $B6
+L8A55:  STA MultIn1
 L8A57:  JSR Multiply            ;($8885)Multiply 2 bytes for a 16 byte result.
-L8A5A:  LDY #$30
+L8A5A:  LDY #CHR_GOLD
 L8A5C:  LDA (CrntChrPtr),Y
 L8A5E:  SEC
-L8A5F:  SBC $B7
+L8A5F:  SBC MultOutLB
 L8A61:  STA $2D
 L8A63:  INY
 L8A64:  LDA (CrntChrPtr),Y
-L8A66:  SBC $B8
-L8A68:  BCS L8A70
-L8A6A:  PLA
-L8A6B:  LDA #$68
-L8A6D:  JMP LastText            ;($9475)Show last tesxt before exiting.
-L8A70:  STA (CrntChrPtr),Y
+L8A66:  SBC MultOutUB
+L8A68:  BCS +
+
+L8A6A:  PLA                     ;Pull stored value off of stack and discard.
+L8A6B:  LDA #$68                ;YOU DON'T HAVE ENOUGH MONEY text.
+L8A6D:  JMP LastText            ;($9475)Show last text before exiting.
+
+L8A70:* STA (CrntChrPtr),Y
 L8A72:  DEY
 L8A73:  LDA $2D
 L8A75:  STA (CrntChrPtr),Y
-L8A77:  JSR L9D5E
+L8A77:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8A7A:  CLC
 L8A7B:  PLA
-L8A7C:  LDX $70
+L8A7C:  LDX ThisMap
 L8A7E:  ADC $8A90,X
 L8A81:  ADC #$C0
 L8A83:  STA TextIndex
 L8A85:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L8A88:  LDA #$69
-L8A8A:  JMP LastText            ;($9475)Show last tesxt before exiting.
+
+L8A88:  LDA #$69                ;COME BACK IF I CAN HELP YOU AGAIN text.
+L8A8A:  JMP LastText            ;($9475)Show last text before exiting.
 L8A8D:  JMP DialogExit          ;($94A9)Exit dialog routines.
+
+;----------------------------------------------------------------------------------------------------
 
 L8A90:  .byte $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01, $00, $01
 L8AA0:  .byte $00, $01, $00, $01, $00
 
+;----------------------------------------------------------------------------------------------------
+
 L8AA5:  PHA
-L8AA6:  LDY $70
+L8AA6:  LDY ThisMap
 L8AA8:  LDA $8E56,Y
 L8AAB:  TAY
 L8AAC:  PLA
@@ -1195,8 +1211,10 @@ L8ABA:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-;Unused.
-L8ABB:  .byte $00, $07, $07, $0E, $01, $00, $01, $01, $01, $00, $01, $01, $01, $01, $00, $01
+
+L8ABB:  .byte $00, $07, $07, $0E
+
+L8ABF:  .byte $01, $00, $01, $01, $01, $00, $01, $01, $01, $01, $00, $01
 L8ACB:  .byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $02, $03, $00, $00, $01, $03
 L8ADB:  .byte $04, $64, $00, $64, $00, $C8, $00, $F4, $01, $33, $33, $33, $33, $30, $00, $0C
 L8AEB:  .byte $BB, $BB, $BB, $BB, $BC, $BB, $B8, $99, $99, $98, $88, $C0, $03, $33, $33, $33
@@ -1208,32 +1226,35 @@ HealerTalk:
 L8B00:  LDA #$6A
 L8B02:  STA TextIndex
 L8B04:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
-L8B07:  LDX $70
+L8B07:  LDX ThisMap
 L8B09:  LDA $8ABF,X
 L8B0C:  CLC
 L8B0D:  ADC #$6B
 L8B0F:  STA TextIndex2
+
 L8B12:  LDA #$0A
 L8B14:  STA Wnd2XPos
 L8B17:  LDA #$06
 L8B19:  STA Wnd2YPos
+
 L8B1C:  LDA #$14
 L8B1E:  STA Wnd2Width
 L8B21:  LDA #$08
 L8B23:  ADC $8ABF,X
 L8B26:  ADC $8ABF,X
 L8B29:  STA Wnd2Height
+
 L8B2C:  CLC
 L8B2D:  LDA #$03
 L8B2F:  ADC $8ABF,X
 L8B32:  STA NumMenuItems
 L8B34:  LDA #$00
-L8B36:  STA $9D
+L8B36:  STA MultiWindow
 L8B38:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L8B3B:  BCC L8B40
 L8B3D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8B40:  PHA
-L8B41:  LDX $70
+L8B41:  LDX ThisMap
 L8B43:  LDA $8ABF,X
 L8B46:  ASL
 L8B47:  ASL
@@ -1254,7 +1275,7 @@ L8B61:  PLA
 L8B62:  BCC L8B67
 L8B64:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8B67:  PHA
-L8B68:  JSR L9D5E
+L8B68:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8B6B:  PLA
 L8B6C:  CMP #$04
 L8B6E:  BNE L8B73
@@ -1275,8 +1296,8 @@ L8B88:  LDA (CrntChrPtr),Y
 L8B8A:  SBC $2E
 L8B8C:  PLA
 L8B8D:  BCS L8B94
-L8B8F:  LDA #$68
-L8B91:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8B8F:  LDA #$68                ;YOU DON'T HAVE ENOUGH MONEY text.
+L8B91:  JMP LastText            ;($9475)Show last text before exiting.
 L8B94:  TAX
 L8B95:  LDA $99
 L8B97:  PHA
@@ -1320,14 +1341,14 @@ L8BDA:  STA $2D
 L8BDC:  LDA #$00
 L8BDE:  STA $2E
 L8BE0:  JSR L8CF1
-L8BE3:  JSR L9D5E
+L8BE3:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8BE6:  LDA #$EB
 L8BE8:  STA TextIndex
 L8BEA:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L8BED:  LDA #$76
-L8BEF:  JMP LastText            ;($9475)Show last tesxt before exiting.
-L8BF2:  LDA #$75
-L8BF4:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8BED:  LDA #$76                ;TAKE CARE. COME AGAIN IF YOU DON'T FEEL WELL text.
+L8BEF:  JMP LastText            ;($9475)Show last text before exiting.
+L8BF2:  LDA #$75                ;SEEMS HEALTHY text.
+L8BF4:  JMP LastText            ;($9475)Show last text before exiting.
 L8BF7:  CMP #$01
 L8BF9:  BNE L8C26
 L8BFB:  LDY #$0B
@@ -1341,14 +1362,14 @@ L8C09:  STA $2D
 L8C0B:  LDA #$00
 L8C0D:  STA $2E
 L8C0F:  JSR L8CF1
-L8C12:  JSR L9D5E
+L8C12:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8C15:  LDA #$EB
 L8C17:  STA TextIndex
 L8C19:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L8C1C:  LDA #$76
-L8C1E:  JMP LastText            ;($9475)Show last tesxt before exiting.
-L8C21:  LDA #$75
-L8C23:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8C1C:  LDA #$76                ;TAKE CARE. COME AGAIN IF YOU DON'T FEEL WELL text.
+L8C1E:  JMP LastText            ;($9475)Show last text before exiting.
+L8C21:  LDA #$75                ;SEEMS HEALTHY text.
+L8C23:  JMP LastText            ;($9475)Show last text before exiting.
 L8C26:  CMP #$02
 L8C28:  BNE L8C52
 L8C2A:  LDY #$36
@@ -1363,12 +1384,12 @@ L8C3A:  STA $2D
 L8C3C:  LDA #$00
 L8C3E:  STA $2E
 L8C40:  JSR L8CF1
-L8C43:  JSR L9D5E
+L8C43:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8C46:  LDA #$EB
 L8C48:  STA TextIndex
 L8C4A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L8C4D:  LDA #$76
-L8C4F:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8C4D:  LDA #$76                ;TAKE CARE. COME AGAIN IF YOU DON'T FEEL WELL text.
+L8C4F:  JMP LastText            ;($9475)Show last text before exiting.
 L8C52:  LDY #$0B
 L8C54:  LDA (CrntChrPtr),Y
 L8C56:  CMP #$03
@@ -1382,7 +1403,7 @@ L8C62:  STA $2D
 L8C64:  LDA #$01
 L8C66:  STA $2E
 L8C68:  JSR L8CF1
-L8C6B:  JSR L9D5E
+L8C6B:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8C6E:  PLA
 L8C6F:  STA $9A
 L8C71:  PLA
@@ -1409,18 +1430,18 @@ L8C9A:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L8C9D:  LDA #$EB
 L8C9F:  STA TextIndex
 L8CA1:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
-L8CA4:  LDA #$76
-L8CA6:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8CA4:  LDA #$76                ;TAKE CARE. COME AGAIN IF YOU DON'T FEEL WELL text.
+L8CA6:  JMP LastText            ;($9475)Show last text before exiting.
 L8CA9:  LDY #$0B
 L8CAB:  LDA #$04
 L8CAD:  STA (CrntChrPtr),Y
-L8CAF:  LDA #$71
-L8CB1:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8CAF:  LDA #$71                ;THERE WAS NO WAY. CHARACTER WAS TURNED INTO ASHES text.
+L8CB1:  JMP LastText            ;($9475)Show last text before exiting.
 L8CB4:  BCC L8CBB
-L8CB6:  LDA #$75
-L8CB8:  JMP LastText            ;($9475)Show last tesxt before exiting.
-L8CBB:  LDA #$75
-L8CBD:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8CB6:  LDA #$75                ;SEEMS HEALTHY text.
+L8CB8:  JMP LastText            ;($9475)Show last text before exiting.
+L8CBB:  LDA #$75                ;SEEMS HEALTHY text.
+L8CBD:  JMP LastText            ;($9475)Show last text before exiting.
 L8CC0:  LDY #$2D
 L8CC2:  SEC
 L8CC3:  LDA (CrntChrPtr),Y
@@ -1430,8 +1451,8 @@ L8CC9:  INY
 L8CCA:  LDA (CrntChrPtr),Y
 L8CCC:  SBC #$00
 L8CCE:  BCS L8CD5
-L8CD0:  LDA #$72
-L8CD2:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8CD0:  LDA #$72                ;YOUR HIT POINTS ARE TOO LOW TO DONATE BLOOD text.
+L8CD2:  JMP LastText            ;($9475)Show last text before exiting.
 L8CD5:  LDY #$2E
 L8CD7:  STA (CrntChrPtr),Y
 L8CD9:  DEY
@@ -1442,9 +1463,9 @@ L8CE0:  STA $2D
 L8CE2:  LDA #$00
 L8CE4:  STA $2E
 L8CE6:  JSR AddGold             ;(L947A)Increase character's gold.
-L8CE9:  JSR L9D5E
-L8CEC:  LDA #$73
-L8CEE:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8CE9:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
+L8CEC:  LDA #$73                ;THANK YOU. MANY ARE IN NEED text.
+L8CEE:  JMP LastText            ;($9475)Show last text before exiting.
 L8CF1:  LDA $2A
 L8CF3:  STA $9A
 L8CF5:  LDA $29
@@ -1467,8 +1488,8 @@ L8D13:  JMP L8DDC
 L8D16:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8D19:  BCC L8D1E
 L8D1B:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8D1E:  JSR L9D5E
-L8D21:  LDX $70
+L8D1E:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
+L8D21:  LDX ThisMap
 L8D23:  LDA $8E56,X
 L8D26:  CLC
 L8D27:  ADC #$AE
@@ -1484,12 +1505,12 @@ L8D3D:  STA Wnd2Height
 L8D40:  LDA #$07
 L8D42:  STA NumMenuItems
 L8D44:  LDA #$00
-L8D46:  STA $9D
+L8D46:  STA MultiWindow
 L8D48:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
 L8D4B:  BCC L8D50
 L8D4D:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8D50:  STA $30
-L8D52:  LDX $70
+L8D52:  LDX ThisMap
 L8D54:  LDA $8E56,X
 L8D57:  ASL
 L8D58:  ASL
@@ -1541,7 +1562,7 @@ L8DB3:  BCC L8DB8
 L8DB5:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DB8:  JMP L8DBE
 L8DBB:  JSR L9463
-L8DBE:  JSR L9D5E
+L8DBE:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8DC1:  LDA #$85
 L8DC3:  STA TextIndex
 L8DC5:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
@@ -1551,12 +1572,12 @@ L8DCD:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8DD0:  CMP #$01
 L8DD2:  BEQ L8DD7
 L8DD4:  JMP L8D07
-L8DD7:  LDA #$86
-L8DD9:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8DD7:  LDA #$86                ;THANK YOU text.
+L8DD9:  JMP LastText            ;($9475)Show last text before exiting.
 L8DDC:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8DDF:  BCC L8DE4
 L8DE1:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8DE4:  JSR L9D5E
+L8DE4:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8DE7:  JSR L9C40
 L8DEA:  BCC L8DEF
 L8DEC:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -1657,7 +1678,7 @@ L8F13:  JMP L9349
 L8F16:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L8F19:  BCC L8F1E
 L8F1B:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L8F1E:  JSR L9D5E
+L8F1E:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8F21:  LDA #$0C
 L8F23:  STA Wnd2XPos
 L8F26:  LDA #$08
@@ -1669,7 +1690,7 @@ L8F32:  STA Wnd2Height
 L8F35:  LDA #$06
 L8F37:  STA NumMenuItems
 L8F39:  LDA #$00
-L8F3B:  STA $9D
+L8F3B:  STA MultiWindow
 L8F3D:  LDA #$AB
 L8F3F:  STA TextIndex2
 L8F42:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
@@ -1720,7 +1741,7 @@ L8F9E:  BCC L8FA3
 L8FA0:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8FA3:  JMP L8FA9
 L8FA6:  JSR L93C0
-L8FA9:  JSR L9D5E
+L8FA9:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L8FAC:  LDA #$85
 L8FAE:  STA TextIndex
 L8FB0:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
@@ -1730,8 +1751,8 @@ L8FB8:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L8FBB:  CMP #$01
 L8FBD:  BEQ L8FC2
 L8FBF:  JMP L8F07
-L8FC2:  LDA #$86
-L8FC4:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L8FC2:  LDA #$86                ;THANK YOU text.
+L8FC4:  JMP LastText            ;($9475)Show last text before exiting.
 L8FC7:  PHA
 L8FC8:  LDY #$35
 L8FCA:  LDA (CrntChrPtr),Y
@@ -1761,7 +1782,7 @@ L9004:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9007:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L900A:  BCC L900F
 L900C:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L900F:  JSR L9D5E
+L900F:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L9012:  LDA #$0A
 L9014:  STA Wnd2XPos
 L9017:  LDA #$04
@@ -1773,7 +1794,7 @@ L9023:  STA Wnd2Height
 L9026:  LDA #$03
 L9028:  STA NumMenuItems
 L902A:  LDA #$00
-L902C:  STA $9D
+L902C:  STA MultiWindow
 L902E:  LDA #$B1
 L9030:  STA TextIndex2
 L9033:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
@@ -1787,7 +1808,7 @@ L9042:  LDA #$00
 L9044:  STA $2E
 L9046:  JSR L98DB
 L9049:  PHP
-L904A:  JSR L9D5E
+L904A:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L904D:  PLP
 L904E:  PLA
 L904F:  BCC L9060
@@ -1805,15 +1826,15 @@ L9068:  STA $2E
 L906A:  JSR L908B
 L906D:  LDA #$85
 L906F:  STA TextIndex
-L9071:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
+L9071:  JSR NoWaitDialog        ;($99E0)Show dialog followed by another menu.
 L9074:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9077:  BCC L907C
 L9079:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L907C:  CMP #$01
 L907E:  BEQ L9083
 L9080:  JMP L900F
-L9083:  LDA #$86
-L9085:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9083:  LDA #$86                ;THANK YOU text.
+L9085:  JMP LastText            ;($9475)Show last text before exiting.
 
 L9088:  .byte $0A, $32, $64
 
@@ -1867,16 +1888,16 @@ L911A:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L911D:  BCC L9125
 L911F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9122:  JMP L918E
-L9125:  JSR L9D5E
+L9125:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L9128:  LDA #$0A
 L912A:  STA $2D
 L912C:  LDA #$00
 L912E:  STA $2E
 L9130:  JSR L98DB
 L9133:  BCC L913A
-L9135:  LDA #$68
-L9137:  JMP LastText            ;($9475)Show last tesxt before exiting.
-L913A:  JSR L9D5E
+L9135:  LDA #$68                ;YOU DON'T HAVE ENOUGH MONEY text.
+L9137:  JMP LastText            ;($9475)Show last text before exiting.
+L913A:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L913D:  LDA #$74
 L913F:  STA TextIndex
 L9141:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
@@ -1890,7 +1911,7 @@ L9150:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9153:  JMP L9113
 L9156:  CMP #$03
 L9158:  BNE L916C
-L915A:  LDX $70
+L915A:  LDX ThisMap
 L915C:  LDA $9193,X
 L915F:  STA TextIndex
 L9161:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
@@ -1905,14 +1926,14 @@ L9174:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9177:  BCC L917C
 L9179:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L917C:  JMP L914C
-L917F:  LDX $70
+L917F:  LDX ThisMap
 L9181:  LDA $91A7,X
 L9184:  STA TextIndex
 L9186:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L9189:  BCC L918E
 L918B:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L918E:  LDA #$89
-L9190:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L918E:  LDA #$89                ;THANK YOU. SEE YOU AGAIN text.
+L9190:  JMP LastText            ;($9475)Show last text before exiting.
 
 L9193:  .byte $7E, $B9, $7E, $7E, $BA, $7E, $7E, $B7, $7E, $7E, $B8, $BD, $7E, $BE, $7E, $7E 
 L91A3:  .byte $7E, $BC, $BB, $BF, $7E, $7F, $7E, $7E, $BA, $7E, $7E, $B7, $7E, $7E, $B8, $BD
@@ -1932,7 +1953,7 @@ L9207:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L920A:  BCC L920F
 L920C:  JMP DialogExit          ;($94A9)Exit dialog routines.
 
-L920F:  JSR L9D5E
+L920F:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L9212:  LDA #$0C
 L9214:  STA Wnd2XPos
 L9217:  LDA #$08
@@ -1944,7 +1965,7 @@ L9223:  STA Wnd2Height
 L9226:  LDA #$05
 L9228:  STA NumMenuItems
 L922A:  LDA #$00
-L922C:  STA $9D
+L922C:  STA MultiWindow
 L922E:  LDA #$AC
 L9230:  STA TextIndex2
 L9233:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
@@ -1978,7 +1999,7 @@ L926D:  BCC L9272
 L926F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9272:  JMP L9278
 L9275:  JSR L92B3
-L9278:  JSR L9D5E
+L9278:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L927B:  LDA #$85
 L927D:  STA TextIndex
 L927F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
@@ -1988,8 +2009,8 @@ L9287:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L928A:  CMP #$01
 L928C:  BEQ L9291
 L928E:  JMP L9207
-L9291:  LDA #$86
-L9293:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9291:  LDA #$86                ;THANK YOU text.
+L9293:  JMP LastText            ;($9475)Show last text before exiting.
 
 L9296:  .byte $1E, $32, $4B, $5A, $64, $00, $01, $02, $03, $04
 
@@ -2034,35 +2055,35 @@ L9307:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L930A:  CMP #$01
 L930C:  BNE L9313
 L930E:  LDA #$8E
-L9310:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9310:  JMP LastText            ;($9475)Show last text before exiting.
 L9313:  LDA OnHorse
 L9315:  BEQ L931C
 L9317:  LDA #$8D
-L9319:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9319:  JMP LastText            ;($9475)Show last text before exiting.
 L931C:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L931F:  BCC L9324
 L9321:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L9324:  JSR L9D5E
+L9324:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L9327:  LDA #$03
 L9329:  STA $2E
 L932B:  LDA #$20
 L932D:  STA $2D
 L932F:  JSR L98DB
 L9332:  BCC L933B
-L9334:  LDA #$68
-L9336:  STA $30
-L9338:  JMP LastText            ;($9475)Show last tesxt before exiting.
-L933B:  JSR L9D5E
+L9334:  LDA #$68                ;YOU DON'T HAVE ENOUGH MONEY text.
+L9336:  STA TextIndex
+L9338:  JMP LastText            ;($9475)Show last text before exiting.
+L933B:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L933E:  LDA #$01
 L9340:  STA OnHorse
 L9342:  LDA #$8F
-L9344:  STA $30
-L9346:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9344:  STA TextIndex
+L9346:  JMP LastText            ;($9475)Show last text before exiting.
 
 L9349:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L934C:  BCC L9351
 L934E:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L9351:  JSR L9D5E
+L9351:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L9354:  JSR L9D00
 L9357:  BCC L935C
 L9359:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -2147,7 +2168,7 @@ L940F:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L9412:  JSR L893E
 L9415:  LDA #$91
 L9417:  CLC
-L9418:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9418:  JMP LastText            ;($9475)Show last text before exiting.
 L941B:  CMP #$0E
 L941D:  BNE L9421
 L941F:  CLC
@@ -2290,7 +2311,7 @@ L9513:  STA Wnd2Width
 L9516:  LDA #$02
 L9518:  STA NumMenuItems
 L951A:  LDA #$00
-L951C:  STA $9D
+L951C:  STA MultiWindow
 L951E:  LDA #$93
 L9520:  STA TextIndex2
 L9523:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
@@ -2299,7 +2320,7 @@ L9528:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L952B:  CMP #$01
 L952D:  BEQ L9534
 L952F:  LDA #$94
-L9531:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9531:  JMP LastText            ;($9475)Show last text before exiting.
 L9534:  LDA #$96
 L9536:  STA TextIndex
 L9538:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
@@ -2309,7 +2330,7 @@ L953F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L9542:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9545:  BCC L954A
 L9547:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L954A:  JSR L9D5E
+L954A:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L954D:  LDY #$30
 L954F:  INY
 L9550:  LDA (CrntChrPtr),Y
@@ -2320,8 +2341,8 @@ L9558:  DEY
 L9559:  LDA (CrntChrPtr),Y
 L955B:  CMP #$84
 L955D:  BCS L9564
-L955F:  LDA #$68
-L9561:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L955F:  LDA #$68                ;YOU DON'T HAVE ENOUGH MONEY text.
+L9561:  JMP LastText            ;($9475)Show last text before exiting.
 L9564:  LDA $99
 L9566:  PHA
 L9567:  LDA $9A
@@ -2342,7 +2363,7 @@ L9582:  LDA (CrntChrPtr),Y
 L9584:  CMP #$03
 L9586:  BCS L958D
 L9588:  LDA #$75
-L958A:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L958A:  JMP LastText            ;($9475)Show last text before exiting.
 L958D:  LDA #$03
 L958F:  STA $2E
 L9591:  LDA #$84
@@ -2352,7 +2373,7 @@ L9597:  PHA
 L9598:  LDA $9A
 L959A:  PHA
 L959B:  JSR L8CF1
-L959E:  JSR L9D5E
+L959E:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L95A1:  PLA
 L95A2:  STA $9A
 L95A4:  PLA
@@ -2364,7 +2385,7 @@ L95AD:  LDA #$04
 L95AF:  LDY #$0B
 L95B1:  STA (CrntChrPtr),Y
 L95B3:  LDA #$97
-L95B5:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L95B5:  JMP LastText            ;($9475)Show last text before exiting.
 L95B8:  LDY #$0B
 L95BA:  LDA #$00
 L95BC:  STA (CrntChrPtr),Y
@@ -2379,9 +2400,9 @@ L95CC:  LDA #$EA
 L95CE:  STA TextIndex
 L95D0:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
 L95D3:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L95D6:  JSR L9D5E
+L95D6:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L95D9:  LDA #$9E
-L95DB:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L95DB:  JMP LastText            ;($9475)Show last text before exiting.
 L95DE:  LDA #$D8
 L95E0:  STA TextIndex
 L95E2:  JSR ShowDialog1         ;($C00F)Show dialog in bottom screen window.
@@ -2400,11 +2421,11 @@ L9607:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L960A:  CMP #$01
 L960C:  BNE L9613
 L960E:  LDA #$9A
-L9610:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9610:  JMP LastText            ;($9475)Show last text before exiting.
 L9613:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9616:  BCC L961B
 L9618:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L961B:  JSR L9D5E
+L961B:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L961E:  LDA #$0A
 L9620:  STA Wnd2XPos
 L9623:  LDA #$06
@@ -2416,7 +2437,7 @@ L962F:  STA Wnd2Height
 L9632:  LDA #$03
 L9634:  STA NumMenuItems
 L9636:  LDA #$00
-L9638:  STA $9D
+L9638:  STA MultiWindow
 L963A:  LDA #$9B
 L963C:  STA TextIndex2
 L963F:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
@@ -2430,8 +2451,8 @@ L964F:  LDA #$00
 L9651:  STA $2E
 L9653:  JSR L98DB
 L9656:  BCC L965D
-L9658:  LDA #$68
-L965A:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9658:  LDA #$68                ;YOU DON'T HAVE ENOUGH MONEY text.
+L965A:  JMP LastText            ;($9475)Show last text before exiting.
 L965D:  LDA #$0A
 L965F:  STA Wnd2XPos
 L9662:  LDA #$06
@@ -2443,7 +2464,7 @@ L966E:  STA Wnd2Height
 L9671:  LDA #$03
 L9673:  STA NumMenuItems
 L9675:  LDA #$00
-L9677:  STA $9D
+L9677:  STA MultiWindow
 
 L9679:  LDA #$9C                ;STN SCR PPR text.
 L967B:  STA TextIndex2          ;
@@ -2505,9 +2526,9 @@ L96ED:  STA $2D
 L96EF:  LDA #$00
 L96F1:  STA $2E
 L96F3:  JSR AddGold             ;(L947A)Increase character's gold.
-L96F6:  JSR L9D5E
+L96F6:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L96F9:  LDA #$9D
-L96FB:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L96FB:  JMP LastText            ;($9475)Show last text before exiting.
 
 L96FE:  .byte $04, $44
 
@@ -2522,21 +2543,21 @@ L970B:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
 L970E:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9711:  BCC L9716
 L9713:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L9716:  JSR L9D5E
+L9716:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L9719:  LDA #$64
 L971B:  STA $2D
 L971D:  LDA #$00
 L971F:  STA $2E
 L9721:  JSR L98DB
 L9724:  BCC L972B
-L9726:  LDA #$68
-L9728:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9726:  LDA #$68                ;YOU DON'T HAVE ENOUGH MONEY text.
+L9728:  JMP LastText            ;($9475)Show last text before exiting.
 L972B:  LDY #$05
 L972D:  LDA (CrntChrPtr),Y
 L972F:  ASL
 L9730:  ASL
 L9731:  STA $30
-L9733:  LDA $70
+L9733:  LDA ThisMap
 L9735:  SEC
 L9736:  SBC #$15
 L9738:  AND #$03
@@ -2560,15 +2581,15 @@ L9758:  JSR FlashAndSound1      ;($C04E)Flash screen with SFX.
 L975B:  LDA #$A0
 L975D:  STA TextIndex
 L975F:  JSR NoWaitDialog        ;($99E0)Show dialog follwed by another menu.
-L9762:  JSR L9D5E
+L9762:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L9765:  JSR SelectYesNo         ;($98F7)Show a YES/NO dialog box.
 L9768:  BCC L976D
 L976A:  JMP DialogExit          ;($94A9)Exit dialog routines.
 L976D:  CMP #$00
 L976F:  BEQ L9716
 L9771:  LDA #$A1
-L9773:  STA $30
-L9775:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9773:  STA TextIndex
+L9775:  JMP LastText            ;($9475)Show last text before exiting.
 
 L9778:  .byte $7B, $7C, $7D, $9F, $09, $0A, $07, $08, $4B, $4B, $4B, $4B, $4B, $32, $4B, $63
 L9788:  .byte $32, $4B, $63, $4B, $4B, $63, $4B, $32, $63, $4B, $19, $63, $4B, $00, $C3, $00
@@ -2632,9 +2653,9 @@ L9833:  LDA $29
 L9835:  CMP #$06
 L9837:  BCS L983E
 L9839:  LDA #$CA
-L983B:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L983B:  JMP LastText            ;($9475)Show last text before exiting.
 L983E:  LDA #$D0
-L9840:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L9840:  JMP LastText            ;($9475)Show last text before exiting.
 L9843:  LDA #$19
 L9845:  STA $30
 L9847:  JSR L9872
@@ -2652,9 +2673,9 @@ L9862:  LDA $29
 L9864:  CMP #$19
 L9866:  BCS L986D
 L9868:  LDA #$CA
-L986A:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L986A:  JMP LastText            ;($9475)Show last text before exiting.
 L986D:  LDA #$CC
-L986F:  JMP LastText            ;($9475)Show last tesxt before exiting.
+L986F:  JMP LastText            ;($9475)Show last text before exiting.
 L9872:  LDY #$39
 L9874:  LDA (CrntChrPtr),Y
 L9876:  STA $29
@@ -2685,21 +2706,29 @@ L98A3:  CMP $30
 L98A5:  LDA $30
 L98A7:  STA (CrntChrPtr),Y
 L98A9:  RTS
+
+;----------------------------------------------------------------------------------------------------
+
 L98AA:  LDA #$0A
 L98AC:  STA Wnd2XPos
 L98AF:  LDA #$04
 L98B1:  STA Wnd2YPos
+
 L98B4:  LDA #$0A
 L98B6:  STA Wnd2Width
 L98B9:  LDA #$06
 L98BB:  STA Wnd2Height
+
 L98BE:  LDA #$02
 L98C0:  STA NumMenuItems
+
 L98C2:  LDA #$00
-L98C4:  STA $9D
-L98C6:  LDA #$80
-L98C8:  STA TextIndex2
+L98C4:  STA MultiWindow
+
+L98C6:  LDA #$80                ;BUY SELL text.
+L98C8:  STA TextIndex2          ;
 L98CB:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
+
 L98CE:  PHP
 L98CF:  PHA
 L98D0:  JSR L99AE
@@ -2728,22 +2757,29 @@ L98F3:  STA (CrntChrPtr),Y
 L98F5:  CLC
 L98F6:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 SelectYesNo:
 L98F7:  LDA #$0C
 L98F9:  STA Wnd2XPos
 L98FC:  LDA #$08
 L98FE:  STA Wnd2YPos
+
 L9901:  LDA #$06
 L9903:  STA Wnd2Width
 L9906:  LDA #$06
 L9908:  STA Wnd2Height
+
 L990B:  LDA #$02
 L990D:  STA NumMenuItems
+
 L990F:  LDA #$00
-L9911:  STA $9D
-L9913:  LDA #$65
-L9915:  STA TextIndex2
+L9911:  STA MultiWindow
+
+L9913:  LDA #$65                ;YES NO text.
+L9915:  STA TextIndex2          ;
 L9918:  JSR ShowSelectWnd1      ;($C012)Show a window where player makes a selection.
+
 L991B:  PHP
 L991C:  PHA
 L991D:  JSR L99AE
@@ -2847,6 +2883,7 @@ L99AE:  PHA
 L99AF:  TXA
 L99B0:  PHA
 L99B1:  LDX #$C4
+
 L99B3:  LDA $7300,X
 L99B6:  CMP #SPRT_HIDE
 L99B8:  BEQ L99C4
@@ -2856,6 +2893,7 @@ L99BC:  ADC #$04
 L99BE:  TAX
 L99BF:  BEQ L99DC
 L99C1:  JMP L99B3
+
 L99C4:  LDA $7300
 L99C7:  STA $7300,X
 L99CA:  LDA $7301
@@ -2909,7 +2947,7 @@ L9A25:  BNE L9A1E
 L9A27:  LDA #$00
 L9A29:  STA $2D
 L9A2B:  STA NumMenuItems
-L9A2D:  STA $9D
+L9A2D:  STA MultiWindow
 L9A2F:  LDX #$00
 L9A31:  PLA
 L9A32:  PHA
@@ -2965,7 +3003,7 @@ L9A8C:  LDA (CrntChrPtr),Y
 L9A8E:  STA $A0
 L9A90:  LDA #$00
 L9A92:  STA $A1
-L9A94:  JSR L9943
+L9A94:  JSR DoBinToBCD          ;($9943)Convert binary value to BCD.
 L9A97:  LDA $A4
 L9A99:  LDY $2D
 L9A9B:  STA $0580,Y
@@ -3094,6 +3132,7 @@ L9D57:  .byte $92, $8C, $00, $8A, $43, $FD, $FF
 
 ;----------------------------------------------------------------------------------------------------
 
+ShowChrGold:
 L9D5E:  PHA
 L9D5F:  LDA #$02
 L9D61:  STA WndXPos
@@ -3111,7 +3150,7 @@ L9D76:  STA BinInputLB
 L9D78:  INY
 L9D79:  LDA (CrntChrPtr),Y
 L9D7B:  STA BinInputUB
-L9D7D:  JSR L9943
+L9D7D:  JSR DoBinToBCD          ;($9943)Convert binary value to BCD.
 L9D80:  LDY #$00
 L9D82:  LDX #$00
 L9D84:  LDA BCDOutputBase,Y
@@ -3134,29 +3173,37 @@ L9DA6:  INY
 L9DA7:  LDA #$99
 L9DA9:  STA TextBuffer,Y
 L9DAC:  INY
-L9DAD:  LDA #$FF
+
+L9DAD:  LDA #TXT_END
 L9DAF:  STA TextBuffer,Y
+
 L9DB2:  LDA #$03
 L9DB4:  STA $2A
 L9DB6:  LDA #$04
 L9DB8:  STA $29
+
 L9DBA:  LDA #$06
 L9DBC:  STA $2E
 L9DBE:  LDA #$01
 L9DC0:  STA $2D
-L9DC2:  LDA #$FF
-L9DC4:  STA $30
+
+L9DC2:  LDA #TXT_DBL_SPACE
+L9DC4:  STA TextIndex
 L9DC6:  JSR DisplayText1        ;($C003)Display text on the screen.
+
 L9DC9:  PLA
 L9DCA:  CLC
 L9DCB:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
+;Unused.
 L9DCC:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $30, $00, $00, $11, $11, $11, $33
 L9DDC:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $33, $66, $33, $33, $33, $33
 L9DEC:  .byte $33, $33, $33, $33, $33, $33, $33, $33, $30, $00, $0C, $88, $88, $8C, $11, $13
 L9DFC:  .byte $33, $33, $33, $33
+
+;----------------------------------------------------------------------------------------------------
 
 L9E00:  LDA #$48
 L9E02:  STA TextIndex
@@ -3185,7 +3232,7 @@ L9E32:  STA Wnd2Height
 L9E35:  LDA #$04
 L9E37:  STA NumMenuItems
 L9E39:  LDA #$00
-L9E3B:  STA $9D
+L9E3B:  STA MultiWindow
 L9E3D:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L9E40:  BCS L9E1C
 L9E42:  TAY
@@ -3233,7 +3280,7 @@ L9EFC:  .byte $33, $33, $33, $33
 L9F00:  JSR ChooseChar1         ;($C00C)Select a character from a list.
 L9F03:  BCC L9F08
 L9F05:  JMP DialogExit          ;($94A9)Exit dialog routines.
-L9F08:  JSR L9D5E
+L9F08:  JSR ShowChrGold         ;($9D5E)Show the selected character's gold.
 L9F0B:  LDA #$DD
 L9F0D:  STA TextIndex2
 L9F10:  LDA #$0A
@@ -3247,7 +3294,7 @@ L9F21:  STA Wnd2Height
 L9F24:  LDA #$03
 L9F26:  STA NumMenuItems
 L9F28:  LDA #$00
-L9F2A:  STA $9D
+L9F2A:  STA MultiWindow
 L9F2C:  JSR _ShowSelectWnd1     ;($C018)Show a window where player makes a selection, variant.
 L9F2F:  BCC L9F34
 L9F31:  JMP DialogExit          ;($94A9)Exit dialog routines.
@@ -3519,7 +3566,7 @@ LA66B:  STA $A0
 LA66D:  INY
 LA66E:  LDA (CrntChrPtr),Y
 LA670:  STA $A1
-LA672:  JSR L9943
+LA672:  JSR DoBinToBCD          ;($9943)Convert binary value to BCD.
 LA675:  LDY #$04
 LA677:  JSR LA70B
 LA67A:  LDA #$00
@@ -3533,7 +3580,7 @@ LA688:  LDA (CrntChrPtr),Y
 LA68A:  STA $A0
 LA68C:  LDA #$00
 LA68E:  STA $A1
-LA690:  JSR L9943
+LA690:  JSR DoBinToBCD          ;($9943)Convert binary value to BCD.
 LA693:  LDY #$02
 LA695:  JSR LA70B
 LA698:  LDA #$FD
@@ -3548,7 +3595,7 @@ LA6A8:  STA $A0
 LA6AA:  INY
 LA6AB:  LDA (CrntChrPtr),Y
 LA6AD:  STA $A1
-LA6AF:  JSR L9943
+LA6AF:  JSR DoBinToBCD          ;($9943)Convert binary value to BCD.
 LA6B2:  LDY #$04
 LA6B4:  JSR LA70B
 LA6B7:  LDA #$00
@@ -3562,7 +3609,7 @@ LA6C5:  LDA (CrntChrPtr),Y
 LA6C7:  STA $A0
 LA6C9:  LDA #$00
 LA6CB:  STA $A1
-LA6CD:  JSR L9943
+LA6CD:  JSR DoBinToBCD          ;($9943)Convert binary value to BCD.
 LA6D0:  LDY #$02
 LA6D2:  JSR LA70B
 LA6D5:  LDA #$FD

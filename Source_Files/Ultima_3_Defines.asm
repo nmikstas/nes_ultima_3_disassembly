@@ -146,7 +146,6 @@
 .alias WndWidth         $2E     ;Width of window to draw.
 .alias WndRowRemain     $2E     ;Number of tiles left to draw in current window row.
 
-
 .alias ChrNum           $2B     ;Keep track of character number when previewing.
 .alias ChrRow           $2C     ;Row character data will appear on when previewing.
 .alias ChrDYConst       $2D     ;LB intro scene, Reloads ChrDYVar when it hits 0.
@@ -251,7 +250,9 @@
 .alias SGCharPtrUB      $9A     ;Pointer to character data in current save game, upper byte.
 .alias BtnMask          $9B     ;A mask for buttons that will allow game to progress.
 .alias NumMenuItems     $9C     ;The number of items in a given menu.
-
+.alias MultiWindow      $9D     ;For windows with greater than 8 selections, this stores the
+                                ;total number of selections. MSB set tells game code to draw second
+                                ;set of text strings in window. MSB clear is first half of text.
 .alias DisSpriteAnim    $9E     ;Non-zero value disables sprite animations.
 .alias DisNPCMovement   $9F     ;Non-zero value stops NPCs from moving and disables water animation.
 
@@ -331,6 +332,7 @@
 .alias OnHorse          $DE     ;LSB set=Has horses, MSB set=Riding horses.
 
 .alias ExodusDead       $E0     ;$01=Exodus dead, $02=Game won, $FF=Time expired, everyone dies.
+.alias HideSpriteTemp   $E1     ;Temp storage for HideUprSprites.
 
 .alias DelayConst       $E3     ;Loaded with $1E when loading saved game. Used as a delay constant.
 .alias UnusedE4         $E4     ;Not used.

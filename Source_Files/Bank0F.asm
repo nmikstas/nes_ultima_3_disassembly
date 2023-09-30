@@ -410,6 +410,7 @@ LC247:  JSR LFC55
 LC24A:  JSR LFB06
 LC24D:  LDA #$D4
 LC24F:  STA HideUprSprites
+
 LC251:  LDA #$16
 LC253:  STA Wnd2XPos
 LC256:  LDA #$04
@@ -418,6 +419,7 @@ LC25B:  LDA #$0A
 LC25D:  STA Wnd2Width
 LC260:  LDA #$12
 LC262:  STA Wnd2Height
+
 LC265:  LDA BribePray
 LC267:  AND #CMD_BOTH
 LC269:  ASL
@@ -438,7 +440,7 @@ LC286:  INX
 LC287:  LDA CmdPtrTbl,X
 LC28A:  STA $90
 LC28C:  LDA #$00
-LC28E:  STA $9D
+LC28E:  STA MultiWindow
 LC290:  JMP ($008F)
 
 FinishCommand:
@@ -962,10 +964,12 @@ LC63E:  STA Wnd2Height
 LC641:  LDA #$02
 LC643:  STA NumMenuItems
 LC645:  LDA #$00
-LC647:  STA $9D
-LC649:  LDA #$65
-LC64B:  STA TextIndex2
+LC647:  STA MultiWindow
+
+LC649:  LDA #$65                ;YES NO text.
+LC64B:  STA TextIndex2          ;
 LC64E:  JSR ShowSelectWnd       ;($E4FF)Show a window where player makes a selection.
+
 LC651:  PHP
 LC652:  PHA
 LC653:  JSR LE699
@@ -2827,7 +2831,7 @@ LD3EF:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 LD3F0:  LDA #$00
-LD3F2:  STA $9D
+LD3F2:  STA MultiWindow
 LD3F4:  LDA #$02
 LD3F6:  STA NumMenuItems
 LD3F8:  LDA #$19                ;CLERIC WIZARD text.
@@ -2852,7 +2856,7 @@ LD41C:  BCC LD421
 LD41E:  TAX
 LD41F:  LDA #$08
 LD421:  STA NumMenuItems
-LD423:  STX $9D
+LD423:  STX MultiWindow
 LD425:  LDA #$0A
 LD427:  STA Wnd2XPos
 LD42A:  LDA #$06
@@ -4317,8 +4321,8 @@ LDDA4:  CMP #$0B
 LDDA6:  BEQ LDDD9
 LDDA8:  BNE LDDD0
 LDDAA:  LDA #$00
-LDDAC:  STA $9C
-LDDAE:  STA $9D
+LDDAC:  STA NumMenuItems
+LDDAE:  STA MultiWindow
 LDDB0:  LDA CharBlock
 LDDB3:  AND #$1F
 LDDB5:  CMP #BLK_CHEST
@@ -4331,7 +4335,7 @@ LDDC2:  AND #$1F
 LDDC4:  CMP #BLK_FLOWER
 LDDC6:  BNE LDDCB
 LDDC8:  JMP LDEB5
-LDDCB:  JSR LDECF
+LDDCB:  JSR ChkCounter          ;($DECF)Check if chest is behind a shop counter.
 LDDCE:  BCC LDDD9
 
 LDDD0:  LDA #$0F                ;NOTHING HERE text.
@@ -4340,8 +4344,10 @@ LDDD4:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 
 LDDD7:  SEC
 LDDD8:  RTS
+
 LDDD9:  CLC
 LDDDA:  RTS
+
 LDDDB:  LDA #SFX_CHST_OPEN+INIT
 LDDDD:  STA ThisSFX
 LDDDF:  LDA MapProperties
@@ -4462,6 +4468,9 @@ LDECA:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LDECD:  SEC
 LDECE:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
+ChkCounter:
 LDECF:  JSR GetFrontBlock       ;($E739)Get the block in front of character 1.
 LDED2:  CMP #BLK_COUNTER
 LDED4:  BNE LDF0E
@@ -4640,7 +4649,7 @@ LE009:  JSR ShowDialog          ;($E675)Show dialog in lower screen window.
 LE00C:  LDA MapProperties
 LE00E:  AND #MAP_DUNGEON
 LE010:  BNE LE082
-LE012:  LDA $9C
+LE012:  LDA NumMenuItems
 LE014:  BNE LE047
 LE016:  JSR LE090
 LE019:  PHA
@@ -4653,7 +4662,7 @@ LE024:  PLA
 LE025:  STA ($43),Y
 LE027:  RTS
 
-LE028:  LDA #$8B
+LE028:  LDA #BLK_FLOOR+$80
 LE02A:  STA CharBlock
 LE02D:  PLA
 LE02E:  LDA ($43),Y
@@ -5378,48 +5387,60 @@ LE4FC:  JMP LE477
 ;----------------------------------------------------------------------------------------------------
 
 ShowSelectWnd:
-LE4FF:  LDA NumMenuItems
-LE501:  CLC
-LE502:  ADC #$01
-LE504:  ASL
-LE505:  STA Wnd2Height
+LE4FF:  LDA NumMenuItems        ;
+LE501:  CLC                     ;The height of the window will be the number of items double
+LE502:  ADC #$01                ;spaced(*2) with a blank space on top and bottom(+1).
+LE504:  ASL                     ;
+LE505:  STA Wnd2Height          ;
 LE508:  JMP _ShowSelectWnd      ;($E50B)Show a window where player makes a selection, variant.
 
-_ShowSelectWnd:
-LE50B:  LDA HideUprSprites
-LE50D:  STA $E1
+;----------------------------------------------------------------------------------------------------
 
-LE50F:  LDA Wnd2XPos
-LE512:  STA $2A
-LE514:  LDA Wnd2YPos
-LE517:  STA $29
-LE519:  LDA Wnd2Width
-LE51C:  STA $2E
-LE51E:  LDA Wnd2Height
-LE521:  STA $2D
+_ShowSelectWnd:
+LE50B:  LDA HideUprSprites      ;Temporarily store hide sprites value.
+LE50D:  STA HideSpriteTemp      ;
+
+LE50F:  LDA Wnd2XPos            ;
+LE512:  STA WndXPos             ;Set the X,Y position of the selection window.
+LE514:  LDA Wnd2YPos            ;
+LE517:  STA WndYPos             ;
+
+LE519:  LDA Wnd2Width           ;
+LE51C:  STA WndWidth            ;Set the height and width of the selection window.
+LE51E:  LDA Wnd2Height          ;
+LE521:  STA WndHeight           ;
+
 LE523:  JSR ShowWindow          ;($F42A)Show a window on the display.
-LE526:  LDA TextIndex2
-LE529:  STA $30
-LE52B:  LDA Wnd2XPos
-LE52E:  CLC
-LE52F:  ADC #$02
-LE531:  STA $2A
-LE533:  LDA Wnd2YPos
-LE536:  CLC
-LE537:  ADC #$02
-LE539:  STA $29
-LE53B:  LDA Wnd2Width
-LE53E:  SEC
-LE53F:  SBC #$03
-LE541:  STA $2E
-LE543:  SEC
-LE544:  LDA Wnd2Height
-LE547:  SBC #$02
-LE549:  LSR
-LE54A:  STA $2D
-LE54C:  LDA $E1
-LE54E:  STA HideUprSprites
+
+LE526:  LDA TextIndex2          ;Set the text index for the selection window.
+LE529:  STA TextIndex           ;
+
+LE52B:  LDA Wnd2XPos            ;
+LE52E:  CLC                     ;Text will always be X offset from window border by 2 tiles.
+LE52F:  ADC #$02                ;
+LE531:  STA TXTXPos             ;
+
+LE533:  LDA Wnd2YPos            ;
+LE536:  CLC                     ;Text will always be Y offset from window border by 2 tiles.
+LE537:  ADC #$02                ;
+LE539:  STA TXTYPos             ;
+
+LE53B:  LDA Wnd2Width           ;
+LE53E:  SEC                     ;Text will be 3 tiles skinnier than window width.
+LE53F:  SBC #$03                ;
+LE541:  STA TXTClrCols          ;
+
+LE543:  SEC                     ;
+LE544:  LDA Wnd2Height          ;Text will be 2 tiles shorter than window height.
+LE547:  SBC #$02                ;
+LE549:  LSR                     ;
+LE54A:  STA TXTClrRows          ;
+
+LE54C:  LDA HideSpriteTemp      ;Restore hide sprites value.
+LE54E:  STA HideUprSprites      ;
+
 LE550:  JSR DisplayText         ;($F0BE)Display text on the screen.
+
 LE553:  LDA NumMenuItems
 LE555:  CLC
 LE556:  ADC #$01
@@ -5429,11 +5450,13 @@ LE55B:  LDX #$02
 LE55D:  SEC
 LE55E:  LDA Wnd2Height
 LE561:  SBC $2E
-LE563:  BEQ LE569
+LE563:  BEQ +
+
 LE565:  CLC
 LE566:  ADC #$02
 LE568:  TAX
-LE569:  STX $2E
+
+LE569:* STX $2E
 LE56B:  LDA Wnd2YPos
 LE56E:  CLC
 LE56F:  ADC $2E
@@ -5447,32 +5470,41 @@ LE57B:  ADC #$01
 LE57D:  ASL
 LE57E:  ASL
 LE57F:  ASL
-LE580:  STA $7303
+LE580:  STA SpriteBuffer+3
+
 LE583:  LDA #$01
 LE585:  STA $2E
 LE587:  LDA NumMenuItems
 LE589:  STA $2D
 LE58B:  JSR LE685
 LE58E:  BCS LE5FD
+
 LE590:  CMP #$FF
 LE592:  BNE LE5E8
-LE594:  LDA $9D
+
+LE594:  LDA MultiWindow
 LE596:  BEQ LE553
+
 LE598:  AND #$80
 LE59A:  BEQ LE5B3
-LE59C:  LDA $9D
+
+LE59C:  LDA MultiWindow
 LE59E:  AND #$7F
-LE5A0:  STA $9D
-LE5A2:  LDA #$08
-LE5A4:  STA NumMenuItems
-LE5A6:  LDA #$12
-LE5A8:  STA Wnd2Height
-LE5AB:  LDA TextIndex2
-LE5AE:  STA $30
+LE5A0:  STA MultiWindow
+
+LE5A2:  LDA #$08                ;8 selections in window to draw.
+LE5A4:  STA NumMenuItems        ;
+
+LE5A6:  LDA #$12                ;the selection window will be 18 tiles tall.
+LE5A8:  STA Wnd2Height          ;
+
+LE5AB:  LDA TextIndex2          ;Set the text index of the window to draw.
+LE5AE:  STA TextIndex           ;
 LE5B0:  JMP _ShowSelectWnd      ;($E50B)Show a window where player makes a selection, variant.
-LE5B3:  LDA $9D
+
+LE5B3:  LDA MultiWindow
 LE5B5:  ORA #$80
-LE5B7:  STA $9D
+LE5B7:  STA MultiWindow
 LE5B9:  AND #$7F
 LE5BB:  SEC
 LE5BC:  SBC #$08
@@ -5497,9 +5529,11 @@ LE5E3:  STA $30
 LE5E5:  JMP LE52B
 LE5E8:  STA $2E
 LE5EA:  LDX #$00
-LE5EC:  LDA $9D
+LE5EC:  LDA MultiWindow
 LE5EE:  BPL LE5F2
+
 LE5F0:  LDX #$08
+
 LE5F2:  CLC
 LE5F3:  TXA
 LE5F4:  ADC $2E
@@ -5512,6 +5546,8 @@ LE5FC:  RTS
 LE5FD:  JSR BinToBCD            ;($F4D1)Convert binary number to BCD.
 LE600:  SEC
 LE601:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LE602:  LDA CurPRGBank
 LE604:  PHA
@@ -5526,6 +5562,8 @@ LE613:  TXA
 LE614:  PLP
 LE615:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 LE616:  LDA CurPRGBank
 LE618:  PHA
 LE619:  LDA #BANK_HELPERS2
@@ -5539,6 +5577,8 @@ LE627:  TXA
 LE628:  PLP
 LE629:  RTS
 
+;----------------------------------------------------------------------------------------------------
+
 LE62A:  LDA CurPRGBank
 LE62C:  PHA
 LE62D:  LDA #BANK_HELPERS2
@@ -5551,6 +5591,8 @@ LE638:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE63B:  TXA
 LE63C:  PLP
 LE63D:  RTS
+
+;----------------------------------------------------------------------------------------------------
 
 LE63E:  LDA CurPRGBank
 LE640:  PHA
@@ -5617,11 +5659,12 @@ LE693:  JSR SetPRGBank          ;($FC0F)Swap out lower PRG ROM bank.
 LE696:  PLP
 LE697:  TXA
 LE698:  RTS
+
 LE699:  PHA
 LE69A:  TXA
 LE69B:  PHA
 LE69C:  LDX #$C4
-LE69E:  LDA $7300,X
+LE69E:  LDA SpriteBuffer,X
 LE6A1:  CMP #SPRT_HIDE
 LE6A3:  BEQ LE6AF
 LE6A5:  TXA
